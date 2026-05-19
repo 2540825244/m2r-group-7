@@ -3,6 +3,7 @@ import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
+import Mathlib.Logic.Unique
 
 def maximumOrder : Nat := 3
 
@@ -13,11 +14,21 @@ theorem classification [hp: Fact (n <= maximumOrder)] (h : Nat.card G = n) :
  :=
   match n with
   | 1 => by
-    -- use 1
-    -- apply Nonempty.intro
-    -- have : Unique G := Nat.card_eq_one_iff_unique.mp h
-    -- exact (MulEquiv.ofUnique G (retrieve 1 1))
-    sorry
+    use 1
+    apply Nonempty.intro
+
+    have : Unique (retrieve 1 1) := by
+      have hr : retrieve 1 1 = Unit := by rfl
+      rw [hr]
+      infer_instance
+
+    have hg := Nat.card_eq_one_iff_unique.mp h
+    have h_nonempty := hg.right
+    have : Subsingleton G := hg.left
+    have : Inhabited G := Classical.inhabited_of_nonempty h_nonempty
+    have h_unique := Unique.mk' G
+
+    exact MulEquiv.ofUnique
 
   | 2 => by
     use 1
