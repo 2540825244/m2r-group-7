@@ -32,16 +32,22 @@ theorem classification [hp: Fact (n <= maximumOrder)] (h : Nat.card G = n) :
 
   | 2 => by
     use 1
-    sorry
+    have hr : MulEquiv (retrieve 2 1) (CyclicGroup 2) := by
+      have hr_is_c : retrieve 2 1 = CyclicGroup 2 := by rfl
+      exact (MulEquiv.refl (CyclicGroup 2))
+    apply Nonempty.intro
+    have hg : MulEquiv G (CyclicGroup 2) := by
+      have : IsCyclic G := isCyclic_of_prime_card h
+      refine (mulEquivOfCyclicCardEq ?_)
+      have h_card : Nat.card (CyclicGroup 2) = 2 := card_cyclicGroup 2
+      rw [h, h_card]
+
+    apply MulEquiv.symm at hr
+    exact MulEquiv.trans hg hr
+
   | 3 => by
     use 1
     sorry
   | _ => by
     have hn := n > maximumOrder
     sorry
-
-theorem prime_classification [hp: Fact n.Prime] (h : Nat.card G = n) :
-  (∃ i : Nat, Nonempty (MulEquiv G (retrieve n i)))
- :=
-  -- apply isCyclic_of_prime_card
-  sorry

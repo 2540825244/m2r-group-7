@@ -5,11 +5,26 @@ import Mathlib.GroupTheory.SpecificGroups.Quaternion
 
 
 /- Cyclic group generator -/
-def CyclicGroup (n : ℕ) := Multiplicative (ZMod n)
+def CyclicGroup (n : Nat) := Multiplicative (ZMod n)
 
-instance (n : ℕ) : Group (CyclicGroup n) := by
+instance (n : Nat) : Group (CyclicGroup n) := by
   delta CyclicGroup
   infer_instance
+
+instance (n : Nat) : IsCyclic (CyclicGroup n) := by
+  delta CyclicGroup
+  exact isCyclic_multiplicative
+
+theorem card_cyclicGroup (n : Nat) : Nat.card (CyclicGroup n) = n := by
+  -- 1. Unfold your type synonym definition
+  delta CyclicGroup
+
+  -- 2. Strip away the 'Multiplicative' tag (Nat.card is invariant under type tags)
+  rw [Nat.card_congr Multiplicative.toAdd]
+
+
+  -- 3. Use Mathlib's built-in theorem for the Nat.card of ZMod n
+  exact Nat.card_zmod n
 
 instance : Group Unit where
   mul _ _ := ()
