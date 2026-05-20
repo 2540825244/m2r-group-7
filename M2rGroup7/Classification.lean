@@ -9,7 +9,23 @@ def maximumOrder : Nat := 3
 
 variable (n : ℕ) (G : Type*) [Group G]
 
-theorem classification [hp: Fact (n <= maximumOrder)] (h : Nat.card G = n) :
+macro "classify_prime" p:num h:term : tactic => `(tactic|(
+  have : Fact (Nat.Prime $p) := ⟨by decide⟩
+  use 1
+  have hr : MulEquiv (retrieve $p 1) (CyclicGroup $p) := by
+    have hr_is_c : retrieve $p 1 = CyclicGroup $p := by rfl
+    exact (MulEquiv.refl (CyclicGroup $p))
+  apply Nonempty.intro
+  have hg : MulEquiv G (CyclicGroup $p) := by
+    have h_g_card : Nat.card G = $p := $h
+    have : IsCyclic G := isCyclic_of_prime_card h_g_card
+    refine (mulEquivOfCyclicCardEq ?_)
+    have h_r_card : Nat.card (CyclicGroup $p) = $p := card_cyclicGroup $p
+    rw [h_g_card, h_r_card]
+  apply MulEquiv.symm at hr
+  exact MulEquiv.trans hg hr))
+
+theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
   (∃ i : Nat, Nonempty (MulEquiv G (retrieve n i)))
  :=
   match n with
@@ -31,23 +47,35 @@ theorem classification [hp: Fact (n <= maximumOrder)] (h : Nat.card G = n) :
     exact MulEquiv.ofUnique
 
   | 2 => by
-    use 1
-    have hr : MulEquiv (retrieve 2 1) (CyclicGroup 2) := by
-      have hr_is_c : retrieve 2 1 = CyclicGroup 2 := by rfl
-      exact (MulEquiv.refl (CyclicGroup 2))
-    apply Nonempty.intro
-    have hg : MulEquiv G (CyclicGroup 2) := by
-      have : IsCyclic G := isCyclic_of_prime_card h
-      refine (mulEquivOfCyclicCardEq ?_)
-      have h_card : Nat.card (CyclicGroup 2) = 2 := card_cyclicGroup 2
-      rw [h, h_card]
-
-    apply MulEquiv.symm at hr
-    exact MulEquiv.trans hg hr
+    classify_prime 2 h
 
   | 3 => by
-    use 1
+    classify_prime 3 h
+
+  | 4 => by
     sorry
+
+  | 5 => by
+    classify_prime 5 h
+
+  | 6 => by
+    sorry
+
+  | 7 => by
+    classify_prime 7 h
+
+  | 8 => by
+    sorry
+
+  | 9 => by
+    sorry
+
+  | 10 => by
+    sorry
+
+  | 11 => by
+    classify_prime 11 h
+
   | _ => by
     have hn := n > maximumOrder
     sorry
