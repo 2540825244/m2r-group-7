@@ -9,21 +9,23 @@ def maximumOrder : Nat := 3
 
 variable (n : ℕ) (G : Type*) [Group G]
 
+theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
+(Nonempty (MulEquiv G (CyclicGroup n))) := by
+  apply Nonempty.intro
+  have h_g_card : Nat.card G = n := h
+  have : IsCyclic G := isCyclic_of_prime_card h_g_card
+  refine (mulEquivOfCyclicCardEq ?_)
+  have h_c_card: Nat.card (CyclicGroup n) = n := card_cyclicGroup n
+  rw [h_g_card, h_c_card]
+
 macro "classify_prime" p:num h:term : tactic => `(tactic|(
   have : Fact (Nat.Prime $p) := ⟨by decide⟩
   use 1
   have hr : MulEquiv (retrieve $p 1) (CyclicGroup $p) := by
     have hr_is_c : retrieve $p 1 = CyclicGroup $p := by rfl
     exact (MulEquiv.refl (CyclicGroup $p))
-  apply Nonempty.intro
-  have hg : MulEquiv G (CyclicGroup $p) := by
-    have h_g_card : Nat.card G = $p := $h
-    have : IsCyclic G := isCyclic_of_prime_card h_g_card
-    refine (mulEquivOfCyclicCardEq ?_)
-    have h_r_card : Nat.card (CyclicGroup $p) = $p := card_cyclicGroup $p
-    rw [h_g_card, h_r_card]
-  apply MulEquiv.symm at hr
-  exact MulEquiv.trans hg hr))
+  apply prime_classification
+  exact $h))
 
 theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
   (∃ i : Nat, Nonempty (MulEquiv G (retrieve n i)))
