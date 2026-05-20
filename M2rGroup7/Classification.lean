@@ -4,10 +4,125 @@ import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
+import Mathlib.SetTheory.Cardinal.Finite
+import Mathlib.Algebra.GroupWithZero.Basic
+import Mathlib.GroupTheory.FiniteAbelian.Basic
+import Mathlib.Data.Multiset.MapFold
+import Mathlib.Data.Fintype.Defs
+import Mathlib.SetTheory.Cardinal.Defs
+import Mathlib.GroupTheory.Coset.Card
+import Mathlib.Data.Nat.Prime.Basic
+import Mathlib.Data.Fintype.EquivFin
+import Mathlib.Data.PNat.Prime
+import Mathlib.Algebra.Group.Subgroup.Finite
+import Mathlib.GroupTheory.Subgroup.Center
+import Mathlib.GroupTheory.PGroup
 
 def maximumOrder : Nat := 3
 
 variable (n : ℕ) (G : Type*) [Group G]
+
+theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_na : ¬IsMulCommutative G) (h : Nat.card G = p^3) :
+  True := by
+  -- Define Z as the center of G
+  set Z := Subgroup.center G with hZ
+  -- Claim 1: |Z(G)| = p and so Z(G) isomorphic to C_p
+  -- Step 1: Z(G) subgroup of G implies |Z(G)| in {1, p, p^2, p^3}
+  have h_z_order_divides_p_3 := by
+    apply Subgroup.card_subgroup_dvd_card Z
+  rw [h] at h_z_order_divides_p_3
+  rw [dvd_prime_pow hn.out.prime] at h_z_order_divides_p_3
+  obtain ⟨i, h'⟩ := h_z_order_divides_p_3
+  obtain ⟨h_bound, h_z_order_p_i⟩ := h'
+
+  -- Step 2: |Z(G)| ≠ 1 as centers of p-groups are non-trivial
+
+  have : Finite G := by
+    apply Nat.finite_of_card_ne_zero
+    rw [h]
+    have p_ne : p ≠ 0 := Nat.Prime.ne_zero hn.elim
+    exact pow_ne_zero 3 p_ne
+
+  have : Nontrivial G := by
+    have p_3_gt_1 : p^3 > 1 := by
+      have p_gt_1 : p > 1 := hn.out.one_lt
+      exact one_lt_pow₀ p_gt_1 (by norm_num)
+    have : Fintype G := Fintype.ofFinite G
+    rw [← Fintype.one_lt_card_iff_nontrivial, ← Nat.card_eq_fintype_card, h]
+    exact p_3_gt_1
+
+  have h_p_group : IsPGroup p G := by
+    apply IsPGroup.of_card
+    exact h
+
+  have h_z_nontrivial : Nontrivial ↥Z := IsPGroup.center_nontrivial h_p_group
+  have h_z_card_gt_one : 1 < Nat.card ↥Z := Finite.one_lt_card
+
+  have h_i_ne_zero : i ≠ 0 := by
+    intro hi0
+
+    rw [hi0, pow_zero] at h_z_order_p_i
+    obtain ⟨u, hu⟩ := h_z_order_p_i
+    apply mul_eq_one.mp at hu
+    obtain ⟨h_ord_one, _⟩ := hu
+    omega
+
+  -- Step 3: |Z(G)| ≠ p^3 as then Z(G) isomorphic to G which is iff G is abelian, contradiction
+
+  have : Nat.card ↥Z ≠ (p^3) := by
+    intro h_z_p3
+    have h_z_eq_g : Z = ⊤ := by
+      rw [← Subgroup.card_eq_iff_eq_top, h_z_p3, h]
+    have h_g_abelian : IsMulCommutative G := by
+      -- rw [← Subgroup.center_eq_top_iff, ← hZ]
+      -- exact h_z_eq_g
+      sorry
+    -- exact h_g_abelian
+    sorry
+  sorry
+
+  -- Step 4: |Z(G)| ≠ p^2 as then |G/Z(G)| = p and so it is cyclic so G is abelian, contradiction
+
+
+  -- Claim 2: [G, G] is isomorphic to Z(G)
+
+  -- Step 1: Z(G) contains [G, G] as Z(G) is normal and G/N abelian iff N contains [G, G]
+
+  -- Step 2: [G, G] is either trivial group or Z(G) but it is trivial iff G is abelian which is not true
+
+  -- Claim 3: ???
+
+theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [CommGroup G] (h : Nat.card G = p^3) :
+  (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
+  (Nonempty (MulEquiv G (CyclicGroup (p^2) × CyclicGroup p))) ∨
+  (Nonempty (MulEquiv G (CyclicGroup p × CyclicGroup p × CyclicGroup p)))
+  := by
+    have : Finite G := by
+      apply Nat.finite_of_card_ne_zero
+      rw [h]
+      have p_ne : p ≠ 0 := Nat.Prime.ne_zero hn.elim
+      exact pow_ne_zero 3 p_ne
+    have h_finite_cycles := CommGroup.equiv_prod_multiplicative_zmod_of_finite G
+
+    obtain ⟨IndexType, h'⟩ := h_finite_cycles
+    obtain ⟨h_index_fin, h''⟩ := h'
+    obtain ⟨order_func, h'''⟩ := h''
+    obtain ⟨h_cycles_nontrivial, h_prod⟩ := h'''
+
+    -- have : Nat.card G = Nat.card ((i : IndexType) → Multiplicative (ZMod (order_func i))) := sorry
+
+    have order_to_group := fun i : IndexType => Multiplicative (ZMod (order_func i))
+    let ProductGroup := ((i : IndexType) → Multiplicative (ZMod (order_func i)))
+
+    have := Cardinal.mk_pi order_to_group
+
+    have : ∀ i : IndexType, Cardinal.mk (order_to_group i) = order_func i := by
+      sorry
+
+    have : Cardinal.mk ProductGroup = Cardinal.prod fun i ↦ order_func i := by
+      sorry
+
+    -- have := Multiset.map (p^3) Finset.univ
 
 theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
 (Nonempty (MulEquiv G (CyclicGroup n))) := by
