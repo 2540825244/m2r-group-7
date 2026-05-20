@@ -4,6 +4,7 @@ import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
+import OrderPQ
 
 def maximumOrder : Nat := 3
 
