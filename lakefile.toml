@@ -17,6 +17,7 @@ rev = "v4.29.1"
 [[lean_lib]]
 name = "M2rGroup7"
 
-[[dependency]]
+[[require]]
 name = "OrderPQ"
-git = "https://github.com/wupr/order-p-q"
+git = "https://github.com/2540825244/order-p-q"
+rev = "main"
