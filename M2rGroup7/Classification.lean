@@ -2,11 +2,12 @@ import Mathlib.Logic.Basic
 import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
+import «M2rGroup7».PqCase
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import OrderPQ
 
-def maximumOrder : Nat := 3
+def maximumOrder : Nat := 9
 
 variable (n : ℕ) (G : Type*) [Group G]
 
@@ -27,6 +28,12 @@ macro "classify_prime" p:num h:term : tactic => `(tactic|(
     exact (MulEquiv.refl (CyclicGroup $p))
   apply prime_classification
   exact $h))
+
+macro "classify_prime_sq" p:num h:term : tactic => `(tactic|(
+  haveI : Fact (Nat.Prime $p) := ⟨by decide⟩
+  obtain (hiso | hiso) := p_squared_classification (p := $p) ($h |>.trans (by decide))
+  · exact ⟨1, hiso⟩
+  · exact ⟨2, hiso⟩))
 
 theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
   (∃ i : Nat, Nonempty (MulEquiv G (retrieve n i)))
@@ -55,14 +62,15 @@ theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
   | 3 => by
     classify_prime 3 h
 
-  | 4 => by
-    sorry
+  | 4 => by classify_prime_sq 2 h
 
   | 5 => by
     classify_prime 5 h
 
   | 6 => by
-    sorry
+    obtain (hiso | hiso) := order6_classification h
+    · exact ⟨2, hiso⟩
+    · exact ⟨1, hiso⟩
 
   | 7 => by
     classify_prime 7 h
@@ -70,8 +78,7 @@ theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
   | 8 => by
     sorry
 
-  | 9 => by
-    sorry
+  | 9 => by classify_prime_sq 3 h
 
   | 10 => by
     sorry
