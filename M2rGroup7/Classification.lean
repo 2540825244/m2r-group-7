@@ -28,6 +28,9 @@ variable (n : ℕ) (G : Type*) [Group G]
 lemma isMulCommutative_iff {M : Type*} [Mul M] : IsMulCommutative M ↔ ∀ a b : M, a * b = b * a := by
   grind [IsMulCommutative, Std.Commutative]
 
+theorem center_eq_top_iff : Subgroup.center G = ⊤ ↔ IsMulCommutative G := by
+  simp [Subgroup.eq_top_iff', isMulCommutative_iff, Subgroup.mem_center_iff, eq_comm]
+
 theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_na : ¬IsMulCommutative G) (h : Nat.card G = p^3) :
   True := by
   -- Define Z as the center of G
@@ -75,20 +78,18 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
 
   -- Step 3: |Z(G)| ≠ p^3 as then Z(G) isomorphic to G which is iff G is abelian, contradiction
 
-  have : Nat.card ↥Z ≠ (p^3) := by
+  have h_z_card_ne_p3 : Nat.card ↥Z ≠ (p^3) := by
     intro h_z_p3
     have h_z_eq_g : Z = ⊤ := by
       rw [← Subgroup.card_eq_iff_eq_top, h_z_p3, h]
     have h_g_abelian : IsMulCommutative G := by
-      -- rw [← Subgroup.center_eq_top_iff, ← hZ]
-      -- exact h_z_eq_g
-      sorry
-    -- exact h_g_abelian
-    sorry
+      rw [← center_eq_top_iff, ← hZ]
+      exact h_z_eq_g
+    exact absurd h_g_abelian h_na
 
   -- Step 4: |Z(G)| ≠ p^2 as then |G/Z(G)| = p and so it is cyclic so G is abelian, contradiction
 
-  have : Nat.card ↥Z ≠ (p^2) := by
+  have h_z_card_ne_p2 : Nat.card ↥Z ≠ (p^2) := by
     intro h_z_p2
 
     have : Z.Normal := by
@@ -123,16 +124,42 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
     specialize h_comm a b
     exact h_comm
 
+  have h_z_card_eq_p : Nat.card Z = p := by
+    have h_card_eq : Nat.card ↥Z = p ^ i :=
+      Nat.dvd_antisymm h_z_order_p_i.dvd h_z_order_p_i.symm.dvd
+    have hne2 : i ≠ 2 := by
+      intro h2; rw [h2] at h_card_eq; exact h_z_card_ne_p2 h_card_eq
+    have hne3 : i ≠ 3 := by
+      intro h3; rw [h3] at h_card_eq; exact h_z_card_ne_p3 h_card_eq
+    have hi1 : i = 1 := by omega
+    rw [h_card_eq, hi1, pow_one]
 
 
+  -- Claim 2: G / Z is C_p x C_p
 
-  -- Claim 2: [G, G] is isomorphic to Z(G)
+  -- Step 1: G / Z is order p^2
+
+  have h_z_idx_p2 : Z.index = p^2 := by
+    have h_index_mul_card := Subgroup.index_mul_card Z
+    rw [h_z_card_eq_p, h] at h_index_mul_card
+    have h_p_ne_zero := hn.elim.ne_zero
+    nlinarith
+
+  have h_g_quot_z_p_card : Nat.card (G ⧸ Z) = p^2 := by
+    rw [← h_z_idx_p2]
+    apply Subgroup.index_eq_card
+
+  -- Step 2: G / Z cannot be cyclic because G is not abelian
+
+  -- Step 3: Hence G / Z is C_p x C_p
+
+  -- Claim 3: [G, G] is isomorphic to Z(G)
 
   -- Step 1: Z(G) contains [G, G] as Z(G) is normal and G/N abelian iff N contains [G, G]
 
   -- Step 2: [G, G] is either trivial group or Z(G) but it is trivial iff G is abelian which is not true
 
-  -- Claim 3: ???
+  -- Claim 4: ???
 
 theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [CommGroup G] (h : Nat.card G = p^3) :
   (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
