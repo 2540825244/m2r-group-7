@@ -19,10 +19,14 @@ import Mathlib.Algebra.Group.Subgroup.Finite
 import Mathlib.GroupTheory.Subgroup.Center
 import Mathlib.GroupTheory.PGroup
 import OrderPQ
+import Mathlib.Algebra.Group.Defs
 
 def maximumOrder : Nat := 9
 
 variable (n : ℕ) (G : Type*) [Group G]
+
+lemma isMulCommutative_iff {M : Type*} [Mul M] : IsMulCommutative M ↔ ∀ a b : M, a * b = b * a := by
+  grind [IsMulCommutative, Std.Commutative]
 
 theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_na : ¬IsMulCommutative G) (h : Nat.card G = p^3) :
   True := by
@@ -81,9 +85,45 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
       sorry
     -- exact h_g_abelian
     sorry
-  sorry
 
   -- Step 4: |Z(G)| ≠ p^2 as then |G/Z(G)| = p and so it is cyclic so G is abelian, contradiction
+
+  have : Nat.card ↥Z ≠ (p^2) := by
+    intro h_z_p2
+
+    have : Z.Normal := by
+      rw [hZ]
+      exact Subgroup.instNormalCenter
+
+    have h_z_idx_p : Z.index = p := by
+      have h_index_mul_card := Subgroup.index_mul_card Z
+      rw [h_z_p2, h] at h_index_mul_card
+      have h_p_ne_zero := hn.elim.ne_zero
+      nlinarith
+
+    have h_g_quot_z_p_card : Nat.card (G ⧸ Z) = p := by
+      rw [← h_z_idx_p]
+      apply Subgroup.index_eq_card
+
+    have : IsCyclic (G ⧸ Z) := by
+      exact isCyclic_of_prime_card h_g_quot_z_p_card
+
+    have h_ker_subgroup_z : (QuotientGroup.mk' Z).ker ≤ Z := by
+      rw [QuotientGroup.ker_mk' Z]
+
+    -- have h_g_comm : CommGroup G := by
+    --   exact commGroupOfCyclicCenterQuotient (QuotientGroup.mk' Z) (h_ker_subgroup_z)
+
+    have h_comm := commutative_of_cyclic_center_quotient (QuotientGroup.mk' Z) (h_ker_subgroup_z)
+
+    contrapose! h_na
+    rw [isMulCommutative_iff]
+    intro a
+    intro b
+    specialize h_comm a b
+    exact h_comm
+
+
 
 
   -- Claim 2: [G, G] is isomorphic to Z(G)
