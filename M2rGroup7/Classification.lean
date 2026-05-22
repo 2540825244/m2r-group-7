@@ -149,15 +149,25 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
     rw [← h_z_idx_p2]
     apply Subgroup.index_eq_card
 
+  have h_g_quot_z_classify := p_squared_classification h_g_quot_z_p_card
+
   -- Step 2: G / Z cannot be cyclic because G is not abelian
-
-
-
   -- Step 3: Hence G / Z is C_p x C_p
 
+  have h_g_quot_z_is_Cp_x_Cp : Nonempty (MulEquiv (G ⧸ Z) (CyclicGroup p × CyclicGroup p)) := by
+    cases h_g_quot_z_classify with
+      | inl h_g_quot_z_is_Cp2 =>
+        -- Contradictive Case
+        have h_g_quot_z_cyclic : IsCyclic (G ⧸ Z) := by
+          let iso := Classical.choice h_g_quot_z_is_Cp2
+          rw [MulEquiv.isCyclic iso]
+          infer_instance
 
+        sorry
+      | inr hb =>
+        exact hb
 
-  -- Claim 3: [G, G] is isomorphic to Z(G)
+  -- Claim 3: [G, G] = Z(G)
 
   -- Step 1: Z(G) contains [G, G] as Z(G) is normal and G/N abelian iff N contains [G, G]
 
