@@ -24,8 +24,14 @@ import Mathlib.Data.Finite.Card
 import Mathlib.GroupTheory.SchurZassenhaus
 import Mathlib.RingTheory.ZMod.UnitsCyclic
 import Mathlib.Data.Nat.Totient
+import Mathlib.SetTheory.Cardinal.Finite
 
 variable (G : Type*) [Group G]
+
+theorem cyclic_subgroup_of_cyclic_group_is_unique {p : ℕ} {n : ℕ} [h_p_prime : Fact p.Prime] (h_p_div_n : p ∣ n) (h_n_pos : n > 0) : Nat.card ({K : Subgroup (CyclicGroup n) | Nat.card K = p}) = 1
+:= by
+  -- Step 1:
+  sorry
 
 theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_prime : Fact q.Prime] (h_p_ne_q : p ≠ q) (h_p_bound : p ≤ 3) (h : Nat.card G = p^2 * q) :
   True := by
@@ -72,7 +78,7 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
     -- n_p is 1 (mod p)
 
     have h_n_p_one_mod_p : n_p ≡ 1 [MOD p] := by
-      show Nat.card (Sylow p G) ≡ 1 [MOD p]
+      change Nat.card (Sylow p G) ≡ 1 [MOD p]
       exact card_sylow_modEq_one p G
 
     -- Claim 1: n_p = 1 or n_q = 1
@@ -162,7 +168,7 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
 
           have mem_toFset : ∀ (H : Subgroup G) (x : G), x ∈ toFset H ↔ x ∈ H := fun H x => by
             letI : Fintype ↥H := Fintype.ofFinite _
-            show x ∈ (H : Set G).toFinset ↔ x ∈ H
+            change x ∈ (H : Set G).toFinset ↔ x ∈ H
             simp [Set.mem_toFinset, SetLike.mem_coe]
 
           have toFset_card : ∀ H : Subgroup G, (toFset H).card = Nat.card ↥H := fun H => by
@@ -308,7 +314,7 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
           have hTcard : (Finset.univ \ U).card = p ^ 2 - 1 := by
             have hsum : (Finset.univ \ U).card + U.card = Fintype.card G := by
               have h1 := @Finset.card_sdiff_add_card_inter G _ Finset.univ U
-              simp only [Finset.inter_comm, Finset.univ_inter] at h1
+              simp only [Finset.univ_inter] at h1
               linarith [Finset.card_univ (α := G)]
             have hU' : U.card = 1 + p ^ 2 * (q - 1) := h_nqp2 ▸ hUcard
             rw [← Nat.card_eq_fintype_card, h, hU'] at hsum
@@ -324,7 +330,7 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
             simp only [Finset.mem_sdiff, mem_toFset, Finset.mem_singleton, Finset.mem_univ,
                        true_and, U, Finset.mem_biUnion]
             rintro ⟨hxP, hx1⟩ ⟨Q', hxQ⟩
-            exact h_P_avoid_Q P' x hxP hx1 Q' ((mem_toFset _ _).mp hxQ)
+            exact h_P_avoid_Q P' x hxP hx1 Q' hxQ
 
           -- Each Sylow p-subgroup contributes exactly p^2 - 1 non-identity elements
           have hPcard : ∀ P' : Sylow p G, (toFset P' \ {(1 : G)}).card = p ^ 2 - 1 := fun P' => by
@@ -350,9 +356,7 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
                          not_false_eq_true, and_true] at key
               exact key
 
-          have hUniq : Unique (Sylow p G) :=
-            { toInhabited := ⟨P⟩, uniq := fun P' => Subsingleton.elim P' P }
-          exact Nat.card_eq_one_iff_unique.mpr ⟨hUniq⟩
+          exact Nat.card_eq_one_iff_unique.mpr ⟨hSubsing, ⟨P⟩⟩
 
           -- =========================================================
           -- END PROOF OF STEPS 4 & 5
@@ -438,33 +442,54 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
 
         -- Step 2: If q divides p - 1 then there is exactly one subgroup of order q of C_p(p-1) otherwise zero
 
-
+        let SubgroupsOfOrderQ :=
+            {K : Subgroup (CyclicGroup (p * (p - 1))) | Nat.card K = q}
 
         by_cases h_q_dvd : q ∣ p - 1
         · -- case h_q_dvd : q ∣ p - 1
 
           -- The set of subgroups of CyclicGroup (p * (p - 1)) of order q
-          let SubgroupsOfOrderQ :=
-            {K : Subgroup (CyclicGroup (p * (p - 1))) | Nat.card K = q}
 
           -- There is exactly one such subgroup
           have h_unique_subgroup :
               Nat.card SubgroupsOfOrderQ = 1 := by
+                have h_p_div : q ∣ p * (p - 1) := by
+                  exact dvd_mul_of_dvd_right h_q_dvd p
 
-            sorry
+                have h_n_pos : p * (p - 1) > 0 := by
+                  have := Nat.Prime.one_lt h_p_prime.elim
+                  have := Nat.Prime.pos h_p_prime.elim
+                  aesop
 
+                exact cyclic_subgroup_of_cyclic_group_is_unique h_p_div h_n_pos
+
+          -- There are only two homomorphisms from C_q to C_(p(p-1))
+          -- One is trivial homomorphism, and other one is where f(g) is non-identity where g is generator of C_q
+          -- This is because image is subgroup of order q of C_(p(p-1)) and there is exactly one such subgroup
 
 
 
           sorry
-        · -- case h_q_not_dvd : q ∤ p - 1
+        · -- case h_q_dvd : q ∤ p - 1
+          have h_no_subgroup_helper : ∀ K : Subgroup (CyclicGroup (p * (p - 1))), Nat.card ↥K ≠ q := by
+            intro K hK
+            apply h_q_dvd
+            have hq_dvd_prod : q ∣ p * (p - 1) := by
+              have hLag := Subgroup.card_subgroup_dvd_card K
+              simp only [card_cyclicGroup] at hLag
+              rwa [hK] at hLag
+            have hcop : Nat.Coprime q p :=
+              h_q_prime.out.coprime_iff_not_dvd.mpr
+                (fun hdvd => h_p_ne_q
+                  ((h_p_prime.out.eq_one_or_self_of_dvd q hdvd).resolve_left
+                    h_q_prime.out.one_lt.ne').symm)
+            exact hcop.dvd_of_dvd_mul_left hq_dvd_prod
+
+          have h_no_subgroup :  Nat.card SubgroupsOfOrderQ = 0 := by aesop
+
           sorry
 
       · -- case h_p_iso_p_p : Nonempty (P ≃* CyclicGroup p × CyclicGroup p)
         sorry
     · -- case h_nq1 : n_q = 1
-  sorry
-
-theorem cyclic_subgroup_of_cyclic_group_is_unique {p : ℕ} {n : ℕ} [h_p_prime : Fact p.Prime] (h_p_div_n : p ∣ n) (h_p_pos : p > 0) : Nat.card ({K : Subgroup (CyclicGroup n) | Nat.card K = p}) = 1
-:= by
-  sorry
+      sorry
