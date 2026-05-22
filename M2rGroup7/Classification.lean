@@ -229,6 +229,8 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
 
   -- Step 2: a^p, b^p in Z
 
+  sorry
+
 theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [CommGroup G] (h : Nat.card G = p^3) :
   (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
   (Nonempty (MulEquiv G (CyclicGroup (p^2) × CyclicGroup p))) ∨
@@ -260,6 +262,8 @@ theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [Co
       sorry
 
     -- have := Multiset.map (p^3) Finset.univ
+
+    sorry
 
 /-- A group of prime order is isomorphic to the cyclic group of the same order. -/
 theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
