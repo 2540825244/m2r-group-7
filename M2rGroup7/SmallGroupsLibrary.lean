@@ -64,6 +64,15 @@ def retrieve (n : Nat) (i : Nat) : Type :=
   | 10, 1 => DihedralGroup 5
   | 10, 2 => CyclicGroup 10
   | 11, 1 => CyclicGroup 11
+  | 12, 1 => QuaternionGroup 3
+  | 12, 2 => CyclicGroup 12
+  | 12, 3 => AlternatingGroup 4
+  | 12, 4 => DihedralGroup 6
+  | 12, 5 => CyclicGroup 6 × CyclicGroup 2
+  | 13, 1 => CyclicGroup 13
+  | 14, 1 => DihedralGroup 7
+  | 14, 2 => CyclicGroup 14
+  | 15, 1 => CyclicGroup 15
   | _, _ => CyclicGroup n -- Fallback to make retrieve total
 
 -- Tell compiler that groups we get are groups
