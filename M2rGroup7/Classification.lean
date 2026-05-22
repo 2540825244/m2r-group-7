@@ -3,6 +3,9 @@ import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
+import Mathlib.FieldTheory.Finite.GaloisField
+import Mathlib.Algebra.Module.ZMod
+import Mathlib.LinearAlgebra.Dimension.Free
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import Mathlib.SetTheory.Cardinal.Finite
@@ -21,6 +24,7 @@ import Mathlib.GroupTheory.PGroup
 import OrderPQ
 import Mathlib.Algebra.Group.Defs
 import Paperproof
+import Mathlib.SetTheory.Cardinal.Finite
 
 def maximumOrder : Nat := 9
 
@@ -232,39 +236,126 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
 
   sorry
 
-theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [CommGroup G] (h : Nat.card G = p^3) :
+theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [IsMulCommutative G] (h : Nat.card G = p^3) :
   (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
   (Nonempty (MulEquiv G (CyclicGroup (p^2) × CyclicGroup p))) ∨
   (Nonempty (MulEquiv G (CyclicGroup p × CyclicGroup p × CyclicGroup p)))
   := by
-    have : Finite G := by
-      apply Nat.finite_of_card_ne_zero
-      rw [h]
-      have p_ne : p ≠ 0 := Nat.Prime.ne_zero hn.elim
-      exact pow_ne_zero 3 p_ne
-    have h_finite_cycles := CommGroup.equiv_prod_multiplicative_zmod_of_finite G
-
-    obtain ⟨IndexType, h'⟩ := h_finite_cycles
-    obtain ⟨h_index_fin, h''⟩ := h'
-    obtain ⟨order_func, h'''⟩ := h''
-    obtain ⟨h_cycles_nontrivial, h_prod⟩ := h'''
-
-    -- have : Nat.card G = Nat.card ((i : IndexType) → Multiplicative (ZMod (order_func i))) := sorry
-
-    have order_to_group := fun i : IndexType => Multiplicative (ZMod (order_func i))
-    let ProductGroup := ((i : IndexType) → Multiplicative (ZMod (order_func i)))
-
-    have := Cardinal.mk_pi order_to_group
-
-    have : ∀ i : IndexType, Cardinal.mk (order_to_group i) = order_func i := by
+  haveI hfin : Finite G := Nat.finite_of_card_ne_zero (h ▸ pow_ne_zero 3 hn.elim.ne_zero)
+  -- Case 1: G is cyclic → G ≅ CyclicGroup (p³)
+  by_cases hc : IsCyclic G
+  · left
+    haveI := hc
+    exact ⟨mulEquivOfCyclicCardEq (h.trans (card_cyclicGroup _).symm)⟩
+  -- G is not cyclic; split on whether G has an element of order p²
+  · by_cases hexp2 : ∃ g : G, orderOf g = p ^ 2
+    · -- Case 2: G has element of order p² → G ≅ C_{p²} × C_p
+      right; left
+      obtain ⟨g, hg⟩ := hexp2
+      let H := Subgroup.closure (setOf (· = g))
+      let G_H := G ⧸ H
       sorry
 
-    have : Cardinal.mk ProductGroup = Cardinal.prod fun i ↦ order_func i := by
-      sorry
+    · -- Case 3: no element of order ≥ p², so every element satisfies g^p = 1
+      right; right
+      -- Every element satisfies g^p = 1
+      have hpow : ∀ g : G, g ^ p = 1 := by
+        intro g
+        have hdvd : orderOf g ∣ p ^ 3 := h ▸ orderOf_dvd_natCard g
+        rw [Nat.dvd_prime_pow hn.out] at hdvd
+        obtain ⟨k, hk3, hgk⟩ := hdvd
+        -- k ≠ 3: else orderOf g = card G so G is cyclic, contradicting hc
+        have hk3' : k ≠ 3 :=
+          fun hk3e => hc (isCyclic_of_orderOf_eq_card g (hgk ▸ hk3e ▸ h.symm))
+        -- k ≠ 2: contradicts hexp2
+        have hk2' : k ≠ 2 := fun hk2e => hexp2 ⟨g, hgk ▸ hk2e ▸ rfl⟩
+        -- so k ≤ 1, meaning orderOf g ∣ p
+        have hk1 : k ≤ 1 := by omega
+        have hk1' : p ^ k ∣ p ^ 1 := Nat.pow_dvd_pow p hk1
+        rw [pow_one] at hk1'
+        rw [← hgk] at hk1'
+        exact orderOf_dvd_iff_pow_eq_one.mp hk1'
+      -- Give Additive G a ZMod p-module structure
+      haveI hnezerp : NeZero p := ⟨hn.elim.ne_zero⟩
+      haveI hmod : Module (ZMod p) (Additive G) := AddCommGroup.zmodModule (n := p) fun a => by
+        nth_rewrite 1 [← ofMul_toMul a]
+        rw [← ofMul_pow, hpow (Additive.toMul a)]
+        trivial
+      haveI hfree : Module.Free (ZMod p) (Additive G) := Module.Free.of_divisionRing _ _
+      haveI hfinmod : Module.Finite (ZMod p) (Additive G) := Module.Finite.of_finite
+      -- finrank = 3 from p^finrank = Nat.card (Additive G) = p^3
+      have hfinrank : Module.finrank (ZMod p) (Additive G) = 3 := by
+        have hcardAG : Nat.card (Additive G) = p ^ 3 :=
+          (Nat.card_congr Additive.toMul).trans h
+        have hcard := Module.natCard_eq_pow_finrank (K := ZMod p) (V := Additive G)
+        rw [Nat.card_zmod, hcardAG] at hcard
+        exact Nat.pow_right_injective hn.out.one_lt hcard.symm
+      -- Get a Fin 3 basis and linear equivalence Additive G ≃ₗ[ZMod p] (Fin 3 → ZMod p)
+      let e_lin := (Module.finBasisOfFinrankEq (ZMod p) (Additive G) hfinrank).equivFun
+      -- Direct MulEquiv: G →* (Fin 3 → CyclicGroup p) via e_lin
+      have e_mul : G ≃* (Fin 3 → CyclicGroup p) :=
+        { toFun := fun g i => Multiplicative.ofAdd (e_lin (Additive.ofMul g) i)
+          invFun := fun f => Additive.toMul (e_lin.symm (fun i => Multiplicative.toAdd (f i)))
+          left_inv := fun g => by simp
+          right_inv := fun f => by ext i; simp
+          map_mul' := fun g1 g2 => by
+            ext i
+            simp only [ofMul_mul, LinearEquiv.map_add, Pi.add_apply, Pi.mul_apply,
+              ← ofAdd_add, toAdd_ofAdd]
+            trivial }
+      have e_fin3 : (Fin 3 → CyclicGroup p) ≃* CyclicGroup p × CyclicGroup p × CyclicGroup p :=
+        { toFun := fun f => (f 0, f 1, f 2)
+          invFun := fun ⟨a, b, c⟩ => Fin.cons a (Fin.cons b (fun _ => c))
+          left_inv := fun f => funext fun i => by
+            fin_cases i <;>
+              simp [Fin.cons_zero, Fin.cons_succ]
+              <;> trivial
+          right_inv := fun ⟨a, b, c⟩ => by
+            simp [Fin.cons_zero, Fin.cons_succ]
+            trivial
+          map_mul' := fun f g => rfl }
+      exact ⟨e_mul.trans e_fin3⟩
 
-    -- have := Multiset.map (p^3) Finset.univ
 
-    sorry
+-- theorem alt_no_claude_prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [CommGroup G] (h : Nat.card G = p^3) :
+--   (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
+--   (Nonempty (MulEquiv G (CyclicGroup (p^2) × CyclicGroup p))) ∨
+--   (Nonempty (MulEquiv G (CyclicGroup p × CyclicGroup p × CyclicGroup p)))
+--   := by
+--     have : Finite G := by
+--       apply Nat.finite_of_card_ne_zero
+--       rw [h]
+--       have p_ne : p ≠ 0 := Nat.Prime.ne_zero hn.elim
+--       exact pow_ne_zero 3 p_ne
+--     have h_finite_cycles := CommGroup.equiv_prod_multiplicative_zmod_of_finite G
+
+--     obtain ⟨IndexType, h_index_fin, order_func, h_cycles_nontrivial, h_prod⟩ := h_finite_cycles
+
+--     by_contra h_not_iso
+
+--     match h_index_n : Fintype.card IndexType with
+--       | 0 =>
+--         -- apply Fintype.card_eq_zero_iff.mp at h_index_n
+--         have : Nat.card ((i : IndexType) → Multiplicative (ZMod (order_func i))) = 1 := by
+--           sorry
+--         --Not possible
+--         sorry
+--       | 1 =>
+--         have : Nonempty (G ≃* CyclicGroup (p ^ 3)) := by
+--           sorry
+--         tauto
+--       | 2 =>
+--         have : Nonempty (G ≃* CyclicGroup (p ^ 2) × CyclicGroup p) := by
+--           sorry
+--         tauto
+--       | 3 =>
+--         have : Nonempty (G ≃* CyclicGroup p × CyclicGroup p × CyclicGroup p) := by
+--           sorry
+--         tauto
+--       | k+3 =>
+--         -- Not possible
+--         sorry
+
 
 /-- A group of prime order is isomorphic to the cyclic group of the same order. -/
 theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
