@@ -31,6 +31,8 @@ lemma isMulCommutative_iff {M : Type*} [Mul M] : IsMulCommutative M ↔ ∀ a b 
 theorem center_eq_top_iff : Subgroup.center G = ⊤ ↔ IsMulCommutative G := by
   simp [Subgroup.eq_top_iff', isMulCommutative_iff, Subgroup.mem_center_iff, eq_comm]
 
+/-- An abelian group of order `p^3` is isomorphic to one of `CyclicGroup p^3`,
+    `CyclicGroup p^2 × CyclicGroup p`, `CyclicGroup p × CyclicGroup p × CyclicGroup p`. -/
 theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_na : ¬IsMulCommutative G) (h : Nat.card G = p^3) :
   True := by
   -- Define Z as the center of G
@@ -259,6 +261,7 @@ theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [Co
 
     -- have := Multiset.map (p^3) Finset.univ
 
+/-- A group of prime order is isomorphic to the cyclic group of the same order. -/
 theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
 (Nonempty (MulEquiv G (CyclicGroup n))) := by
   apply Nonempty.intro
@@ -283,6 +286,7 @@ macro "classify_prime_sq" p:num h:term : tactic => `(tactic|(
   · exact ⟨1, hiso⟩
   · exact ⟨2, hiso⟩))
 
+/-- A group of order at most `maximumOrder` is isomorphic to some group obtained by `retrieve`. -/
 theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
   (∃ i : Nat, Nonempty (MulEquiv G (retrieve n i)))
  :=
