@@ -20,6 +20,7 @@ import Mathlib.GroupTheory.Subgroup.Center
 import Mathlib.GroupTheory.PGroup
 import OrderPQ
 import Mathlib.Algebra.Group.Defs
+import Paperproof
 
 def maximumOrder : Nat := 9
 
