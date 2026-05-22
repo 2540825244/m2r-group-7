@@ -2,6 +2,7 @@ import Mathlib.Algebra.Group.Defs
 import Mathlib.Data.ZMod.Basic
 import Mathlib.GroupTheory.SpecificGroups.Dihedral
 import Mathlib.GroupTheory.SpecificGroups.Quaternion
+import Mathlib.GroupTheory.SpecificGroups.Alternating
 
 
 /- Cyclic group generator -/
@@ -9,6 +10,13 @@ def CyclicGroup (n : Nat) := Multiplicative (ZMod n)
 
 instance (n : Nat) : Group (CyclicGroup n) := by
   delta CyclicGroup
+  infer_instance
+
+/- Alternating group generator -/
+def AlternatingGroup (n : Nat) := ↥(alternatingGroup (Fin n))
+
+instance (n : Nat) : Group (AlternatingGroup n) := by
+  delta AlternatingGroup
   infer_instance
 
 instance (n : Nat) : IsCyclic (CyclicGroup n) := by
