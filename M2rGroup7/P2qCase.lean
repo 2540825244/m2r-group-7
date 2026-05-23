@@ -3,6 +3,7 @@ import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
+import «M2rGroup7».SylowUtils
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import Mathlib.SetTheory.Cardinal.Finite
@@ -28,7 +29,7 @@ import Mathlib.SetTheory.Cardinal.Finite
 
 variable (G : Type*) [Group G]
 
-theorem cyclic_subgroup_of_cyclic_group_is_unique {p : ℕ} {n : ℕ} [h_p_prime : Fact p.Prime] (h_p_div_n : p ∣ n) (h_n_pos : n > 0) : Nat.card ({K : Subgroup (CyclicGroup n) | Nat.card K = p}) = 1
+theorem cyclic_subgroup_of_cyclic_group_is_unique {n d : ℕ} (h_d_div_n : d ∣ n) (h_n_pos : n > 0) : Nat.card ({K : Subgroup (CyclicGroup n) | Nat.card K = d}) = 1
 := by
   -- Step 1:
   sorry
@@ -50,33 +51,20 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
     let P : Sylow p G := default
 
     -- Order of Sylow p-group is p^2
-    have h_p_p2 : Nat.card P = p^2 := by
-      rw [Sylow.card_eq_multiplicity]
-      rw [h]
-      have hcop : Nat.Coprime (p ^ 2) q := by
-        exact (h_p_prime.out.coprime_iff_not_dvd.mpr (fun h => absurd (h_q_prime.out.eq_one_or_self_of_dvd p h)
-          (by rintro (h1 | h2); exact h_p_prime.out.one_lt.ne' h1; exact h_p_ne_q h2))).pow_left 2
-      rw [Nat.factorization_mul_of_coprime hcop, Finsupp.add_apply,
-          Nat.factorization_pow_self h_p_prime.out,
-          h_q_prime.out.factorization, Finsupp.single_apply, if_neg (Ne.symm h_p_ne_q), add_zero]
+    have h_p_p2 : Nat.card ↥(P : Subgroup G) = p ^ 2 :=
+      sylow_card_eq h_p_ne_q (show Nat.card G = p ^ 2 * q ^ 1 by aesop) P
 
     -- Index of Sylow p-group is q
-    have h_p_idx_q : P.index = q := by
-      have h_index_mul_card := Subgroup.index_mul_card (↑P: Subgroup G)
-      rw [h_p_p2, h] at h_index_mul_card
-      have h_p2_pos : 0 < p^2 := pow_pos h_p_prime.out.pos 2
-      rw [mul_comm] at h_index_mul_card
-      exact Nat.eq_of_mul_eq_mul_left h_p2_pos h_index_mul_card
+    have h_p_idx_q : (↑P : Subgroup G).index = q := by
+      simpa using sylow_index_eq h_p_ne_q (show Nat.card G = p ^ 2 * q ^ 1 by aesop) P
 
     -- n_p divides q
-
     have h_n_p_div_q : n_p ∣ q := by
       have h_sylow_dvd_p_index := Sylow.card_dvd_index P
       rw [h_p_idx_q] at h_sylow_dvd_p_index
       exact h_sylow_dvd_p_index
 
     -- n_p is 1 (mod p)
-
     have h_n_p_one_mod_p : n_p ≡ 1 [MOD p] := by
       change Nat.card (Sylow p G) ≡ 1 [MOD p]
       exact card_sylow_modEq_one p G
@@ -92,24 +80,15 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
         let Q : Sylow q G := default
 
         -- Order of Sylow q-group is q
-        have h_q_q : Nat.card Q = q := by
-          rw [Sylow.card_eq_multiplicity, h]
-          have hcop : Nat.Coprime (p ^ 2) q :=
-            (h_p_prime.out.coprime_iff_not_dvd.mpr (fun h => absurd (h_q_prime.out.eq_one_or_self_of_dvd p h)
-              (by rintro (h1 | h2); exact h_p_prime.out.one_lt.ne' h1; exact h_p_ne_q h2))).pow_left 2
-          rw [Nat.factorization_mul_of_coprime hcop, Finsupp.add_apply]
-          have h1 : (p ^ 2).factorization q = 0 := by
-            rw [Nat.factorization_pow, Finsupp.smul_apply, h_p_prime.out.factorization,
-                Finsupp.single_apply, if_neg h_p_ne_q]
-            simp
-          rw [h1, zero_add, h_q_prime.out.factorization, Finsupp.single_apply, if_pos rfl, pow_one]
+        have h_q_q : Nat.card ↥(Q : Subgroup G) = q := by
+          have := sylow_card_eq (Ne.symm h_p_ne_q)
+            (show Nat.card G = q ^ 1 * p ^ 2 by rw [pow_one, h]; ring) Q
+          simpa using this
 
         -- Index of Sylow q-group is p^2
-        have h_q_idx_p2 : Q.index = p^2 := by
-          have h_index_mul_card := Subgroup.index_mul_card (↑Q: Subgroup G)
-          rw [h_q_q, h] at h_index_mul_card
-          have h_p_ne_zero := h_p_prime.elim.ne_zero
-          nlinarith
+        have h_q_idx_p2 : (↑Q : Subgroup G).index = p ^ 2 := by
+          simpa using sylow_index_eq (Ne.symm h_p_ne_q)
+            (show Nat.card G = q ^ 1 * p ^ 2 by rw [pow_one, h]; ring) Q
 
         -- n_q divides p^2
         have h_n_p_div_q : n_q ∣ p^2 := by
@@ -130,7 +109,7 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
 
         -- n_q is 1 (mod q)
         have h_n_p_one_mod_p : n_q ≡ 1 [MOD q] := by
-          show Nat.card (Sylow q G) ≡ 1 [MOD q]
+          change Nat.card (Sylow q G) ≡ 1 [MOD q]
           exact card_sylow_modEq_one q G
 
         -- n_q ≠ p
@@ -177,31 +156,13 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
 
           -- All Sylow q-subgroups have order q
           have h_sylow_q_card : ∀ Q' : Sylow q G, Nat.card ↥(Q' : Subgroup G) = q := fun Q' => by
-            rw [Sylow.card_eq_multiplicity, h]
-            have hcop : Nat.Coprime (p ^ 2) q :=
-              (h_p_prime.out.coprime_iff_not_dvd.mpr (fun hdvd => absurd
-                (h_q_prime.out.eq_one_or_self_of_dvd p hdvd)
-                (by rintro (h1 | h2)
-                    · exact h_p_prime.out.one_lt.ne' h1
-                    · exact h_p_ne_q h2))).pow_left 2
-            rw [Nat.factorization_mul_of_coprime hcop, Finsupp.add_apply]
-            have hf : (p ^ 2).factorization q = 0 := by
-              rw [Nat.factorization_pow, Finsupp.smul_apply, h_p_prime.out.factorization,
-                  Finsupp.single_apply, if_neg h_p_ne_q]; simp
-            rw [hf, zero_add, h_q_prime.out.factorization, Finsupp.single_apply, if_pos rfl, pow_one]
+            have := sylow_card_eq (Ne.symm h_p_ne_q)
+              (show Nat.card G = q ^ 1 * p ^ 2 by rw [pow_one, h]; ring) Q'
+            simpa using this
 
           -- Any Sylow p-subgroup has order p^2
-          have h_p_p2_gen : ∀ P' : Sylow p G, Nat.card ↥(P' : Subgroup G) = p ^ 2 := fun P' => by
-            rw [Sylow.card_eq_multiplicity, h]
-            have hcop : Nat.Coprime (p ^ 2) q :=
-              (h_p_prime.out.coprime_iff_not_dvd.mpr (fun hdvd => absurd
-                (h_q_prime.out.eq_one_or_self_of_dvd p hdvd)
-                (by rintro (h1 | h2)
-                    · exact h_p_prime.out.one_lt.ne' h1
-                    · exact h_p_ne_q h2))).pow_left 2
-            rw [Nat.factorization_mul_of_coprime hcop, Finsupp.add_apply,
-                Nat.factorization_pow_self h_p_prime.out,
-                h_q_prime.out.factorization, Finsupp.single_apply, if_neg (Ne.symm h_p_ne_q), add_zero]
+          have h_p_p2_gen : ∀ P' : Sylow p G, Nat.card ↥(P' : Subgroup G) = p ^ 2 := fun P' =>
+            sylow_card_eq h_p_ne_q (show Nat.card G = p ^ 2 * q ^ 1 by aesop) P'
 
           -- Distinct Sylow q-subgroups intersect trivially
           have h_Qdisj : ∀ Q₁ Q₂ : Sylow q G, Q₁ ≠ Q₂ → Disjoint (Q₁ : Subgroup G) Q₂ := by
@@ -348,7 +309,7 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
             refine ⟨fun P₁ P₂ => ?_⟩
             apply Sylow.ext; apply Subgroup.ext; intro x
             rcases eq_or_ne x 1 with rfl | hx1
-            · simp [Subgroup.one_mem]
+            · simp
             · have h_neq : toFset P₁ \ {(1 : G)} = toFset P₂ \ {(1 : G)} :=
                 (hPeqT P₁).trans (hPeqT P₂).symm
               have key := Finset.ext_iff.mp h_neq x
