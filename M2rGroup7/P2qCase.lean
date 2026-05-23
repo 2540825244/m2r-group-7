@@ -360,42 +360,8 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
 
       -- Step 1: Aut(P) ≃* C_(p(p-1))
 
-      -- Aut(C_(p^2)) ≃* (ZMod (p ^ 2))ˣ
-      have h_aut_c_p2_iso_cyclic : MulAut (CyclicGroup (p ^ 2)) ≃* (ZMod (p ^ 2))ˣ := by
-        have h_aut := IsCyclic.mulAutMulEquiv (CyclicGroup (p ^ 2))
-        rw [card_cyclicGroup (p ^ 2)] at h_aut
-        exact h_aut
-
-      -- (ZMod (p ^ 2))ˣ is cyclic
-      have h_units_cyclic : IsCyclic (ZMod (p ^ 2))ˣ := by
-        by_cases h_p2 : p = 2
-        · subst h_p2
-          exact ZMod.isCyclic_units_four
-        · exact ZMod.isCyclic_units_of_prime_pow p h_p_prime.out h_p2 2
-
-      have h_zmod_unit_order : Nat.card ((ZMod (p ^ 2))ˣ) = (p ^ 2).totient := by
-        have := _root_.ZMod.card_units_eq_totient (p ^ 2)
-        rw [Nat.card_eq_fintype_card]
-        exact this
-
-      have h_p2_totient : (p ^ 2).totient = p * (p - 1) := by
-        have := Nat.totient_prime_pow_succ h_p_prime.out 1
-        grind
-
-      rw [h_p2_totient] at h_zmod_unit_order
-
-      have h_iso_helper : Multiplicative (ZMod (p * (p - 1))) ≃* (ZMod (p ^ 2))ˣ := by
-        have h' := zmodCyclicMulEquiv h_units_cyclic
-        rw [h_zmod_unit_order] at h'
-        exact h'
-
-      have h_iso : CyclicGroup (p * (p - 1)) ≃* (ZMod (p ^ 2))ˣ := h_iso_helper
-
-      have h_aut_equiv : MulAut (CyclicGroup (p ^ 2)) ≃* CyclicGroup (p * (p - 1)) :=
-        h_aut_c_p2_iso_cyclic.trans h_iso.symm
-
       have h_aut_P : MulAut P ≃* CyclicGroup (p * (p - 1)) :=
-        (MulAut.congr h_p_iso_p2.some).trans h_aut_equiv
+        (MulAut.congr h_p_iso_p2.some).trans (Classical.choice aut_of_cyclic_p2)
 
       -- Step 2: If q divides p - 1 then there is exactly one subgroup of order q of C_p(p-1) otherwise zero
 
@@ -478,6 +444,7 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
         · -- ── Nontrivial action: φ(g) ≠ 1, so G ≅ C_{p²} ⋊ C_q ───────────────
           -- h_unique_subgroup gives a unique subgroup of order q in Aut(C_{p²}),
           -- so all nontrivial actions are equivalent up to isomorphism.
+
           sorry
 
         -- ─────────────────────────────────────────────────────────────────────────
