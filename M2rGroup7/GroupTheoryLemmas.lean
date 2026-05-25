@@ -1,9 +1,9 @@
 import Mathlib.GroupTheory.SpecificGroups.Cyclic
+import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.Logic.Basic
 import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».PqCase
-import «M2rGroup7».SylowUtils
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import Mathlib.Algebra.GroupWithZero.Basic
@@ -76,3 +76,28 @@ lemma aut_of_cyclic_p2 {p : ℕ} [h_p_prime : Fact p.Prime] : Nonempty (MulAut (
         h_aut_c_p2_iso_cyclic.trans h_iso.symm
 
     exact Nonempty.intro h_aut_equiv
+
+/-- For each r ≤ min(m, d) where d = v_p(q - 1), the canonical action
+    φ_r : C_{p^m} →* Aut(C_{q^n}) with image of order p^r.
+    Construction: Aut(C_{q^n}) is cyclic of order q^{n-1}(q-1); picking a generator α,
+    the element α ^ (|Aut| / p^r) has order exactly p^r. -/
+noncomputable def canonicalAction
+    (p q n m : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n)
+    (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
+    CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n)) := by
+  sorry
+
+/-- Semidirect products C_{q^n} ⋊ C_{p^m} (q odd prime, p ≠ q) are classified up to
+    isomorphism by r ∈ {0, …, min(m, d)} where d = v_p(q - 1), giving min(m, d) + 1
+    classes. Every action f belongs to exactly one class, represented by canonicalAction r. -/
+theorem classify_Cqn_rtimes_Cpm
+    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (hpq : p ≠ q) (hq_odd : q ≠ 2)
+    (m n : ℕ) (hm : 0 < m) (hn : 0 < n)
+    (f : CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n))) :
+    ∃! r : Fin (min m ((q - 1).factorization p) + 1),
+      Nonempty (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m)) f ≃*
+               SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+                 (canonicalAction p q n m hpq hq_odd hn ↑r (Nat.lt_succ_iff.mp r.isLt))) := by
+  sorry
