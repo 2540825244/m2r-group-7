@@ -37,78 +37,78 @@ lemma monoidHom_eq_of_generator_eq
 
 lemma cyclic_subgroup_of_cyclic_group_is_unique {n d : ℕ} (h_d_div_n : d ∣ n) (h_n_pos : n > 0)
     : Nat.card ({K : Subgroup (CyclicGroup n) | Nat.card K = d}) = 1 := by
-  let G := CyclicGroup n
-  haveI : Finite G := by
-    apply Nat.finite_of_card_ne_zero
-    rw [card_cyclicGroup n]
-    simp_all only [gt_iff_lt, ne_eq]
-    apply Aesop.BuiltinRules.not_intro
-    intro a
-    subst a
-    simp_all only [dvd_zero, lt_self_iff_false]
-  -- Fix a generator g with orderOf g = n
-  obtain ⟨g, hg_spec⟩ := (inferInstance : IsCyclic G).exists_generator
-  have hg_order : orderOf g = n := by
-    rw [orderOf_eq_card_of_forall_mem_zpowers hg_spec, card_cyclicGroup]
-  have h_d_pos : 0 < d := Nat.pos_of_dvd_of_pos h_d_div_n h_n_pos
-  have h_nd_pos : 0 < n / d := Nat.div_pos (Nat.le_of_dvd h_n_pos h_d_div_n) h_d_pos
-  -- The canonical subgroup of order d is H = zpowers (g^(n/d))
-  let g' := g ^ (n / d)
-  have h_g'_order : orderOf g' = d := by
-    show orderOf (g ^ (n / d)) = d
-    have hdvd : d ∣ orderOf g := hg_order.symm ▸ h_d_div_n
-    have hne  : orderOf g ≠ 0  := hg_order.symm ▸ h_n_pos.ne'
-    have := orderOf_pow_orderOf_div hne hdvd
-    rwa [hg_order] at this
-  let H := Subgroup.zpowers g'
-  have h_H_card : Nat.card H = d := (Nat.card_zpowers g').trans h_g'_order
-  -- Reduce to: every subgroup of order d equals H
-  suffices h : ∀ (L : Subgroup G), Nat.card L = d → L = H by
-    rw [Nat.card_eq_one_iff_unique]
-    exact ⟨⟨fun ⟨K, hK⟩ ⟨K', hK'⟩ => Subtype.ext ((h K hK).trans (h K' hK').symm)⟩,
-           ⟨⟨H, h_H_card⟩⟩⟩
-  intro K hK
-  -- Since G = zpowers g, every subgroup satisfies K = zpowers (g^m) for some m
-  have hK_le : K ≤ Subgroup.zpowers g := fun _ _ => hg_spec _
-  rw [Subgroup.le_zpowers_iff] at hK_le
-  obtain ⟨m, hKm⟩ := hK_le
-  -- Recover orderOf (g^m) = d from |K| = d
-  have h_m_order : orderOf (g ^ m) = d := by
-    rw [← Nat.card_zpowers, ← hKm]; exact hK
-  -- Compute gcd(n, m) = n/d using the order formula
-  have h_gcd_eq : Nat.gcd n m = n / d := by
-    have h_order_eq : n / Nat.gcd n m = d := by
-      have := (orderOf_pow g).symm.trans h_m_order; rwa [hg_order] at this
-    have h_n_eq : n = Nat.gcd n m * d :=
-      calc n = n / Nat.gcd n m * Nat.gcd n m := (Nat.div_mul_cancel (Nat.gcd_dvd_left n m)).symm
-           _ = d * Nat.gcd n m               := by rw [h_order_eq]
-           _ = Nat.gcd n m * d               := mul_comm _ _
-    -- n/d = Nat.gcd n m * d / d = Nat.gcd n m (avoid rewriting n inside Nat.gcd)
-    calc Nat.gcd n m = Nat.gcd n m * d / d := (Nat.mul_div_cancel _ h_d_pos).symm
-         _           = n / d               := by rw [← h_n_eq]
-  -- Write m = (n/d)*j for some j; note g^m = g'^j
-  obtain ⟨j, hj⟩ := h_gcd_eq ▸ Nat.gcd_dvd_right n m
-  have h_gm_eq : g ^ m = g' ^ j := by
-    have hg'_def : g' = g ^ (n / d) := rfl
-    rw [hg'_def, ← pow_mul, ← hj]
-  -- Show gcd(j, d) = 1 using the gcd formula
-  have h_gcd_jd : Nat.gcd j d = 1 := by
-    have h_mul : n / d * Nat.gcd d j = n / d :=
-      calc n / d * Nat.gcd d j
-          = Nat.gcd (n / d * d) (n / d * j) := (Nat.gcd_mul_left _ _ _).symm
-        _ = Nat.gcd n m                      := by rw [Nat.div_mul_cancel h_d_div_n, ← hj]
-        _ = n / d                            := h_gcd_eq
-    have h_eq := mul_left_cancel₀ h_nd_pos.ne' (h_mul.trans (mul_one _).symm)
-    rwa [Nat.gcd_comm] at h_eq
-  -- K ≤ H: g'^j = g^m ∈ H = zpowers g'
-  have hKH : K ≤ H :=
-    hKm.symm ▸ h_gm_eq.symm ▸ Subgroup.zpowers_le.mpr (H.pow_mem (Subgroup.mem_zpowers g') j)
-  -- H ≤ K: g' ∈ K = zpowers (g'^j) by mem_zpowers_pow_iff (gcd(j, d) = 1)
-  have hHK : H ≤ K := by
-    apply Subgroup.zpowers_le.mpr
-    rw [hKm, h_gm_eq, mem_zpowers_pow_iff, h_g'_order]
-    exact h_gcd_jd
-  exact le_antisymm hKH hHK
+    let G := CyclicGroup n
+    haveI : Finite G := by
+        apply Nat.finite_of_card_ne_zero
+        rw [card_cyclicGroup n]
+        simp_all only [gt_iff_lt, ne_eq]
+        apply Aesop.BuiltinRules.not_intro
+        intro a
+        subst a
+        simp_all only [dvd_zero, lt_self_iff_false]
+    -- Fix a generator g with orderOf g = n
+    obtain ⟨g, hg_spec⟩ := (inferInstance : IsCyclic G).exists_generator
+    have hg_order : orderOf g = n := by
+        rw [orderOf_eq_card_of_forall_mem_zpowers hg_spec, card_cyclicGroup]
+    have h_d_pos : 0 < d := Nat.pos_of_dvd_of_pos h_d_div_n h_n_pos
+    have h_nd_pos : 0 < n / d := Nat.div_pos (Nat.le_of_dvd h_n_pos h_d_div_n) h_d_pos
+    -- The canonical subgroup of order d is H = zpowers (g^(n/d))
+    let g' := g ^ (n / d)
+    have h_g'_order : orderOf g' = d := by
+        show orderOf (g ^ (n / d)) = d
+        have hdvd : d ∣ orderOf g := hg_order.symm ▸ h_d_div_n
+        have hne  : orderOf g ≠ 0  := hg_order.symm ▸ h_n_pos.ne'
+        have := orderOf_pow_orderOf_div hne hdvd
+        rwa [hg_order] at this
+    let H := Subgroup.zpowers g'
+    have h_H_card : Nat.card H = d := (Nat.card_zpowers g').trans h_g'_order
+    -- Reduce to: every subgroup of order d equals H
+    suffices h : ∀ (L : Subgroup G), Nat.card L = d → L = H by
+        rw [Nat.card_eq_one_iff_unique]
+        exact ⟨⟨fun ⟨K, hK⟩ ⟨K', hK'⟩ => Subtype.ext ((h K hK).trans (h K' hK').symm)⟩,
+               ⟨⟨H, h_H_card⟩⟩⟩
+    intro K hK
+    -- Since G = zpowers g, every subgroup satisfies K = zpowers (g^m) for some m
+    have hK_le : K ≤ Subgroup.zpowers g := fun _ _ => hg_spec _
+    rw [Subgroup.le_zpowers_iff] at hK_le
+    obtain ⟨m, hKm⟩ := hK_le
+    -- Recover orderOf (g^m) = d from |K| = d
+    have h_m_order : orderOf (g ^ m) = d := by
+        rw [← Nat.card_zpowers, ← hKm]; exact hK
+    -- Compute gcd(n, m) = n/d using the order formula
+    have h_gcd_eq : Nat.gcd n m = n / d := by
+        have h_order_eq : n / Nat.gcd n m = d := by
+            have := (orderOf_pow g).symm.trans h_m_order; rwa [hg_order] at this
+        have h_n_eq : n = Nat.gcd n m * d :=
+            calc n = n / Nat.gcd n m * Nat.gcd n m := (Nat.div_mul_cancel (Nat.gcd_dvd_left n m)).symm
+                 _ = d * Nat.gcd n m               := by rw [h_order_eq]
+                 _ = Nat.gcd n m * d               := mul_comm _ _
+        -- n/d = Nat.gcd n m * d / d = Nat.gcd n m (avoid rewriting n inside Nat.gcd)
+        calc Nat.gcd n m = Nat.gcd n m * d / d := (Nat.mul_div_cancel _ h_d_pos).symm
+             _           = n / d               := by rw [← h_n_eq]
+    -- Write m = (n/d)*j for some j; note g^m = g'^j
+    obtain ⟨j, hj⟩ := h_gcd_eq ▸ Nat.gcd_dvd_right n m
+    have h_gm_eq : g ^ m = g' ^ j := by
+        have hg'_def : g' = g ^ (n / d) := rfl
+        rw [hg'_def, ← pow_mul, ← hj]
+    -- Show gcd(j, d) = 1 using the gcd formula
+    have h_gcd_jd : Nat.gcd j d = 1 := by
+        have h_mul : n / d * Nat.gcd d j = n / d :=
+            calc n / d * Nat.gcd d j
+                = Nat.gcd (n / d * d) (n / d * j) := (Nat.gcd_mul_left _ _ _).symm
+              _ = Nat.gcd n m                      := by rw [Nat.div_mul_cancel h_d_div_n, ← hj]
+              _ = n / d                            := h_gcd_eq
+        have h_eq := mul_left_cancel₀ h_nd_pos.ne' (h_mul.trans (mul_one _).symm)
+        rwa [Nat.gcd_comm] at h_eq
+    -- K ≤ H: g'^j = g^m ∈ H = zpowers g'
+    have hKH : K ≤ H :=
+        hKm.symm ▸ h_gm_eq.symm ▸ Subgroup.zpowers_le.mpr (H.pow_mem (Subgroup.mem_zpowers g') j)
+    -- H ≤ K: g' ∈ K = zpowers (g'^j) by mem_zpowers_pow_iff (gcd(j, d) = 1)
+    have hHK : H ≤ K := by
+        apply Subgroup.zpowers_le.mpr
+        rw [hKm, h_gm_eq, mem_zpowers_pow_iff, h_g'_order]
+        exact h_gcd_jd
+    exact le_antisymm hKH hHK
 
 lemma aut_of_cyclic_p2 {p : ℕ} [h_p_prime : Fact p.Prime] : Nonempty (MulAut (CyclicGroup (p ^ 2)) ≃* CyclicGroup (p * (p - 1))) := by
     -- Aut(C_(p^2)) ≃* (ZMod (p ^ 2))ˣ
