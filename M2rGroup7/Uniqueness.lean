@@ -1,0 +1,126 @@
+import «M2rGroup7».SmallGroupsLibrary
+
+universe u u' v
+
+structure GroupInvariant (α : Type u) [DecidableEq α] where
+  eval (K : Type v) [Group K] [Fintype K] [DecidableEq K] : α
+  preservation {K L : Type v}
+    [Group K] [Group L] [Fintype K] [Fintype L] [DecidableEq K] [DecidableEq L]
+    (iso : K ≃* L) : eval K = eval L
+
+def combine {α : Type u} {β : Type u'} [DecidableEq α] [DecidableEq β]
+  (inv : GroupInvariant α) (inv' : GroupInvariant β)
+  : GroupInvariant (α × β) where
+    eval K _ _ _ := ⟨inv.eval K, inv'.eval K⟩
+    preservation e := by
+      congr 1
+      · exact inv.preservation e
+      · exact inv'.preservation e
+
+lemma not_iso_by {G H : Type v}
+  [Group G] [Group H] [Fintype G] [Fintype H] [DecidableEq G] [DecidableEq H]
+  {α : Type u} [DecidableEq α]
+  (inv : GroupInvariant α)
+  (h_inv_neq : inv.eval G ≠ inv.eval H)
+  : IsEmpty (G ≃* H) := by
+  contrapose! h_inv_neq with hiso
+  exact inv.preservation Classical.ofNonempty
+
+
+def trivial_inv : GroupInvariant Unit where
+  eval _ _ _ _ := ()
+  preservation _ := by tauto
+
+noncomputable def exponentInv : GroupInvariant Nat where
+  eval K _ _ _ := Monoid.exponent K
+  preservation e := Monoid.exponent_eq_of_mulEquiv e
+
+-- ∃ x, x^k ≠ 1  (decidable for any Fintype with DecidableEq)
+-- hasPowerNotOneInv 2 : true for C4 (generator has order 4), false for C2×C2 (all x^2=1)
+-- hasPowerNotOneInv 3 : true for C9 (generator has order 9), false for C3×C3 (all x^3=1)
+def hasPowerNotOneInv (k : ℕ) : GroupInvariant Bool where
+  eval K _ _ _ := decide (∃ x : K, x ^ k ≠ (1 : K))
+  preservation e := by
+    apply Bool.decide_congr
+    constructor
+    · intro ⟨x, hx⟩
+      exact ⟨e x, by rw [← map_pow, ← map_one e]; exact e.injective.ne hx⟩
+    · intro ⟨y, hy⟩
+      exact ⟨e.symm y, by rw [← map_pow, ← map_one e.symm]; exact e.symm.injective.ne hy⟩
+
+-- ∀ x y, x*y = y*x  (decidable for any Fintype with DecidableEq)
+-- true for C6, C10; false for D3, D5
+def isAbelianInv : GroupInvariant Bool where
+  eval K _ _ _ := decide (∀ x y : K, x * y = y * x)
+  preservation e := by
+    apply Bool.decide_congr
+    constructor
+    · intro h a b
+      have key := congr_arg e (h (e.symm a) (e.symm b))
+      simp only [map_mul, MulEquiv.apply_symm_apply] at key
+      exact key
+    · intro h a b
+      have key := congr_arg e.symm (h (e a) (e b))
+      simp only [map_mul, MulEquiv.symm_apply_apply] at key
+      exact key
+
+
+macro "by_single_group" : tactic => `(tactic | (
+  simp only [num_entries] at *
+  omega
+))
+
+macro "by_invariant" i:ident i':ident inv:term : tactic => `(tactic | (
+  simp only [num_entries] at *
+  interval_cases $i <;> interval_cases $i' <;>
+    first
+    | omega
+    | simp only [retrieve]
+      exact not_iso_by $inv (by decide)
+))
+
+theorem uniqueness (n i n' i' : Nat)
+  [Fact (ValidIndex n i)] [Fact (ValidIndex n' i')] [Fact (n ≠ n' ∨ i ≠ i')]
+  : IsEmpty ((retrieve n i) ≃* (retrieve n' i')) := by
+  let G := retrieve n i
+  let G' := retrieve n' i'
+  rcases eq_or_ne n n' with rfl | hn
+  · -- n = n'
+    have hv : ValidIndex n i := Fact.out
+    have hv' : ValidIndex n i' := Fact.out
+    have hneq : n ≠ n ∨ i ≠ i' := Fact.out
+    have hi_neq : i ≠ i' := by tauto
+
+    obtain ⟨hn_pos, hn_range, hi_pos, hi_range⟩ := hv
+    obtain ⟨_, _, hi'_pos, hi'_range⟩ := hv'
+
+    interval_cases n
+    · -- n = 1
+      by_single_group
+    · -- n = 2
+      by_single_group
+    · -- n = 3
+      by_single_group
+    · -- n = 4: C4 vs C2×C2; C4 has element with x^2≠1, C2×C2 does not
+      by_invariant i i' (hasPowerNotOneInv 2)
+    · -- n = 5
+      by_single_group
+    · -- n = 6: C6 vs D3; C6 is abelian, D3 is not
+      by_invariant i i' isAbelianInv
+    · -- n = 7
+      by_single_group
+    · -- n = 8
+      sorry
+    · -- n = 9: C9 vs C3×C3; C9 has element with x^3≠1, C3×C3 does not
+      by_invariant i i' (hasPowerNotOneInv 3)
+    · -- n = 10: C10 vs D5; C10 is abelian, D5 is not
+      by_invariant i i' isAbelianInv
+    · -- n = 11
+      by_single_group
+  · -- n ≠ n'
+    have : Nat.card G = n := retrieve_card n i
+    have : Nat.card G' = n' := retrieve_card n' i'
+    have hcard_neq : Nat.card G ≠ Nat.card G' := by
+      simp_all only [ne_eq, not_false_eq_true, true_or, G, G']
+    contrapose! hcard_neq with hiso
+    exact Nat.card_congr (Classical.ofNonempty : retrieve n i ≃* retrieve n' i')
