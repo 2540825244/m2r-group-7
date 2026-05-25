@@ -7,14 +7,14 @@ import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.GroupTheory.OrderOfElement
 
 
-/- Cyclic group generator -/
+/-- Cyclic group generator -/
 def CyclicGroup (n : Nat) := Multiplicative (ZMod n)
 
 instance (n : Nat) : Group (CyclicGroup n) := by
   delta CyclicGroup
   infer_instance
 
-/- Alternating group generator -/
+/-- Alternating group generator -/
 def AlternatingGroup (n : Nat) := ↥(alternatingGroup (Fin n))
 
 instance (n : Nat) : Group (AlternatingGroup n) := by
