@@ -26,8 +26,6 @@ import Mathlib.Algebra.Group.Defs
 import Paperproof
 import Mathlib.SetTheory.Cardinal.Finite
 
-def maximumOrder : Nat := 9
-
 variable (n : ℕ) (G : Type*) [Group G]
 
 lemma isMulCommutative_iff {M : Type*} [Mul M] : IsMulCommutative M ↔ ∀ a b : M, a * b = b * a := by
@@ -427,6 +425,9 @@ theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
 macro "classify_prime" p:num h:term : tactic => `(tactic|(
   have : Fact (Nat.Prime $p) := ⟨by decide⟩
   use 1
+  have hv : ValidIndex $p 1 := by decide
+  haveI : Fact (ValidIndex $p 1) := ⟨hv⟩
+  use hv
   have hr : MulEquiv (retrieve $p 1) (CyclicGroup $p) := by
     have hr_is_c : retrieve $p 1 = CyclicGroup $p := by rfl
     exact (MulEquiv.refl (CyclicGroup $p))
@@ -436,16 +437,21 @@ macro "classify_prime" p:num h:term : tactic => `(tactic|(
 macro "classify_prime_sq" p:num h:term : tactic => `(tactic|(
   haveI : Fact (Nat.Prime $p) := ⟨by decide⟩
   obtain (hiso | hiso) := p_squared_classification (p := $p) ($h |>.trans (by decide))
-  · exact ⟨1, hiso⟩
-  · exact ⟨2, hiso⟩))
+  · exact ⟨1, by decide , hiso⟩
+  · exact ⟨2, by decide, hiso⟩))
 
 /-- A group of order at most `maximumOrder` is isomorphic to some group obtained by `retrieve`. -/
 theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
-  (∃ i : Nat, Nonempty (MulEquiv G (retrieve n i)))
+  ∃ i : Nat, ∃ hv : ValidIndex n i,
+  haveI : Fact (ValidIndex n i) := ⟨hv⟩
+  Nonempty (MulEquiv G (retrieve n i))
  :=
   match n with
   | 1 => by
     use 1
+    have hv : ValidIndex 1 1 := by decide
+    haveI : Fact (ValidIndex 1 1) := ⟨hv⟩
+    use hv
     apply Nonempty.intro
 
     have : Unique (retrieve 1 1) := by
@@ -474,8 +480,8 @@ theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
 
   | 6 => by
     obtain (hiso | hiso) := order6_classification h
-    · exact ⟨2, hiso⟩
-    · exact ⟨1, hiso⟩
+    · exact ⟨2, by decide, hiso⟩
+    · exact ⟨1, by decide, hiso⟩
 
   | 7 => by
     classify_prime 7 h
