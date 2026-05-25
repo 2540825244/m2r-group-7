@@ -38,14 +38,8 @@ instance (n : Nat) [NeZero n] : Fintype (CyclicGroup n) := by
   infer_instance
 
 theorem card_cyclicGroup (n : Nat) : Nat.card (CyclicGroup n) = n := by
-  -- 1. Unfold your type synonym definition
   delta CyclicGroup
-
-  -- 2. Strip away the 'Multiplicative' tag (Nat.card is invariant under type tags)
   rw [Nat.card_congr Multiplicative.toAdd]
-
-
-  -- 3. Use Mathlib's built-in theorem for the Nat.card of ZMod n
   exact Nat.card_zmod n
 
 /-- Build a monoid hom out of `CyclicGroup n` from an element whose `n`th power is `1`. -/
