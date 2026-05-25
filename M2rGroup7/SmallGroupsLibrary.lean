@@ -170,6 +170,7 @@ def retrieve (n : Nat) (i : Nat) : Type :=
   | 16, 12 => CyclicGroup 2 × QuaternionGroup 2
   | 16, 13 => (CyclicGroup 4 × CyclicGroup 2) ⋊[c2OnK8Psi6] CyclicGroup 2
   | 16, 14 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
+  | 17, 1 => CyclicGroup 17
   | _, _ => CyclicGroup n -- Fallback to make retrieve total
 
 -- Tell compiler that groups we get are groups
