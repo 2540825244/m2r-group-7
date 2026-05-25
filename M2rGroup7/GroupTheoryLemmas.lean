@@ -3,7 +3,7 @@ import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.Logic.Basic
 import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
-import «M2rGroup7».PqCase
+import «M2rGroup7».SmallGroupsLibrary
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import Mathlib.Algebra.GroupWithZero.Basic
@@ -24,6 +24,11 @@ import Mathlib.Data.Finite.Card
 import Mathlib.GroupTheory.SchurZassenhaus
 import Mathlib.RingTheory.ZMod.UnitsCyclic
 import Mathlib.Data.Nat.Totient
+import Mathlib.LinearAlgebra.Matrix.GeneralLinearGroup.Defs
+import Mathlib.Algebra.Group.Equiv.TypeTags
+import Mathlib.Algebra.Module.ZMod
+import Mathlib.LinearAlgebra.GeneralLinearGroup.Basic
+import Mathlib.LinearAlgebra.Pi
 
 /-- A group homomorphism out of a cyclic group is fully determined by
     its value on a generator. -/
@@ -84,27 +89,39 @@ lemma aut_of_cyclic_p2 {p : ℕ} [h_p_prime : Fact p.Prime] : Nonempty (MulAut (
 
     exact Nonempty.intro h_aut_equiv
 
-/-- For each r ≤ min(m, d) where d = v_p(q - 1), the canonical action
-    φ_r : C_{p^m} →* Aut(C_{q^n}) with image of order p^r.
-    Construction: Aut(C_{q^n}) is cyclic of order q^{n-1}(q-1); picking a generator α,
-    the element α ^ (|Aut| / p^r) has order exactly p^r. -/
-noncomputable def canonicalAction
-    (p q n m : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n)
-    (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
-    CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n)) := by
-  sorry
+-- canonicalAction and classify_Cqn_rtimes_Cpm are in SylowUtils.lean
+-- (they use semidirectProduct_iso_iff_range_eq from that file)
 
-/-- Semidirect products C_{q^n} ⋊ C_{p^m} (q odd prime, p ≠ q) are classified up to
-    isomorphism by r ∈ {0, …, min(m, d)} where d = v_p(q - 1), giving min(m, d) + 1
-    classes. Every action f belongs to exactly one class, represented by canonicalAction r. -/
-theorem classify_Cqn_rtimes_Cpm
-    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2)
-    (m n : ℕ) (hm : 0 < m) (hn : 0 < n)
-    (f : CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n))) :
-    ∃! r : Fin (min m ((q - 1).factorization p) + 1),
-      Nonempty (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m)) f ≃*
-               SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-                 (canonicalAction p q n m hpq hq_odd hn ↑r (Nat.lt_succ_iff.mp r.isLt))) := by
-  sorry
+/-- The automorphism group of C_p × C_p is isomorphic to GL(2, 𝔽_p).
+    Proof sketch:
+      MulAut(C_p × C_p)
+        ≃*  AddAut(ZMod p × ZMod p)                          [strip Multiplicative: MulAutMultiplicative + MulEquiv.prodMultiplicative]
+        ≃*  (ZMod p × ZMod p) ≃ₗ[ZMod p] (ZMod p × ZMod p) [AddMonoidHom.toZModLinearMapEquiv: every additive aut of a ZMod p-module is linear]
+        ≃*  GL (Fin 2) (ZMod p)                              [Matrix.GeneralLinearGroup.toLin' with standard basis] -/
+lemma aut_of_CpCp (p : ℕ) [hp : Fact p.Prime] :
+    Nonempty (MulAut (CyclicGroup p × CyclicGroup p) ≃* GL (Fin 2) (ZMod p)) := by
+  -- Step 1: strip the Multiplicative wrapper
+  -- CyclicGroup p = Multiplicative (ZMod p), so C_p × C_p ≃* Multiplicative (ZMod p × ZMod p)
+  -- Then MulAutMultiplicative gives MulAut (Multiplicative G) ≃* AddAut G
+  have step1 : MulAut (CyclicGroup p × CyclicGroup p) ≃* AddAut (ZMod p × ZMod p) :=
+    (MulAut.congr (MulEquiv.prodMultiplicative (ZMod p) (ZMod p)).symm).trans
+      (MulAutMultiplicative (ZMod p × ZMod p))
+  -- Step 2: every additive automorphism of a ZMod p-module is automatically ZMod p-linear
+  -- (AddMonoidHom.toZModLinearMap shows additive homs between ZMod p-modules are linear)
+  have step2 : AddAut (ZMod p × ZMod p) ≃*
+      ((ZMod p × ZMod p) ≃ₗ[ZMod p] (ZMod p × ZMod p)) :=
+    { toFun := fun f => f.toLinearEquiv
+        (fun r x => (AddMonoidHom.toZModLinearMap p f.toAddMonoidHom).map_smul r x)
+      invFun := fun g => g.toAddEquiv
+      left_inv := fun f => by sorry -- ext x; simp [AddEquiv.coe_toLinearEquiv, LinearEquiv.coe_toAddEquiv]
+      right_inv := fun g => by sorry -- ext x; simp [AddEquiv.coe_toLinearEquiv, LinearEquiv.coe_toAddEquiv]
+      map_mul' := fun f g => by sorry -- ext x; simp [AddEquiv.coe_toLinearEquiv]
+      }
+  -- Step 3: LinearEquiv group ≃* GL(Fin 2, ZMod p)
+  -- via generalLinearEquiv, then finTwoArrow to match (Fin 2 → ZMod p), then toLin
+  have step3 : ((ZMod p × ZMod p) ≃ₗ[ZMod p] (ZMod p × ZMod p)) ≃* GL (Fin 2) (ZMod p) :=
+    (LinearMap.GeneralLinearGroup.generalLinearEquiv (ZMod p) (ZMod p × ZMod p)).symm
+      |>.trans (LinearMap.GeneralLinearGroup.congrLinearEquiv
+        (LinearEquiv.finTwoArrow (ZMod p) (ZMod p)).symm)
+      |>.trans Matrix.GeneralLinearGroup.toLin.symm
+  exact ⟨step1.trans (step2.trans step3)⟩
