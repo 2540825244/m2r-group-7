@@ -30,6 +30,25 @@ import Mathlib.SetTheory.Cardinal.Finite
 
 variable (G : Type*) [Group G]
 
+/-- The canonical non-trivial action φ₀ : C_q →* Aut(C_{p²}),
+    sending the generator of C_q to the element of order q in Aut(C_{p²}). -/
+noncomputable def canonicalP2QAction (p q : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (h_div : q ∣ p * (p - 1)) : CyclicGroup q →* MulAut (CyclicGroup (p ^ 2)) :=
+  let e := Classical.choice aut_of_cyclic_p2
+  let target : MulAut (CyclicGroup (p ^ 2)) :=
+    e.symm ((Multiplicative.ofAdd 1 : CyclicGroup (p * (p - 1))) ^ (p * (p - 1) / q))
+  monoidHomOfForallMemZpowers
+    (g := (Multiplicative.ofAdd 1 : CyclicGroup q))
+    (fun x => by sorry)  -- every element of C_q is a zpow of the generator
+    (g' := target)
+    (by sorry)           -- orderOf target ∣ q
+
+/-- The unique (up to isomorphism) non-trivial semidirect product C_{p²} ⋊ C_q,
+    arising when q ∣ p(p-1). -/
+noncomputable def P2QSemidirectProduct (p q : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (h_div : q ∣ p * (p - 1)) : Type _ :=
+  SemidirectProduct (CyclicGroup (p ^ 2)) (CyclicGroup q) (canonicalP2QAction p q h_div)
+
 theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_prime : Fact q.Prime] (h_p_ne_q : p ≠ q) (h_p_bound : p ≤ 3) (h : Nat.card G = p^2 * q) :
   Nonempty (G ≃* CyclicGroup (p ^ 2 * q)) := by
 

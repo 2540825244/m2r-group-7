@@ -1,5 +1,4 @@
 import Mathlib.GroupTheory.SpecificGroups.Cyclic
-import «M2rGroup7».SmallGroupsLibrary
 import Mathlib.Logic.Basic
 import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
