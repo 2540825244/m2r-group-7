@@ -64,6 +64,68 @@ def isAbelianInv : GroupInvariant Bool where
       simp only [map_mul, MulEquiv.symm_apply_apply] at key
       exact key
 
+structure GroupPredicate where
+  check {K : Type v} [Group K] [Fintype K] [DecidableEq K] (x : K) : Bool
+  preservation {K L : Type v}
+    [Group K] [Group L] [Fintype K] [Fintype L] [DecidableEq K] [DecidableEq L]
+    (iso : K ≃* L) (x : K) : check x = check (iso x)
+
+def numElementsSatisfyingInv (pred : GroupPredicate) : GroupInvariant Nat :=
+  let satisfyingSubsetOf (K : Type v) [Group K] [Fintype K] [DecidableEq K] := (Finset.univ : Finset K).filter (pred.check ·)
+  {
+    eval K _ _ _ := (satisfyingSubsetOf K).card
+    preservation {K L : Type v} _ _ _ _ _ _ iso := by
+      let X := satisfyingSubsetOf K
+      let Y := satisfyingSubsetOf L
+      change X.card = Y.card
+      exact Finset.card_bij (α := K) (β := L) (s := X) (t := Y)
+        (fun _ ↦ iso ·)
+        ( -- Map elements of X to elements of Y
+          by
+            intro a ha
+            change iso a ∈ Y
+            have ha_pred : pred.check a = true := by grind
+            have : pred.check (iso a) = true := by
+              rw [← pred.preservation iso a]
+              exact ha_pred
+            grind
+        )
+        ( -- Injectivity
+          by
+            intro a ha b hb
+            change iso a = iso b → a = b
+            intro heq
+            exact iso.injective heq
+        )
+        ( -- Surjectivity
+          by
+            intro y hy
+            let x : K := iso.symm y
+            have hxy : iso x = y := iso.apply_symm_apply y
+            have hx : x ∈ X := by
+              contrapose! hy
+              have hx_pred : pred.check x = false := by grind
+              have hy_pred : pred.check y = false := by
+                rw [← hxy, ← pred.preservation iso x]
+                exact hx_pred
+              grind
+            use x
+        )
+  }
+
+def numElementsOfOrderTwoInv : GroupInvariant Nat :=
+  numElementsSatisfyingInv {
+    check {K} _ _ _ x := decide (x^2 = 1 ∧ x ≠ 1)
+    preservation {K L} _ _ _ _ _ _ iso x := by
+      apply Bool.decide_congr
+      constructor
+      · rintro ⟨h1, h2⟩
+        exact ⟨by rw [← map_pow, h1, map_one],
+               fun h => h2 (iso.injective (h.trans (map_one iso).symm))⟩
+      · rintro ⟨h1, h2⟩
+        exact ⟨iso.injective (by rw [map_pow, h1, map_one]),
+               fun h => h2 (by rw [h, map_one])⟩
+  }
 
 macro "by_single_group" : tactic => `(tactic | (
   simp only [num_entries] at *
@@ -110,7 +172,7 @@ theorem uniqueness (n i n' i' : Nat)
     · -- n = 7
       by_single_group
     · -- n = 8
-      sorry
+      by_invariant i i' (combine (combine (hasPowerNotOneInv 4) (hasPowerNotOneInv 2)) isAbelianInv)
     · -- n = 9: C9 vs C3×C3; C9 has element with x^3≠1, C3×C3 does not
       by_invariant i i' (hasPowerNotOneInv 3)
     · -- n = 10: C10 vs D5; C10 is abelian, D5 is not
