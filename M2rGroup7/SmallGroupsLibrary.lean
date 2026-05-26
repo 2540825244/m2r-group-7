@@ -11,6 +11,10 @@ instance (n : Nat) : Group (CyclicGroup n) := by
   delta CyclicGroup
   infer_instance
 
+instance (n : Nat) : CommGroup (CyclicGroup n) := by
+  delta CyclicGroup
+  infer_instance
+
 instance (n : Nat) : IsCyclic (CyclicGroup n) := by
   delta CyclicGroup
   exact isCyclic_multiplicative
