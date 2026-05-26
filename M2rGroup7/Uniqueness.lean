@@ -181,6 +181,30 @@ theorem uniqueness (n i n' i' : Nat)
       by_invariant i i' isAbelianInv
     · -- n = 11
       by_single_group
+    . -- n = 12
+      sorry
+    . -- n = 13
+      by_single_group
+    . -- n = 14
+      sorry
+    . -- n = 15
+      by_single_group
+    . -- n = 16
+      sorry
+    . -- n = 17
+      by_single_group
+    . -- n = 12
+      sorry
+    . -- n = 13
+      by_single_group
+    . -- n = 14
+      sorry
+    . -- n = 15
+      by_single_group
+    . -- n = 16
+      sorry
+    . -- n = 17
+      by_single_group
   · -- n ≠ n'
     have : Nat.card G = n := retrieve_card n i
     have : Nat.card G' = n' := retrieve_card n' i'
