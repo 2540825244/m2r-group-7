@@ -20,13 +20,21 @@ import Mathlib.GroupTheory.Subgroup.Center
 import Mathlib.GroupTheory.PGroup
 import OrderPQ
 import Mathlib.Algebra.Group.Defs
+import Mathlib.GroupTheory.Commutator.Basic
 
 def maximumOrder : Nat := 9
 
 variable (n : ℕ) (G : Type*) [Group G]
 
+lemma isMulCommutative_of_commGroup {M : Type*} [CommGroup M] : IsMulCommutative M :=
+  ⟨⟨fun a b => mul_comm a b⟩⟩
+
 lemma isMulCommutative_iff {M : Type*} [Mul M] : IsMulCommutative M ↔ ∀ a b : M, a * b = b * a := by
   grind [IsMulCommutative, Std.Commutative]
+
+lemma isMulCommutative_of_mulEquiv {M N : Type*} [Group M] [Group N] (e : M ≃* N) (h : IsMulCommutative N)
+: IsMulCommutative M := by
+  exact ⟨⟨fun x y => e.injective (by rw [e.map_mul, e.map_mul]; exact h.is_comm.comm (e x) (e y))⟩⟩
 
 theorem center_eq_top_iff : Subgroup.center G = ⊤ ↔ IsMulCommutative G := by
   simp [Subgroup.eq_top_iff', isMulCommutative_iff, Subgroup.mem_center_iff, eq_comm]
@@ -171,8 +179,50 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
 
   -- Step 1: Z(G) contains [G, G] as Z(G) is normal and G/N abelian iff N contains [G, G]
 
+  have h_quotient_z_abelian : IsMulCommutative (G ⧸ Z) := by
+    obtain ⟨e⟩ := h_g_quot_z_is_Cp_x_Cp
+    have h_Cp_Cp_comm : CommGroup (CyclicGroup p × CyclicGroup p) := by unfold CyclicGroup; infer_instance
+    apply isMulCommutative_of_commGroup at h_Cp_Cp_comm
+    sorry
+
+  have h_comm_sub_z : commutator G ≤ Z := by
+    exact Subgroup.Normal.quotient_commutative_iff_commutator_le.mp h_quotient_z_abelian.is_comm
+
   -- Step 2: [G, G] is either trivial group or Z(G) but it is trivial iff G is abelian which is not true
 
+  have hcomm_nontrivial : commutator G ≠ ⊥ := by
+    intro h
+    apply h_na
+    have hcenter : Subgroup.center G = ⊤ := (commutator_eq_bot_iff_center_eq_top G).mp h
+    exact IsMulCommutative.mk ⟨fun a b => by
+      have ha : a ∈ Subgroup.center G := hcenter ▸ Subgroup.mem_top a
+      symm
+      exact (Subgroup.mem_center_iff.mp ha) b⟩
+
+  have h_or : Nat.card (commutator G) = 1 ∨ Nat.card (commutator G) = p := by
+    have hdvd : Nat.card (commutator G) ∣ Nat.card Z :=
+      Subgroup.card_dvd_of_le h_comm_sub_z
+    have hdvd_p : Nat.card (commutator G) ∣ p := h_z_card_eq_p ▸ hdvd
+    exact Nat.Prime.eq_one_or_self_of_dvd hn.out _ hdvd_p
+
+  have h_ne_one : Nat.card (commutator G) ≠ 1 := by
+    intro h
+    exact hcomm_nontrivial (Subgroup.card_eq_one.mp h)
+
+  have h_card_comm : Nat.card (commutator G) = p := h_or.resolve_left h_ne_one
+
+  have hcard_subgroupOf : Nat.card ((commutator G).subgroupOf Z) = Nat.card (commutator G) :=
+    Nat.card_congr (Subgroup.subgroupOfEquivOfLe h_comm_sub_z).toEquiv
+
+  have h_card_comm_z : Nat.card (commutator G) = Nat.card Z := h_card_comm.trans h_z_card_eq_p.symm
+  have h_comm_top : (commutator G).subgroupOf Z = ⊤ := by
+    rw [← Subgroup.card_eq_iff_eq_top]
+    rw [hcard_subgroupOf]
+    exact h_card_comm_z
+
+  have hcomm_eq_z : commutator G = Z := by
+    rw [Subgroup.subgroupOf_eq_top] at h_comm_top
+    exact le_antisymm h_comm_sub_z h_comm_top
 
 
   -- Claim 4: There exists a, b in G such that aZ, bZ non-identity in G/Z and generate G/Z
