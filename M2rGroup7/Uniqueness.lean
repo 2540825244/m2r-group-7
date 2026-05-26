@@ -174,7 +174,7 @@ theorem uniqueness (n i n' i' : Nat)
     · -- n = 7
       by_single_group
     · -- n = 8
-      by_invariant i i' (combine (combine (hasPowerNotOneInv 4) (hasPowerNotOneInv 2)) isAbelianInv)
+      by_invariant i i' isAbelianInv ⊗ (hasPowerNotOneInv 4) ⊗ (hasPowerNotOneInv 2) ⊗ numElementsOfOrderTwoInv
     · -- n = 9: C9 vs C3×C3; C9 has element with x^3≠1, C3×C3 does not
       by_invariant i i' (hasPowerNotOneInv 3)
     · -- n = 10: C10 vs D5; C10 is abelian, D5 is not
