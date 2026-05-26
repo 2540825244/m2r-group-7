@@ -105,6 +105,7 @@ instance : Group Unit where
   inv _ := ()
   inv_mul_cancel _ := by rfl
 
+@[reducible]
 def retrieve (n : Nat) (i : Nat) : Type :=
   match n, i with
   | 1, 1 => Unit
@@ -150,8 +151,9 @@ def retrieve (n : Nat) (i : Nat) : Type :=
   | 16, 13 => (CyclicGroup 4 × CyclicGroup 2) ⋊[c2OnK8Psi6] CyclicGroup 2
   | 16, 14 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
   | 17, 1 => CyclicGroup 17
-  | _, _ => Empty -- Fallback to make retrieve total
+  | _, _ => PUnit -- Fallback to make retrieve total
 
+@[reducible]
 def num_entries (n : Nat) : Nat :=
   match n with
   | 1 => 1
@@ -173,39 +175,26 @@ def num_entries (n : Nat) : Nat :=
   | 17 => 1
   | _ => 0
 
-structure ValidIndex (n : Nat) (i : Nat) : Prop where
+def validIndex (n i : Nat) : Bool :=
+  decide (n > 0 ∧ n ≤ maximumOrder ∧ i > 0 ∧ i ≤ num_entries n)
+
+class ValidIndex (n : Nat) (i : Nat) : Prop where
   n_pos : n > 0
-  n_range : n <= maximumOrder
+  n_range : n ≤ maximumOrder
   i_pos : i > 0
-  i_range : i <= num_entries n
-  deriving DecidableEq
+  i_range : i ≤ num_entries n
 
-instance (n : Nat) (i : Nat) : Decidable (ValidIndex n i) :=
-  decidable_of_iff (n > 0 ∧ n ≤ maximumOrder ∧ i > 0 ∧ i ≤ num_entries n)
-    ⟨fun ⟨a, b, c, d⟩ => ⟨a, b, c, d⟩,
-      fun h => ⟨h.n_pos, h.n_range, h.i_pos, h.i_range⟩⟩
+instance (n i : Nat) : Decidable (ValidIndex n i) :=
+  decidable_of_iff (validIndex n i = true) (by
+    simp only [validIndex, decide_eq_true_eq]
+    exact ⟨fun ⟨a, b, c, d⟩ => ⟨a, b, c, d⟩,
+           fun h => ⟨h.n_pos, h.n_range, h.i_pos, h.i_range⟩⟩)
 
--- Tell compiler that groups we get are groups
-@[reducible]
-instance (n : Nat) (i : Nat) [hv : Fact (ValidIndex n i)] : Group (retrieve n i) := by
-  obtain ⟨hn_pos, hn_range, hi_pos, hi_range⟩ := hv
-  rw [maximumOrder] at hn_range
-  interval_cases n <;>
-    simp only [num_entries] at hi_range <;>
-    interval_cases i <;>
-      simp only [retrieve] <;>
-      infer_instance
+instance (n : Nat) (i : Nat) [hv : ValidIndex n i] : Group (retrieve n i) := by
+  unfold retrieve
+  split <;> try infer_instance
 
--- instance (n : Nat) (i : Nat) [hv : Fact (ValidIndex n i)] : Group (retrieve n i) := by
---   unfold retrieve
---   split <;> first
---     | infer_instance
---     | (exfalso
---        obtain ⟨hn_pos, hn_range, hi_pos, hi_range⟩ := hv
---        simp only [num_entries, maximumOrder] at *
---        split at hi_range <;> simp_all <;> omega)
-
-theorem retrieve_card (n : Nat) (i : Nat) [hv : Fact (ValidIndex n i)] : Nat.card (retrieve n i) = n := by
+theorem retrieve_card (n : Nat) (i : Nat) [hv : ValidIndex n i] : Nat.card (retrieve n i) = n := by
   obtain ⟨hn_pos, hn_range, hi_pos, hi_range⟩ := hv
   rw [maximumOrder] at hn_range
   interval_cases n <;>

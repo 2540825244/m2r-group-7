@@ -425,8 +425,7 @@ theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
 macro "classify_prime" p:num h:term : tactic => `(tactic|(
   have : Fact (Nat.Prime $p) := ⟨by decide⟩
   use 1
-  have hv : ValidIndex $p 1 := by decide
-  haveI : Fact (ValidIndex $p 1) := ⟨hv⟩
+  haveI hv : ValidIndex $p 1 := by decide
   use hv
   have hr : MulEquiv (retrieve $p 1) (CyclicGroup $p) := by
     have hr_is_c : retrieve $p 1 = CyclicGroup $p := by rfl
@@ -443,14 +442,13 @@ macro "classify_prime_sq" p:num h:term : tactic => `(tactic|(
 /-- A group of order at most `maximumOrder` is isomorphic to some group obtained by `retrieve`. -/
 theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
   ∃ i : Nat, ∃ hv : ValidIndex n i,
-  haveI : Fact (ValidIndex n i) := ⟨hv⟩
+  haveI : ValidIndex n i := hv
   Nonempty (MulEquiv G (retrieve n i))
  :=
   match n with
   | 1 => by
     use 1
-    have hv : ValidIndex 1 1 := by decide
-    haveI : Fact (ValidIndex 1 1) := ⟨hv⟩
+    haveI hv : ValidIndex 1 1 := by decide
     use hv
     apply Nonempty.intro
 

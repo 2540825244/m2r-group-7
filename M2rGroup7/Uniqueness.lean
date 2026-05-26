@@ -144,14 +144,14 @@ macro "by_invariant" i:ident i':ident inv:term : tactic => `(tactic | (
 ))
 
 theorem uniqueness (n i n' i' : Nat)
-  [Fact (ValidIndex n i)] [Fact (ValidIndex n' i')] [Fact (n ≠ n' ∨ i ≠ i')]
+  [ValidIndex n i] [ValidIndex n' i'] [Fact (n ≠ n' ∨ i ≠ i')]
   : IsEmpty ((retrieve n i) ≃* (retrieve n' i')) := by
   let G := retrieve n i
   let G' := retrieve n' i'
   rcases eq_or_ne n n' with rfl | hn
   · -- n = n'
-    have hv : ValidIndex n i := Fact.out
-    have hv' : ValidIndex n i' := Fact.out
+    have hv : ValidIndex n i := inferInstance
+    have hv' : ValidIndex n i' := inferInstance
     have hneq : n ≠ n ∨ i ≠ i' := Fact.out
     have hi_neq : i ≠ i' := by tauto
 
@@ -180,18 +180,6 @@ theorem uniqueness (n i n' i' : Nat)
     · -- n = 10: C10 vs D5; C10 is abelian, D5 is not
       by_invariant i i' isAbelianInv
     · -- n = 11
-      by_single_group
-    . -- n = 12
-      sorry
-    . -- n = 13
-      by_single_group
-    . -- n = 14
-      sorry
-    . -- n = 15
-      by_single_group
-    . -- n = 16
-      sorry
-    . -- n = 17
       by_single_group
     . -- n = 12
       sorry
