@@ -156,48 +156,7 @@ lemma aut_of_cyclic_p2 {p : ℕ} [h_p_prime : Fact p.Prime] : Nonempty (MulAut (
 -- canonicalAction and classify_Cqn_rtimes_Cpm are in SylowUtils.lean
 -- (they use semidirectProduct_iso_iff_range_eq from that file)
 
-/-- The automorphism group of C_p × C_p is isomorphic to GL(2, 𝔽_p).
-    Proof sketch:
-      MulAut(C_p × C_p)
-        ≃*  AddAut(ZMod p × ZMod p)                          [strip Multiplicative: MulAutMultiplicative + MulEquiv.prodMultiplicative]
-        ≃*  (ZMod p × ZMod p) ≃ₗ[ZMod p] (ZMod p × ZMod p) [AddMonoidHom.toZModLinearMapEquiv: every additive aut of a ZMod p-module is linear]
-        ≃*  GL (Fin 2) (ZMod p)                              [Matrix.GeneralLinearGroup.toLin' with standard basis] -/
-lemma aut_of_CpCp (p : ℕ) [hp : Fact p.Prime] :
-    Nonempty (MulAut (CyclicGroup p × CyclicGroup p) ≃* GL (Fin 2) (ZMod p)) := by
-  -- Step 1: strip the Multiplicative wrapper
-  -- CyclicGroup p = Multiplicative (ZMod p), so C_p × C_p ≃* Multiplicative (ZMod p × ZMod p)
-  -- Then MulAutMultiplicative gives MulAut (Multiplicative G) ≃* AddAut G
-  have step1 : MulAut (CyclicGroup p × CyclicGroup p) ≃* AddAut (ZMod p × ZMod p) :=
-    (MulAut.congr (MulEquiv.prodMultiplicative (ZMod p) (ZMod p)).symm).trans
-      (MulAutMultiplicative (ZMod p × ZMod p))
-  -- Step 2: every additive automorphism of a ZMod p-module is automatically ZMod p-linear
-  -- (AddMonoidHom.toZModLinearMap shows additive homs between ZMod p-modules are linear)
-  have step2 : AddAut (ZMod p × ZMod p) ≃*
-      ((ZMod p × ZMod p) ≃ₗ[ZMod p] (ZMod p × ZMod p)) :=
-    { toFun := fun f => f.toLinearEquiv
-        (fun r x => (AddMonoidHom.toZModLinearMap p f.toAddMonoidHom).map_smul r x)
-      invFun := fun g => g.toAddEquiv
-      left_inv := fun f => by
-        apply AddEquiv.ext
-        intro x
-        rfl
-      right_inv := fun g => by
-        apply LinearEquiv.ext
-        intro x
-        rfl
-      map_mul' := fun f g => by
-        apply LinearEquiv.ext
-        intro x
-        rfl
-      }
-  -- Step 3: LinearEquiv group ≃* GL(Fin 2, ZMod p)
-  -- via generalLinearEquiv, then finTwoArrow to match (Fin 2 → ZMod p), then toLin
-  have step3 : ((ZMod p × ZMod p) ≃ₗ[ZMod p] (ZMod p × ZMod p)) ≃* GL (Fin 2) (ZMod p) :=
-    (LinearMap.GeneralLinearGroup.generalLinearEquiv (ZMod p) (ZMod p × ZMod p)).symm
-      |>.trans (LinearMap.GeneralLinearGroup.congrLinearEquiv
-        (LinearEquiv.finTwoArrow (ZMod p) (ZMod p)).symm)
-      |>.trans Matrix.GeneralLinearGroup.toLin.symm
-  exact ⟨step1.trans (step2.trans step3)⟩
+
 
 /-!
 ## DihedralGroup 3 has a unique subgroup of order 3
