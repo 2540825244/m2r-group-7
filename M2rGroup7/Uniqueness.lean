@@ -73,7 +73,8 @@ structure GroupPredicate where
     (iso : K ≃* L) (x : K) : check x = check (iso x)
 
 def numElementsSatisfyingInv (pred : GroupPredicate) : GroupInvariant Nat :=
-  let satisfyingSubsetOf (K : Type v) [Group K] [Fintype K] [DecidableEq K] := (Finset.univ : Finset K).filter (pred.check ·)
+  let satisfyingSubsetOf (K : Type v) [Group K] [Fintype K] [DecidableEq K] :=
+    (Finset.univ : Finset K).filter (pred.check ·)
   {
     eval K _ _ _ := (satisfyingSubsetOf K).card
     preservation {K L : Type v} _ _ _ _ _ _ iso := by
