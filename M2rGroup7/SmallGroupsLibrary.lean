@@ -96,6 +96,21 @@ def c2OnK8Psi6 : CyclicGroup 2 →* MulAut (CyclicGroup 4 × CyclicGroup 2) :=
     intro x
     exact psi6.left_inv x)
 
+-- SemidirectProduct N ⋊[φ] G is structurally N × G, so Fintype and DecidableEq lift directly.
+instance {N G : Type*} [Group N] [Group G] {φ : G →* MulAut N} [Fintype N] [Fintype G] :
+    Fintype (N ⋊[φ] G) :=
+  Fintype.ofEquiv (N × G) {
+    toFun   := fun p => ⟨p.1, p.2⟩
+    invFun  := fun x => ⟨x.left, x.right⟩
+    left_inv  := fun _ => rfl
+    right_inv := fun _ => rfl
+  }
+
+instance {N G : Type*} [Group N] [Group G] {φ : G →* MulAut N} [DecidableEq N] [DecidableEq G] :
+    DecidableEq (N ⋊[φ] G) :=
+  fun a b => decidable_of_iff (a.left = b.left ∧ a.right = b.right)
+    ⟨fun ⟨hl, hr⟩ => SemidirectProduct.ext hl hr, fun h => ⟨congr_arg _ h, congr_arg _ h⟩⟩
+
 instance : Group Unit where
   mul _ _ := ()
   mul_assoc _ _ _ := by rfl
