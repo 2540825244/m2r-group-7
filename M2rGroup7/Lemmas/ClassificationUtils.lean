@@ -1,5 +1,5 @@
 import Mathlib
-import «M2rGroup7».GroupTheoryLemmas
+import «M2rGroup7».Lemmas.GroupTheoryLemmas
 
 theorem semidirectProduct_iso_of_conjugate_action
     {H K : Type*} [Group H] [Group K]
@@ -35,7 +35,7 @@ noncomputable def powerMapAut {K : Type*} [CommGroup K] [Finite K]
 
 /-- If K is cyclic p-group, two homomorphisms f g : K → Aut(H) define
     isomorphic semidirect products if they have the same image. -/
-lemma semidirectProduct_iso_iff_range_eq
+lemma semidirectProduct_iso_if_range_eq
     {H K : Type*} {p m : ℕ} [Group H] [Group K] [IsCyclic K]
     (hp : Fact p.Prime) (h_p_group : Nat.card K = p ^ m)
     (f_1 f_2 : K →* MulAut H) (h_range_eq : f_1.range = f_2.range) :
@@ -124,6 +124,27 @@ lemma semidirectProduct_iso_iff_range_eq
 
   exact semidirectProduct_iso_of_conjugate_action 1 β (by simp [hβ])
 
+/-- If K is cyclic p-group and Aut(H) is also cyclic, then two homomorphisms f g : K → Aut(H) define
+    isomorphic semidirect products if their images have equal order -/
+lemma semidirectProduct_iso_if_range_card_eq
+    {H K : Type*} {p m : ℕ} [Group H] [Group K] [IsCyclic K] [Finite H]
+    (hp : Fact p.Prime) (h_p_group : Nat.card K = p ^ m)
+    (f_1 f_2 : K →* MulAut H) (h_mul_aut_cyclic : IsCyclic (MulAut H)) (h_range_card_eq : Nat.card f_1.range = Nat.card f_2.range) :
+    Nonempty (SemidirectProduct H K f_1 ≃* SemidirectProduct H K f_2) := by
+      -- 1. Prove the ambient group order is positive
+      have h_pos : Nat.card (MulAut H) > 0 := Nat.card_pos
+
+      -- 2. Apply the uniqueness lemma
+      have h' : f_1.range = f_2.range := by
+        exact cyclic_subgroup_of_cyclic_group_is_unique
+          (by aesop)
+          rfl
+          f_1.range
+          f_2.range
+          rfl
+          h_range_card_eq.symm
+
+      grind [semidirectProduct_iso_if_range_eq]
 /-- For each r ≤ min(m, d) where d = v_p(q - 1), the canonical action
     φ_r : C_{p^m} →* Aut(C_{q^n}) with image of order p^r.
     Construction: Aut(C_{q^n}) is cyclic of order q^{n-1}(q-1); picking a generator α,
@@ -215,11 +236,6 @@ theorem classify_Cqn_rtimes_Cpm
   have hr_le_vp : r ≤ (q - 1).factorization p :=
     (hp.out.pow_dvd_iff_le_factorization (Nat.sub_pos_of_lt hq.out.one_lt).ne').mp (by
       -- p^r | (q-1): from p^r | |Aut| = q^(n-1)*(q-1) and gcd(p^r, q^(n-1))=1
-      haveI hqn_ne : NeZero (q ^ n) := ⟨(Nat.pow_pos hq.out.pos).ne'⟩
-      haveI hfin_aut : Finite (MulAut (CyclicGroup (q ^ n))) := by
-        have h := (IsCyclic.mulAutMulEquiv (CyclicGroup (q ^ n))).toEquiv
-        rw [card_cyclicGroup] at h
-        exact Finite.of_equiv _ h.symm
       have h_aut_card : Nat.card (MulAut (CyclicGroup (q ^ n))) = q ^ (n - 1) * (q - 1) := by
         have heq := Nat.card_congr (IsCyclic.mulAutMulEquiv (CyclicGroup (q ^ n))).toEquiv
         rw [card_cyclicGroup] at heq
@@ -240,9 +256,9 @@ theorem classify_Cqn_rtimes_Cpm
   have hr : r ≤ min m ((q - 1).factorization p) := Nat.le_min.mpr ⟨hr_le_m, hr_le_vp⟩
   refine ⟨⟨r, Nat.lt_succ_of_le hr⟩, ?_, ?_⟩
   · -- f ≅ canonicalAction r: their ranges both equal the unique order-p^r subgroup of Aut
-    apply semidirectProduct_iso_iff_range_eq hp (card_cyclicGroup _)
+    apply semidirectProduct_iso_if_range_eq hp (card_cyclicGroup _)
     -- needs cyclic_subgroup_of_cyclic_group_is_unique (groupmate's sorry)
-    sorry
+    -- we are here
   · -- r is uniquely determined by the isomorphism class
     intro ⟨r', _⟩ _; simp only [Fin.mk.injEq]
     sorry

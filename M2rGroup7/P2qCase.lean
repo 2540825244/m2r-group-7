@@ -3,7 +3,7 @@ import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
-import «M2rGroup7».SylowUtils
+import «M2rGroup7».Lemmas.SylowUtils
 import «M2rGroup7».GroupTheoryLemmas
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique

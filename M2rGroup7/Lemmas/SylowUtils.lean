@@ -1,5 +1,5 @@
 import Mathlib
-import «M2rGroup7».GroupTheoryLemmas
+import «M2rGroup7».Lemmas.GroupTheoryLemmas
 
 variable (G : Type*) [Group G]
 
