@@ -226,6 +226,7 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
   -- Step 1: G/Z is C_p x C_p so for every element g, (gZ)^p = Z
 
   -- Step 2: a^p, b^p in Z
+  trivial
 
 theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [CommGroup G] (h : Nat.card G = p^3) :
   (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
@@ -258,6 +259,7 @@ theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [Co
       sorry
 
     -- have := Multiset.map (p^3) Finset.univ
+    sorry
 
 theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
 (Nonempty (MulEquiv G (CyclicGroup n))) := by
