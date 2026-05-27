@@ -29,7 +29,7 @@ lemma not_iso_by {G H : Type v}
   exact inv.preservation Classical.ofNonempty
 
 
-def trivial_inv : GroupInvariant Unit where
+def trivialInv : GroupInvariant Unit where
   eval _ _ _ _ := ()
   preservation _ := by tauto
 
