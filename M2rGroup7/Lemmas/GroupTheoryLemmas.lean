@@ -201,3 +201,8 @@ lemma DihedralGroup3_unique_sylow3 :
     Nat.le_of_dvd (by norm_num) h_dvd
   simp only [Nat.ModEq] at h_mod
   omega
+
+/-- Cardinality of the image of a homomorphism f : G -> G' divides gcd(|G|, |G'|) -/
+theorem MonoidHom.card_range_dvd_gcd {G G' : Type*} [Group G] [Group G'] (f : G →* G') :
+      Nat.card ↥f.range ∣ Nat.gcd (Nat.card G) (Nat.card G') :=
+    Nat.dvd_gcd (Subgroup.card_range_dvd f) (Subgroup.card_subgroup_dvd_card f.range)
