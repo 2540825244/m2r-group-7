@@ -216,18 +216,7 @@ theorem retrieve_card (n : Nat) (i : Nat) [hv : ValidIndex n i] : Nat.card (retr
     simp only [num_entries] at hi_range <;>
     interval_cases i <;>
       simp only [retrieve] <;>
-      simp_all only [
-        Fintype.card_prod,
-        Fintype.card_unique,
-        Nat.card_eq_fintype_card,
-        Nat.ofNat_pos,
-        Nat.one_le_ofNat,
-        Nat.reduceLeDiff,
-        Order.lt_one_iff,
-        Order.lt_two_iff,
-        SemidirectProduct.card,
-        Std.le_refl,
-        gt_iff_lt,
-        zero_le
-      ] <;>
+      simp_all only [Fintype.card_prod, Fintype.card_unique, Nat.card_eq_fintype_card,
+        Nat.ofNat_pos, Nat.one_le_ofNat, Nat.reduceLeDiff, Order.lt_one_iff, Order.lt_two_iff,
+        Std.le_refl, gt_iff_lt, zero_le] <;>
       rfl
