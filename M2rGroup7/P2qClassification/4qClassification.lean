@@ -13,7 +13,7 @@ import «M2rGroup7».P2qClassification.CycPGroupClassification
     cyclic group `Aut(C_q)` of order q − 1. -/
 noncomputable def canonicalC4OnCqAction
     {q : ℕ} [hq : Fact q.Prime] (h_q_gt_3 : q > 3) :
-    CyclicGroup 4 →* MulAut (CyclicGroup q) := by
+    CyclicGroup 4 →* MulAut (CyclicGroup q) :=
   haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
   have h_qm1_ne : q - 1 ≠ 0 := by have := hq.out.one_lt; omega
   have h_dvd : 2 ∣ q - 1 := by
@@ -23,8 +23,7 @@ noncomputable def canonicalC4OnCqAction
     refine Nat.le_min.mpr ⟨one_le_two, ?_⟩
     rw [← Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two h_qm1_ne]
     simpa using h_dvd
-  rw [show q = q ^ 1 from (pow_one q).symm]
-  exact canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1 hr
+  pow_one q ▸ canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1 hr
 
 /-- For q prime, q > 3, q ≡ 3 (mod 4), any nontrivial homomorphism
     `f : C_4 →* Aut(C_q)` has range of order `2^1 = 2`: the range divides both
@@ -49,38 +48,35 @@ private lemma natCard_range_eq_two_of_nontrivial_C4_action
     have h1 : q % 4 = 3 := h_3_mod_4
     have h2 : q > 0 := hq.out.pos
     omega
+  -- gcd(4, q-1) = 2 since (q-1) % 4 = 2.
+  have h_gcd : Nat.gcd 4 (q - 1) = 2 := by
+    have h2_dvd_gcd : 2 ∣ Nat.gcd 4 (q - 1) :=
+      Nat.dvd_gcd (by norm_num) (by omega)
+    have h_gcd_dvd_4 : Nat.gcd 4 (q - 1) ∣ 4 := Nat.gcd_dvd_left _ _
+    have h_not_4_dvd : ¬ (4 ∣ q - 1) := by
+      intro h_dvd; rw [Nat.dvd_iff_mod_eq_zero] at h_dvd; omega
+    have h_gcd_dvd_qm1 : Nat.gcd 4 (q - 1) ∣ q - 1 := Nat.gcd_dvd_right _ _
+    have h_pos : 0 < Nat.gcd 4 (q - 1) :=
+      Nat.gcd_pos_of_pos_left _ (by norm_num)
+    have h_le : Nat.gcd 4 (q - 1) ≤ 4 := Nat.le_of_dvd (by norm_num) h_gcd_dvd_4
+    interval_cases Nat.gcd 4 (q - 1) <;> first
+      | rfl
+      | (exfalso; exact absurd h_gcd_dvd_4 (by decide))
+      | (exfalso; exact h_not_4_dvd h_gcd_dvd_qm1)
   have h_dvd_2 : Nat.card f.range ∣ 2 := by
-    -- card f.range ∣ gcd(4, q-1). Compute gcd(4, q-1) = 2 from q-1 ≡ 2 mod 4.
-    have h_dvd_gcd : Nat.card f.range ∣ Nat.gcd 4 (q - 1) :=
-      Nat.dvd_gcd h_dvd_4 h_dvd_qm1
-    have h_gcd : Nat.gcd 4 (q - 1) = 2 := by
-      have h2_dvd_gcd : 2 ∣ Nat.gcd 4 (q - 1) :=
-        Nat.dvd_gcd (by norm_num) (by omega)
-      have h_gcd_dvd_4 : Nat.gcd 4 (q - 1) ∣ 4 := Nat.gcd_dvd_left _ _
-      have h_not_4_dvd : ¬ (4 ∣ q - 1) := by
-        intro h_dvd; rw [Nat.dvd_iff_mod_eq_zero] at h_dvd; omega
-      have h_pos : 0 < Nat.gcd 4 (q - 1) :=
-        Nat.gcd_pos_of_pos_left _ (by norm_num)
-      have h_le : Nat.gcd 4 (q - 1) ≤ 4 := Nat.le_of_dvd (by norm_num) h_gcd_dvd_4
-      interval_cases Nat.gcd 4 (q - 1)
-      · rfl
-      · exact absurd h_gcd_dvd_4 (by decide)
-      · exact absurd ((show Nat.gcd 4 (q - 1) = 4 from by assumption) ▸
-          Nat.gcd_dvd_right 4 (q - 1)) h_not_4_dvd
-    exact h_gcd ▸ h_dvd_gcd
+    rw [← h_gcd]; exact Nat.dvd_gcd h_dvd_4 h_dvd_qm1
+  -- f ≠ 1, hence range ≠ ⊥, hence |range| > 1.
   have h_card_pos : 0 < Nat.card f.range := Nat.card_pos
+  have h_range_ne_bot : f.range ≠ ⊥ := fun h => hf (MonoidHom.range_eq_bot_iff.mp h)
   have h_card_gt_1 : 1 < Nat.card f.range := by
     by_contra h_not
     push_neg at h_not
     have h_card_one : Nat.card f.range = 1 := by omega
-    apply hf
-    have h_range_bot : f.range = ⊥ := by
-      rw [Subgroup.eq_bot_iff_card]; exact h_card_one
-    ext x
-    have hmem : f x ∈ f.range := MonoidHom.mem_range.mpr ⟨x, rfl⟩
-    rw [h_range_bot, Subgroup.mem_bot] at hmem
-    simpa using hmem
+    have h_range_bot : f.range = ⊥ :=
+      (Subgroup.eq_bot_iff_card).mpr h_card_one
+    exact h_range_ne_bot h_range_bot
   -- Combine: card divides 2 and is > 1, so = 2 = 2^1.
+  have h_le_2 : Nat.card f.range ≤ 2 := Nat.le_of_dvd (by norm_num) h_dvd_2
   interval_cases (Nat.card f.range)
   rfl
 
