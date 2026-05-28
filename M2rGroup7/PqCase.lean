@@ -66,3 +66,12 @@ theorem order14_classification {G : Type*} [Group G] (h : Nat.card G = 14) :
     have hDnc : ¬IsCyclic (DihedralGroup 7) := DihedralGroup.not_isCyclic (by decide)
     have h27 : Nat.card G = 2 * 7 := by linarith
     exact nonempty_mulEquiv_of_card_eq_prime_mul_prime_of_not_isCyclic' (by norm_num) h27 hc hD hDnc
+
+/-- A group of order 15 is isomorphic to CyclicGroup 15. -/
+theorem order15_classification {G : Type*} [Group G] (h : Nat.card G = 15) :
+    Nonempty (G ≃* CyclicGroup 15) := by
+  haveI : Fact (Nat.Prime 3) := ⟨by decide⟩
+  haveI : Fact (Nat.Prime 5) := ⟨by decide⟩
+  have h35 : Nat.card G = 3 * 5 := by linarith
+  haveI : IsCyclic G := isCyclic_of_card_eq_prime_mul_prime (by norm_num) (by decide) h35
+  exact ⟨mulEquivOfCyclicCardEq (h.trans (card_cyclicGroup 15).symm)⟩

@@ -509,7 +509,8 @@ theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
     · exact ⟨1, by decide, hiso⟩
 
   | 15 => by
-    sorry
+    obtain ⟨hiso⟩ := order15_classification h
+    exact ⟨1, by decide, ⟨hiso⟩⟩
 
   | 16 => by
     sorry
