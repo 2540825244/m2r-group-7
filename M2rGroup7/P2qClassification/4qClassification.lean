@@ -67,16 +67,17 @@ private lemma natCard_range_eq_two_of_nontrivial_C4_action
     have h2_dvd_gcd : 2 ∣ Nat.gcd 4 (q - 1) :=
       Nat.dvd_gcd (by norm_num) (by omega)
     have h_gcd_dvd_4 : Nat.gcd 4 (q - 1) ∣ 4 := Nat.gcd_dvd_left _ _
+    have h_gcd_dvd_qm1 : Nat.gcd 4 (q - 1) ∣ q - 1 := Nat.gcd_dvd_right _ _
     have h_not_4_dvd : ¬ (4 ∣ q - 1) := by
       intro h_dvd; rw [Nat.dvd_iff_mod_eq_zero] at h_dvd; omega
-    have h_gcd_dvd_qm1 : Nat.gcd 4 (q - 1) ∣ q - 1 := Nat.gcd_dvd_right _ _
     have h_pos : 0 < Nat.gcd 4 (q - 1) :=
       Nat.gcd_pos_of_pos_left _ (by norm_num)
     have h_le : Nat.gcd 4 (q - 1) ≤ 4 := Nat.le_of_dvd (by norm_num) h_gcd_dvd_4
-    interval_cases Nat.gcd 4 (q - 1) <;> first
-      | rfl
-      | (exfalso; exact absurd h_gcd_dvd_4 (by decide))
-      | (exfalso; exact h_not_4_dvd h_gcd_dvd_qm1)
+    interval_cases Nat.gcd 4 (q - 1)
+    · exact absurd h2_dvd_gcd (by decide)
+    · rfl
+    · exact absurd h_gcd_dvd_4 (by decide)
+    · exact absurd h_gcd_dvd_qm1 h_not_4_dvd
   have h_dvd_2 : Nat.card f.range ∣ 2 := by
     rw [← h_gcd]; exact Nat.dvd_gcd h_dvd_4 h_dvd_qm1
   -- f ≠ 1, hence range ≠ ⊥, hence |range| > 1.
@@ -87,7 +88,7 @@ private lemma natCard_range_eq_two_of_nontrivial_C4_action
     push_neg at h_not
     have h_card_one : Nat.card f.range = 1 := by omega
     have h_range_bot : f.range = ⊥ :=
-      (Subgroup.eq_bot_iff_card).mpr h_card_one
+      (Subgroup.eq_bot_iff_card f.range).mpr h_card_one
     exact h_range_ne_bot h_range_bot
   -- Combine: card divides 2 and is > 1, so = 2 = 2^1.
   have h_le_2 : Nat.card f.range ≤ 2 := Nat.le_of_dvd (by norm_num) h_dvd_2
