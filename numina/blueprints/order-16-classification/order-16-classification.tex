@@ -1,8 +1,741 @@
 % Blueprint: Order 16 Classification
-% Created by Numina
+% Adapted from Clausen, "Classifying All Groups of Order 16" (MATH 434, Univ. of Puget Sound, 2012)
+
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsthm}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
 
 \begin{document}
 
-% Your blueprint will go here.
+\section{Overview}
+
+The goal of this blueprint is to prove that every group $G$ of order $16$ is
+isomorphic to exactly one of the $14$ groups listed in
+\texttt{M2rGroup7.SmallGroupsLibrary} (the \texttt{retrieve 16 i} family).
+The proof works case-by-case on the order of the center $Z(G)$.
+
+\begin{theorem}[Classification of groups of order 16]
+    \label{thm:sixteen-classification}
+    \uses{thm:center-sixteen,thm:center-eight,thm:center-four,thm:center-two,
+          thm:center-divides-card,lem:pgroup-center-nontrivial}
+    Let $G$ be a group with $|G| = 16$. Then $G$ is isomorphic to one of the
+    following $14$ groups (indexed as \texttt{retrieve 16 i} for
+    $1 \le i \le 14$):
+    $C_{16}$, $C_4 \times C_4$, $(C_2 \times C_2) \rtimes C_4$,
+    $C_4 \rtimes C_4$, $C_8 \times C_2$, $C_8 \rtimes_{x \mapsto x^5} C_2$,
+    $D_8$ (dihedral of order $16$), $C_8 \rtimes_{x \mapsto x^3} C_2$
+    (semidihedral), $Q_{16}$ (generalized quaternion),
+    $C_4 \times C_2 \times C_2$, $C_2 \times D_4$, $C_2 \times Q_8$,
+    $(C_4 \times C_2) \rtimes_{\psi_6} C_2$,
+    $C_2 \times C_2 \times C_2 \times C_2$.
+\end{theorem}
+\begin{proof}
+    \uses{thm:center-sixteen,thm:center-eight,thm:center-four,thm:center-two,
+          thm:center-divides-card,lem:pgroup-center-nontrivial,lem:two-power-divisors}
+    Since $|G| = 16 = 2^4$, the group $G$ is a $2$-group, so by
+    Lemma~\ref{lem:pgroup-center-nontrivial} its center $Z(G)$ is nontrivial.
+    By Lagrange (Theorem~\ref{thm:center-divides-card}), $|Z(G)|$ divides
+    $16$, and by Lemma~\ref{lem:two-power-divisors} therefore
+    $|Z(G)| \in \{2, 4, 8, 16\}$. Each case is handled by the corresponding
+    structure theorem:
+    Theorem~\ref{thm:center-sixteen} ($|Z(G)| = 16$),
+    Theorem~\ref{thm:center-eight} ($|Z(G)| = 8$, impossible),
+    Theorem~\ref{thm:center-four} ($|Z(G)| = 4$),
+    Theorem~\ref{thm:center-two} ($|Z(G)| = 2$).
+    Combining these yields the $14$ isomorphism classes.
+\end{proof}
+
+\section{Preliminaries: centers, p-groups and divisors of 16}
+
+\begin{lemma}[Center of a $p$-group is nontrivial]
+    \label{lem:pgroup-center-nontrivial}
+    Let $G$ be a finite $p$-group with $p$ prime and $|G| > 1$. Then the
+    center $Z(G)$ is a nontrivial subgroup.
+\end{lemma}
+\begin{proof}
+    Direct from Mathlib's \texttt{IsPGroup.center\_nontrivial}, which gives
+    \texttt{Nontrivial (Subgroup.center G)} from \texttt{IsPGroup p G} and
+    \texttt{Nontrivial G}.
+\end{proof}
+
+\begin{lemma}[Order of $Z(G)$ divides $|G|$]
+    \label{thm:center-divides-card}
+    For any finite group $G$, $|Z(G)|$ divides $|G|$.
+\end{lemma}
+\begin{proof}
+    Apply Mathlib's \texttt{Subgroup.card\_subgroup\_dvd\_card} to
+    \texttt{Subgroup.center G}.
+\end{proof}
+
+\begin{lemma}[Divisors of $2^4$ are powers of $2$]
+    \label{lem:two-power-divisors}
+    If $d \mid 16$, then $d \in \{1,2,4,8,16\}$.
+\end{lemma}
+\begin{proof}
+    Use \texttt{Nat.dvd\_prime\_pow} with the prime $2$ and exponent $4$:
+    $d \mid 2^4$ iff $d = 2^k$ for some $0 \le k \le 4$. Enumerate $k$.
+\end{proof}
+
+\begin{lemma}[$G$ is a $2$-group from $|G| = 16$]
+    \label{lem:pgroup-of-card-sixteen}
+    If $|G| = 16$ then $G$ is a $2$-group.
+\end{lemma}
+\begin{proof}
+    Rewrite $16 = 2^4$ and apply Mathlib's \texttt{IsPGroup.of\_card}.
+\end{proof}
+
+\begin{lemma}[Cyclic quotient by the center implies abelian]
+    \label{lem:cyclic-center-quotient-abelian}
+    If $G/Z(G)$ is cyclic, then $G$ is abelian.
+\end{lemma}
+\begin{proof}
+    This is Mathlib's \texttt{commutative\_of\_cyclic\_center\_quotient}
+    applied to the canonical surjection $G \to G/Z(G)$, whose kernel equals
+    $Z(G)$ by \texttt{QuotientGroup.ker\_mk'}.
+\end{proof}
+
+\begin{lemma}[Abelian iff $Z(G) = G$]
+    \label{lem:abelian-iff-center-top}
+    A group $G$ is abelian if and only if $Z(G) = G$.
+\end{lemma}
+\begin{proof}
+    Both directions are immediate from the definition of the center: an
+    element is in $Z(G)$ iff it commutes with every element of $G$. In
+    Mathlib this is \texttt{Subgroup.center\_eq\_top\_iff} together with
+    \texttt{Subgroup.mem\_center\_iff}.
+\end{proof}
+
+\section{The center has order 16: abelian case}
+
+\begin{theorem}[Center of order 16]
+    \label{thm:center-sixteen}
+    \uses{lem:abelian-iff-center-top,thm:abelian-order-sixteen}
+    Suppose $G$ is a group of order $16$ with $|Z(G)| = 16$. Then $G$ is
+    isomorphic to one of $C_{16}$, $C_8 \times C_2$, $C_4 \times C_4$,
+    $C_4 \times C_2 \times C_2$, or $C_2 \times C_2 \times C_2 \times C_2$.
+\end{theorem}
+\begin{proof}
+    \uses{lem:abelian-iff-center-top,thm:abelian-order-sixteen}
+    Since a subgroup of a finite group equals the whole group iff their
+    orders are equal, $|Z(G)| = |G|$ gives $Z(G) = G$, hence by
+    Lemma~\ref{lem:abelian-iff-center-top} $G$ is abelian. The result then
+    reduces to the classification of abelian groups of order $16$
+    (Theorem~\ref{thm:abelian-order-sixteen}).
+\end{proof}
+
+\begin{theorem}[Abelian groups of order 16]
+    \label{thm:abelian-order-sixteen}
+    \uses{lem:fundamental-finite-abelian}
+    Any abelian group $G$ of order $16$ is isomorphic to exactly one of
+    $C_{16}$, $C_8 \times C_2$, $C_4 \times C_4$, $C_4 \times C_2 \times C_2$,
+    $C_2 \times C_2 \times C_2 \times C_2$.
+\end{theorem}
+\begin{proof}
+    \uses{lem:fundamental-finite-abelian}
+    By the fundamental theorem of finite abelian groups
+    (Lemma~\ref{lem:fundamental-finite-abelian}) we may write
+    $G \cong \mathbb{Z}/2^{a_1} \times \cdots \times \mathbb{Z}/2^{a_k}$ with
+    $a_1 \ge a_2 \ge \cdots \ge a_k \ge 1$ and $a_1 + \cdots + a_k = 4$. The
+    $5$ partitions of $4$ are $4$, $3+1$, $2+2$, $2+1+1$, $1+1+1+1$, giving
+    the five groups in the statement. (Translating between
+    $\mathbb{Z}/2^a$ and $C_{2^a}$ uses
+    \texttt{M2rGroup7.SmallGroupsLibrary.CyclicGroup}, which is by
+    definition \texttt{Multiplicative (ZMod n)}.)
+\end{proof}
+
+\begin{lemma}[Fundamental theorem of finite abelian groups]
+    \label{lem:fundamental-finite-abelian}
+    Every finite abelian group is isomorphic to a direct sum of finite cyclic
+    groups whose orders are prime powers.
+\end{lemma}
+\begin{proof}
+    This is Mathlib's \texttt{AddCommGroup.equiv\_directSum\_zmod\_of\_finite}
+    (for the additive form); passing through \texttt{Multiplicative} yields
+    the multiplicative statement used here.
+\end{proof}
+
+\section{The center has order 8: impossible}
+
+\begin{theorem}[Center of order 8 is impossible]
+    \label{thm:center-eight}
+    \uses{lem:cyclic-center-quotient-abelian,lem:abelian-iff-center-top,
+          lem:quotient-by-center-card}
+    There is no group $G$ of order $16$ with $|Z(G)| = 8$.
+\end{theorem}
+\begin{proof}
+    \uses{lem:cyclic-center-quotient-abelian,lem:abelian-iff-center-top,
+          lem:quotient-by-center-card,lem:cyclic-of-prime-card}
+    Suppose $|Z(G)| = 8$. By Lemma~\ref{lem:quotient-by-center-card},
+    $|G/Z(G)| = 2$, so $G/Z(G)$ is cyclic
+    (Lemma~\ref{lem:cyclic-of-prime-card}). Then $G$ is abelian
+    (Lemma~\ref{lem:cyclic-center-quotient-abelian}), i.e., $Z(G) = G$
+    (Lemma~\ref{lem:abelian-iff-center-top}), contradicting $|Z(G)| = 8 \ne
+    16 = |G|$.
+\end{proof}
+
+\begin{lemma}[Order of $G/Z(G)$]
+    \label{lem:quotient-by-center-card}
+    If $G$ is a finite group then $|G/Z(G)| \cdot |Z(G)| = |G|$, and in
+    particular $|G/Z(G)| = |G|/|Z(G)|$ when $|Z(G)| \mid |G|$.
+\end{lemma}
+\begin{proof}
+    Use Mathlib's \texttt{Subgroup.index\_mul\_card} on the (normal) subgroup
+    $Z(G)$, together with the identification
+    \texttt{Subgroup.index\_eq\_card} between the index of a subgroup and the
+    cardinality of the quotient.
+\end{proof}
+
+\begin{lemma}[Group of prime cardinality is cyclic]
+    \label{lem:cyclic-of-prime-card}
+    If $|G| = p$ with $p$ prime, then $G$ is cyclic.
+\end{lemma}
+\begin{proof}
+    This is Mathlib's \texttt{isCyclic\_of\_prime\_card}.
+\end{proof}
+
+\section{The center has order 4}
+
+\begin{theorem}[Center of order 4]
+    \label{thm:center-four}
+    \uses{thm:center-four-klein,thm:center-four-cyclic,
+          lem:quotient-by-center-card,lem:two-power-divisors,
+          lem:fundamental-finite-abelian}
+    Suppose $G$ is a group of order $16$ with $|Z(G)| = 4$. Then $G$ is
+    isomorphic to one of $(C_2 \times C_2) \rtimes C_4$,
+    $C_4 \rtimes C_4$, $C_8 \rtimes_{x \mapsto x^5} C_2$
+    (the modular/Iwasawa group $M_{16}$), $C_2 \times D_4$,
+    $C_2 \times Q_8$, or $(C_4 \times C_2) \rtimes_{\psi_6} C_2$.
+\end{theorem}
+\begin{proof}
+    \uses{thm:center-four-klein,thm:center-four-cyclic,
+          lem:fundamental-finite-abelian}
+    Since $|Z(G)| = 4$ and $Z(G)$ is abelian, by the fundamental theorem of
+    finite abelian groups (Lemma~\ref{lem:fundamental-finite-abelian}) either
+    $Z(G) \cong C_4$ or $Z(G) \cong C_2 \times C_2$. The two cases are
+    handled by Theorem~\ref{thm:center-four-cyclic} and
+    Theorem~\ref{thm:center-four-klein} respectively.
+\end{proof}
+
+\subsection{The center is the Klein four-group}
+
+\begin{theorem}[$Z(G) \cong C_2 \times C_2$]
+    \label{thm:center-four-klein}
+    \uses{lem:order-four-quotient-not-cyclic,thm:case-D4-times-C2,
+          thm:case-K4-semidirect-C4,thm:case-Q8-times-C2,
+          thm:case-C4-semidirect-C4}
+    Suppose $G$ has order $16$ with $|Z(G)| = 4$ and $Z(G) \cong
+    C_2 \times C_2$. Then $G$ is isomorphic to one of
+    $D_4 \times C_2$, $(C_2 \times C_2) \rtimes C_4$, $Q_8 \times C_2$, or
+    $C_4 \rtimes C_4$.
+\end{theorem}
+\begin{proof}
+    \uses{lem:order-four-quotient-not-cyclic,thm:case-D4-times-C2,
+          thm:case-K4-semidirect-C4,thm:case-Q8-times-C2,
+          thm:case-C4-semidirect-C4,lem:gi-abelian-when-center-four,
+          lem:no-all-elementary-abelian}
+    The factor group $G/Z(G)$ has order $4$ and is not cyclic
+    (Lemma~\ref{lem:order-four-quotient-not-cyclic}), so
+    $G/Z(G) \cong C_2 \times C_2$. By the Correspondence Theorem this gives
+    three subgroups $G_1, G_2, G_3$ of $G$ of order $8$, each containing
+    $Z(G)$, pairwise intersecting in $Z(G)$. By
+    Lemma~\ref{lem:gi-abelian-when-center-four} each $G_i$ is abelian. Since
+    $Z(G) \cong C_2 \times C_2$ embeds in each $G_i$, and $C_8$ has no such
+    subgroup, each $G_i$ is isomorphic to $C_4 \times C_2$ or
+    $C_2 \times C_2 \times C_2$. By
+    Lemma~\ref{lem:no-all-elementary-abelian} not all three can be
+    elementary abelian. The remaining four cases correspond to
+    Theorems~\ref{thm:case-D4-times-C2}, \ref{thm:case-K4-semidirect-C4},
+    \ref{thm:case-Q8-times-C2} and \ref{thm:case-C4-semidirect-C4}.
+\end{proof}
+
+\begin{lemma}[$G/Z(G)$ of order $4$ is non-cyclic]
+    \label{lem:order-four-quotient-not-cyclic}
+    \uses{lem:cyclic-center-quotient-abelian,lem:abelian-iff-center-top}
+    If $|G| = 16$ and $|Z(G)| = 4$, then $G/Z(G)$ is not cyclic; in particular
+    $G/Z(G) \cong C_2 \times C_2$.
+\end{lemma}
+\begin{proof}
+    \uses{lem:cyclic-center-quotient-abelian,lem:abelian-iff-center-top}
+    If $G/Z(G)$ were cyclic, $G$ would be abelian by
+    Lemma~\ref{lem:cyclic-center-quotient-abelian} and so
+    $|Z(G)| = 16 \ne 4$, contradiction. So $G/Z(G)$ has order $4$ and is not
+    cyclic; the only such group (up to isomorphism) is $C_2 \times C_2$ by
+    classification of groups of order $4$.
+\end{proof}
+
+\begin{lemma}[Each $G_i$ is abelian when $|Z(G)| = 4$]
+    \label{lem:gi-abelian-when-center-four}
+    Let $G$ be a group of order $16$ with $|Z(G)| = 4$ and let $H \le G$ be a
+    subgroup of order $8$ containing $Z(G)$. Then $H$ is abelian.
+\end{lemma}
+\begin{proof}
+    Since $Z(G) \le Z(H)$ (any central element of $G$ commutes with the
+    elements of $H$), we have $|Z(H)| \ge 4$. Among the groups of order $8$,
+    only the abelian ones ($C_8$, $C_4 \times C_2$,
+    $C_2 \times C_2 \times C_2$) have center of order $\ge 4$ (the
+    nonabelian $D_4$ and $Q_8$ have center of order $2$).
+\end{proof}
+
+\begin{lemma}[$G_i$ not all elementary abelian]
+    \label{lem:no-all-elementary-abelian}
+    \uses{lem:abelian-iff-center-top,lem:order2-implies-abelian}
+    If every element of $G$ has order dividing $2$, then $G$ is abelian.
+    Hence if $|Z(G)| = 4 \ne 16$ and the three subgroups $G_1, G_2, G_3$ of
+    order $8$ containing $Z(G)$ are all isomorphic to
+    $C_2 \times C_2 \times C_2$, we get a contradiction.
+\end{lemma}
+\begin{proof}
+    \uses{lem:abelian-iff-center-top,lem:order2-implies-abelian}
+    The first claim is Lemma~\ref{lem:order2-implies-abelian}. Cover $G$ by
+    the three $G_i$ via the coset decomposition: every element of $G$ lies in
+    some $G_i$. If each $G_i \cong C_2 \times C_2 \times C_2$, every
+    non-identity element of $G$ has order $2$, so $G$ is abelian, hence
+    $Z(G) = G$ by Lemma~\ref{lem:abelian-iff-center-top}, contradicting
+    $|Z(G)| = 4$.
+\end{proof}
+
+\begin{lemma}[Exponent-$2$ groups are commutative]
+    \label{lem:order2-implies-abelian}
+    If every element of $G$ satisfies $x^2 = 1$, then $G$ is abelian.
+\end{lemma}
+\begin{proof}
+    Mathlib's \texttt{Commute.of\_orderOf\_dvd\_two} gives, for any pair
+    $a, b$ with order dividing $2$, $a \cdot b = b \cdot a$. Apply it to all
+    pairs.
+\end{proof}
+
+\begin{theorem}[Case $D_4 \times C_2$]
+    \label{thm:case-D4-times-C2}
+    \uses{lem:subgroup-product-card,lem:internal-direct-product}
+    In the setting of Theorem~\ref{thm:center-four-klein}, if two of the
+    $G_i$ are $\cong C_2 \times C_2 \times C_2$ and the third is
+    $\cong C_4 \times C_2$, then $G \cong D_4 \times C_2$.
+\end{theorem}
+\begin{proof}
+    \uses{lem:subgroup-product-card,lem:internal-direct-product}
+    Pick $r$ of order $4$ in $G_3$ and $s$ of order $2$ in $G_1$
+    (representing the noncentral cosets). Their squares lie in $Z(G)$. The
+    product $rs$ lies in $G_2 \cong C_2 \times C_2 \times C_2$, so
+    $(rs)^2 = e$. Writing the commutator $sr = z' \cdot rs$ with
+    $z' \in Z(G)$, expanding $(rs)^2 = 1$ gives $z' = r^2$, so
+    $sr = r^{-1}s$. The set
+    $H = \{e, r, r^2, r^3, s, rs, r^2 s, r^3 s\}$ is therefore a subgroup of
+    order $8$ isomorphic to $D_4$. Pick $z \in Z(G) \setminus \{e, r^2\}$ and
+    set $K = \langle z \rangle \cong C_2$. Then $H \cap K = \{e\}$ and
+    $|HK| = 16$, so $HK = G$; since $K$ is central
+    Lemma~\ref{lem:internal-direct-product} gives
+    $G \cong H \times K \cong D_4 \times C_2$.
+\end{proof}
+
+\begin{theorem}[Case $(C_2 \times C_2) \rtimes C_4$]
+    \label{thm:case-K4-semidirect-C4}
+    \uses{lem:subgroup-product-card,lem:internal-direct-product,
+          lem:abc-eq-e-in-klein}
+    If exactly one $G_i \cong C_2 \times C_2 \times C_2$ and the other two
+    are $\cong C_4 \times C_2$, then $G \cong (C_2 \times C_2) \rtimes C_4$.
+\end{theorem}
+\begin{proof}
+    \uses{lem:subgroup-product-card,lem:abc-eq-e-in-klein,
+          lem:commutator-in-center-when-quotient-abelian}
+    Pick $g_2 \in G_2$ and $g_3 \in G_3$ outside the center; both have order
+    $4$. Their squares $z_2, z_3 \in Z(G)$ and the commutator $z'$ satisfy
+    $z' z_2 z_3 = e$ (because $(g_2 g_3)^2 = 1$ in $G_1$, where every
+    non-identity element has order $2$). By
+    Lemma~\ref{lem:abc-eq-e-in-klein}, $z' = z_2 z_3$. Then
+    $g_3 g_2 = (z_2 z_3) g_2 g_3 = g_2^{-1} g_3^{-1}$, which is exactly the
+    relation for the semidirect product. The subgroups
+    $\langle g_2 \rangle, \langle g_3 \rangle$ have trivial intersection and
+    together generate $G$, so $G \cong (C_2 \times C_2) \rtimes C_4$
+    (the action being the non-trivial swap action of
+    \texttt{c4OnC2sqSwap}).
+\end{proof}
+
+\begin{lemma}[Klein-four triple-product lemma]
+    \label{lem:abc-eq-e-in-klein}
+    Let $a, b, c$ be nonidentity elements of $C_2 \times C_2$. Then
+    $abc = e$ iff $a, b, c$ are pairwise distinct.
+\end{lemma}
+\begin{proof}
+    Direct case analysis. $C_2 \times C_2$ has exactly three non-identity
+    elements; if $a, b, c$ are pairwise distinct they are these three
+    elements and their product is $e$. Conversely, if any two coincide
+    (WLOG $a = b$) then $abc = c \ne e$.
+\end{proof}
+
+\begin{theorem}[Case $Q_8 \times C_2$]
+    \label{thm:case-Q8-times-C2}
+    \uses{lem:internal-direct-product,lem:abc-eq-e-in-klein,
+          lem:commutator-in-center-when-quotient-abelian}
+    Suppose all three $G_i \cong C_4 \times C_2$ and the squares of the
+    chosen non-central order-$4$ elements $i \in G_1$, $j \in G_2$,
+    $ij \in G_3$ all coincide as $z_1 \in Z(G)$. Then $G \cong Q_8 \times
+    C_2$.
+\end{theorem}
+\begin{proof}
+    \uses{lem:internal-direct-product,lem:abc-eq-e-in-klein,
+          lem:commutator-in-center-when-quotient-abelian}
+    With $i^2 = j^2 = (ij)^2 = z_1 \in Z(G)$, the commutator $z'$ between
+    $i, j$ satisfies $z' = z_1 z_2 z_3 = z_1^3 = z_1$, so
+    $ji = z_1 \cdot ij = i^{-1} j$ (and $(ij)(ji) = e$). The set
+    $H = \{e, i, z_1, z_1 i = i^{-1}, j, z_1 j = j^{-1}, ij, z_1 ij\}$ is
+    a subgroup of order $8$ isomorphic to $Q_8$. Pick a $z \in Z(G)$ distinct
+    from $z_1$ and form $K = \langle z \rangle \cong C_2$; $K$ is central,
+    $H \cap K = \{e\}$, and $|HK| = 16$, so by
+    Lemma~\ref{lem:internal-direct-product} $G \cong Q_8 \times C_2$.
+\end{proof}
+
+\begin{theorem}[Case $C_4 \rtimes C_4$]
+    \label{thm:case-C4-semidirect-C4}
+    \uses{lem:subgroup-product-card,lem:abc-eq-e-in-klein,
+          lem:commutator-in-center-when-quotient-abelian}
+    In the setting of Theorem~\ref{thm:center-four-klein}, the remaining case
+    (where exactly two of $z_1, z_2, z_3$ coincide) yields
+    $G \cong C_4 \rtimes_{c4OnC4Inv} C_4$.
+\end{theorem}
+\begin{proof}
+    \uses{lem:subgroup-product-card,lem:abc-eq-e-in-klein,
+          lem:commutator-in-center-when-quotient-abelian}
+    WLOG $z_2 = z_3$; then $z' = z_1 z_2 z_3 = z_1$. With $i \in G_1$ and
+    $j \in G_2$ of order $4$ and $\langle i \rangle \cap \langle j \rangle =
+    \{e\}$, we have $|\langle i \rangle \cdot \langle j \rangle| = 16$, so
+    $G$ has $16$ elements of the form $i^\alpha j^\beta$. The commuting rule
+    is $ji = z' ij = i^2 \cdot ij = i^{-1} j$. This is exactly the
+    presentation of $C_4 \rtimes C_4$ where the action of the right $C_4$
+    on the left $C_4$ is inversion (Mathlib's $\texttt{c4OnC4Inv}$ in
+    \texttt{SmallGroupsLibrary}).
+\end{proof}
+
+\begin{lemma}[Order of a product of subgroups]
+    \label{lem:subgroup-product-card}
+    For finite subgroups $H, K \le G$, $|HK| \cdot |H \cap K| = |H| \cdot
+    |K|$.
+\end{lemma}
+\begin{proof}
+    Mathlib's \texttt{Subgroup.card\_mul\_eq\_card\_subgroup\_mul\_card\_quotient}
+    together with elementary manipulations gives this. Equivalently, use the
+    standard double-coset formula in \texttt{Mathlib.GroupTheory.Coset}.
+\end{proof}
+
+\begin{lemma}[Internal direct product]
+    \label{lem:internal-direct-product}
+    If $H, K \le G$ with $K \le Z(G)$ (so $K$ is normal and $hk = kh$ for all
+    $h \in H, k \in K$), $H \cap K = \{e\}$ and $|HK| = |G|$, then
+    $G \cong H \times K$.
+\end{lemma}
+\begin{proof}
+    This is the standard internal direct product construction; in Mathlib
+    one combines \texttt{Subgroup.prodEquivOfMulEquiv} or the direct
+    construction of a $\texttt{MulEquiv}$ from the assumptions on $H \cap K$,
+    $HK$ and centrality of $K$.
+\end{proof}
+
+\begin{lemma}[Commutators lie in the center]
+    \label{lem:commutator-in-center-when-quotient-abelian}
+    If $G/Z(G)$ is abelian, then for any $g, h \in G$, $g h g^{-1} h^{-1} \in
+    Z(G)$.
+\end{lemma}
+\begin{proof}
+    Mathlib's \texttt{commutator\_eq\_bot\_iff\_center\_eq\_top} and the
+    correspondence \texttt{QuotientGroup} for abelian quotients give that
+    the commutator subgroup lies in $Z(G)$.
+\end{proof}
+
+\subsection{The center is cyclic of order 4}
+
+\begin{theorem}[$Z(G) \cong C_4$]
+    \label{thm:center-four-cyclic}
+    \uses{thm:case-pauli,thm:case-modular,
+          lem:gi-abelian-when-center-four,
+          lem:order-four-quotient-not-cyclic,
+          lem:commutator-has-order-two}
+    Suppose $G$ has order $16$ with $Z(G) \cong C_4$. Then either
+    $G \cong (C_4 \times C_2) \rtimes_{\psi_6} C_2$ (``Pauli case'',
+    index 13 of \texttt{retrieve 16}) or $G \cong
+    C_8 \rtimes_{x \mapsto x^5} C_2$ (modular/Iwasawa group $M_{16}$,
+    index 6).
+\end{theorem}
+\begin{proof}
+    \uses{thm:case-pauli,thm:case-modular,
+          lem:gi-abelian-when-center-four,
+          lem:commutator-has-order-two,
+          lem:order-four-quotient-not-cyclic}
+    The factor group $G/Z(G)$ is $\cong C_2 \times C_2$
+    (Lemma~\ref{lem:order-four-quotient-not-cyclic}), so we have three
+    subgroups $G_1, G_2, G_3 \le G$ of order $8$ each containing $Z(G)$,
+    pairwise intersecting in $Z(G)$. By
+    Lemma~\ref{lem:gi-abelian-when-center-four} each $G_i$ is abelian, and
+    since $Z(G) \cong C_4$ embeds in each $G_i$, each is isomorphic to $C_8$
+    or $C_4 \times C_2$ (not $C_2 \times C_2 \times C_2$, which has no
+    element of order $4$). By Lemma~\ref{lem:commutator-has-order-two} the
+    commutator $z'$ between non-commuting elements has order $\le 2$; this
+    rules out the cases with exactly two $G_i \cong C_8$ or all three
+    $\cong C_8$ (which would force a commutator of order $4$). The remaining
+    two cases give Theorems~\ref{thm:case-pauli} and \ref{thm:case-modular}.
+\end{proof}
+
+\begin{lemma}[Commutator has order at most $2$ when $|Z(G)| = 4$]
+    \label{lem:commutator-has-order-two}
+    \uses{lem:commutator-in-center-when-quotient-abelian}
+    Suppose $G$ is a group of order $16$, $|Z(G)| = 4$, and let $g_i \in G_i$,
+    $g_j \in G_j$ for distinct $i, j$ as above. Then the commutator
+    $z' = g_j g_i g_j^{-1} g_i^{-1}$ satisfies $(z')^2 = e$.
+\end{lemma}
+\begin{proof}
+    \uses{lem:commutator-in-center-when-quotient-abelian}
+    Note that $g_i^2 \in Z(G)$ for every choice (squaring in $C_8$ lands in
+    its unique subgroup of order $4$, which is $Z(G)$; squaring in
+    $C_4 \times C_2$ lands in $Z(G) \cap$ (subgroup of squares)). Compute
+    $g_j g_i^2 = g_i^2 g_j$ in two ways: using commutativity of $Z(G)$
+    directly, and using the commuting rule $g_j g_i = z' g_i g_j$ twice. The
+    two yield $g_i^2 g_j = (z')^2 g_i^2 g_j$, so $(z')^2 = e$.
+\end{proof}
+
+\begin{theorem}[Pauli case]
+    \label{thm:case-pauli}
+    \uses{lem:subgroup-product-card,lem:commutator-has-order-two}
+    Suppose all three $G_i \cong C_4 \times C_2$. Then $G \cong (C_4
+    \times C_2) \rtimes_{\psi_6} C_2$, where $\psi_6$ is the order-$2$
+    automorphism of $C_4 \times C_2$ used in
+    \texttt{SmallGroupsLibrary.c2OnK8Psi6}.
+\end{theorem}
+\begin{proof}
+    \uses{lem:subgroup-product-card,lem:commutator-has-order-two}
+    Pick $g_1 \in G_1$ and $g_2 \in G_2$ outside $Z(G)$ with
+    $|g_1| = |g_2| = 2$ (possible in $C_4 \times C_2$). Then $g_1 g_2 \in
+    G_3$ has order $4$ and its square $(g_1 g_2)^2$ equals the commutator
+    $z'$ between $g_1$ and $g_2$, of order $2$ in $Z(G) \cong C_4$. Let
+    $z$ generate $Z(G)$; then $z^2 = z'$. Now $G_1 = Z(G) \cup g_1 Z(G)$
+    has every element of the form $z^\alpha g_1^\beta$. The subgroup
+    $\langle g_2 \rangle$ has trivial intersection with $G_1$, so
+    $|G_1 \cdot \langle g_2 \rangle| = 16$. The commuting rule
+    $g_2 g_1 = z^2 g_1 g_2$ determines a presentation matching
+    $(C_4 \times C_2) \rtimes_{\psi_6} C_2$ (index 13 in
+    \texttt{retrieve 16}). On the Lean side this is
+    \texttt{c2OnK8Psi6} from the small groups library.
+\end{proof}
+
+\begin{theorem}[Modular case $M_{16}$]
+    \label{thm:case-modular}
+    \uses{lem:subgroup-product-card,lem:commutator-has-order-two}
+    Suppose two $G_i \cong C_8$ and one $G_i \cong C_4 \times C_2$. Then
+    $G \cong C_8 \rtimes_{x \mapsto x^5} C_2$ (the modular group $M_{16}$,
+    index 6 in \texttt{retrieve 16}, generated by an element $a$ of order
+    $8$ and $b$ of order $2$ with $bab^{-1} = a^5$).
+\end{theorem}
+\begin{proof}
+    \uses{lem:subgroup-product-card,lem:commutator-has-order-two}
+    Take $g_1 \in G_1 \cong C_8$ of order $8$ with $g_1^2 = z$ generating
+    $Z(G)$, and analogously $g_2 \in G_2 \cong C_8$ with $g_2^2 = z$. Set
+    $g_3 = g_1 g_2 \in G_3$; computing $g_3^2 = z' z^2$ and noting
+    $|z'| \le 2$ (Lemma~\ref{lem:commutator-has-order-two}) yields
+    $g_3^2 = e$. So $g_3$ has order $2$, $\langle g_1 \rangle = G_1$ and
+    $\langle g_3 \rangle = \{e, g_3\}$ have trivial intersection, and
+    $|G_1 \langle g_3 \rangle| = 16$, giving $G = G_1 \langle g_3\rangle$.
+    The commuting rule
+    $g_3 g_1 = g_1 (g_2 g_1) = g_1 z' g_1 g_2 = z' g_1 g_3 = g_1^5 g_3$,
+    matching the presentation of $M_{16}$ exactly. On the Lean side this is
+    \texttt{c2OnC8Pow5}.
+\end{proof}
+
+\section{The center has order 2}
+
+\begin{theorem}[Center of order 2]
+    \label{thm:center-two}
+    \uses{thm:case-quaternion-sixteen,thm:case-semidihedral,
+          thm:case-dihedral-eight,lem:quotient-by-center-card,
+          lem:cyclic-center-quotient-abelian,
+          lem:two-abelian-subgroups-force-center-four,
+          lem:order-eight-classification}
+    Suppose $G$ is a group of order $16$ with $|Z(G)| = 2$. Then $G$ is
+    isomorphic to one of $D_8$, $C_8 \rtimes_{x \mapsto x^3} C_2$
+    (semidihedral), or $Q_{16}$ (generalized quaternion of order $16$).
+\end{theorem}
+\begin{proof}
+    \uses{thm:case-quaternion-sixteen,thm:case-semidihedral,
+          thm:case-dihedral-eight,lem:quotient-by-center-card,
+          lem:cyclic-center-quotient-abelian,
+          lem:two-abelian-subgroups-force-center-four,
+          lem:order-eight-classification,
+          thm:no-Z2cubed-quotient}
+    The factor group $G/Z(G)$ has order $8$. By
+    Lemma~\ref{lem:order-eight-classification}, $G/Z(G)$ is isomorphic to
+    one of $C_8, C_4 \times C_2, C_2^3, D_4, Q_8$. We rule out the first
+    three:
+    \begin{itemize}
+      \item $G/Z(G) \cong C_8$: cyclic, so $G$ would be abelian
+        (Lemma~\ref{lem:cyclic-center-quotient-abelian}), contradiction.
+      \item $G/Z(G) \cong C_4 \times C_2$ or $Q_8$: by the Correspondence
+        Theorem there are subgroups of order $8$ in $G$ each containing
+        $Z(G)$ and at least two are abelian; by
+        Lemma~\ref{lem:two-abelian-subgroups-force-center-four}
+        $|Z(G)| \ge 4$, contradiction.
+      \item $G/Z(G) \cong C_2^3$: ruled out by
+        Theorem~\ref{thm:no-Z2cubed-quotient}.
+    \end{itemize}
+    So $G/Z(G) \cong D_4$. The remaining three cases on the structure of the
+    three order-$8$ subgroups $G_1, G_2, G_3$ are handled by
+    Theorems~\ref{thm:case-quaternion-sixteen},
+    \ref{thm:case-semidihedral} and \ref{thm:case-dihedral-eight}.
+\end{proof}
+
+\begin{lemma}[Classification of groups of order $8$]
+    \label{lem:order-eight-classification}
+    Every group of order $8$ is isomorphic to one of $C_8$, $C_4 \times C_2$,
+    $C_2 \times C_2 \times C_2$, $D_4$, $Q_8$.
+\end{lemma}
+\begin{proof}
+    Already classified by the project (or future stage of it) and recorded in
+    \texttt{M2rGroup7.SmallGroupsLibrary.retrieve 8 i} for $i = 1, \dots, 5$.
+    For the formalization this lemma may be cited from the existing
+    classification of groups of order $8$.
+\end{proof}
+
+\begin{lemma}[Two abelian order-$8$ subgroups force $|Z(G)| \ge 4$]
+    \label{lem:two-abelian-subgroups-force-center-four}
+    \uses{lem:subgroup-product-card}
+    Let $G$ be a group of order $16$. If $G$ has two distinct subgroups
+    $H_1, H_2$ of order $8$ that are both abelian, then $|Z(G)| \ge 4$.
+\end{lemma}
+\begin{proof}
+    \uses{lem:subgroup-product-card}
+    By Lemma~\ref{lem:subgroup-product-card}, $|H_1 H_2| = |H_1| \cdot |H_2|
+    / |H_1 \cap H_2|$. Since $H_1 H_2 \le G$ has $\le 16$ elements and the
+    $H_i$ are distinct of order $8$, $|H_1 \cap H_2| = 4$. Every element of
+    $H_1 \cap H_2$ commutes with every element of $H_1$ (since $H_1$
+    abelian) and with every element of $H_2$, hence with every element of
+    $H_1 H_2 = G$, so $H_1 \cap H_2 \le Z(G)$, giving $|Z(G)| \ge 4$.
+\end{proof}
+
+\begin{theorem}[$G/Z(G) \not\cong C_2^3$]
+    \label{thm:no-Z2cubed-quotient}
+    \uses{lem:two-abelian-subgroups-force-center-four,
+          lem:order-eight-classification,lem:gi-abelian-when-center-four}
+    There is no group $G$ of order $16$ with $|Z(G)| = 2$ and
+    $G/Z(G) \cong C_2 \times C_2 \times C_2$.
+\end{theorem}
+\begin{proof}
+    \uses{lem:two-abelian-subgroups-force-center-four,
+          lem:order-eight-classification}
+    Sketch from the source paper: every element of $G/Z(G)$ has order $2$,
+    so every $g^2 \in Z(G)$. If $G$ were abelian the center would have order
+    $16$, so pick $g \in G$ with $g^2 = z$ the non-identity central element.
+    The cyclic group $\langle g \rangle$ has order $4$ and lies in three
+    order-$8$ subgroups $G_1, G_2, G_3$ (since the corresponding subgroup of
+    $G/Z(G) \cong C_2^3$ is in three order-$4$ subgroups). By
+    Lemma~\ref{lem:two-abelian-subgroups-force-center-four} at most one of
+    the $G_i$ is abelian, so WLOG $G_2, G_3$ are nonabelian. A direct
+    commutator computation using $g \notin Z(G_2), Z(G_3)$ shows that $g$
+    commutes with $g_2 g_3 \in G_1$, hence $g \in Z(G_1)$. Then $G_1$ is
+    abelian with center of order $\ge 4$, forcing $G_1 \cong C_4 \times
+    C_2$. Picking $g_1 \in G_1 \setminus \langle g \rangle$ and any
+    $h_2 \in G_2$ outside $\langle g\rangle$ leads (by a second commutator
+    computation) to two abelian order-$8$ subgroups, hence
+    $|Z(G)| \ge 4$ contradicting $|Z(G)| = 2$.
+\end{proof}
+
+\begin{lemma}[Commutator subgroup equals $Z(G)$-coset of $G/Z(G)$ center]
+    \label{lem:commutator-equals-centerlift}
+    \uses{lem:commutator-in-center-when-quotient-abelian}
+    Suppose $|G| = 16$, $|Z(G)| = 2$ and $G/Z(G) \cong D_4$. Let
+    $g'Z(G)$ be the non-identity element of the center of $D_4$. Then the
+    commutator subgroup $[G,G]$ equals $\{e, z, g', zg'\}$, where $z$
+    generates $Z(G)$. In particular $[G,G]$ has order $4$ and equals
+    $G_1 \cap G_2 = G_1 \cap G_3 = G_2 \cap G_3$.
+\end{lemma}
+\begin{proof}
+    \uses{lem:commutator-in-center-when-quotient-abelian}
+    In $D_4$ the commutator subgroup is the unique subgroup of order $2$,
+    namely the center. By the Correspondence Theorem, its lift to $G$ is a
+    subgroup of order $4$ containing $Z(G)$. A direct calculation in $D_4$
+    shows that for $g_1 Z(G), g_2 Z(G)$ non-commuting one has
+    $g_1 g_2 = g' z_0 g_2 g_1$ for some $z_0 \in Z(G)$, so both $g'$ and
+    $zg'$ lie in $[G, G]$; commutators give no further generators. The
+    intersections of any two $G_i$ contain $[G,G]$ and have order $4$, hence
+    equal $[G, G]$.
+\end{proof}
+
+\begin{lemma}[One $G_i$ is cyclic of order 8]
+    \label{lem:one-Gi-cyclic-order-eight}
+    \uses{lem:commutator-equals-centerlift,lem:order-eight-classification}
+    With $|G| = 16$, $|Z(G)| = 2$, $G/Z(G) \cong D_4$ and the three
+    order-$8$ subgroups $G_1, G_2, G_3$ containing $Z(G)$ as in
+    Theorem~\ref{thm:center-two}, at least one $G_i$ is cyclic
+    (isomorphic to $C_8$).
+\end{lemma}
+\begin{proof}
+    \uses{lem:commutator-equals-centerlift,lem:order-eight-classification,
+          lem:two-abelian-subgroups-force-center-four}
+    By Lemma~\ref{lem:two-abelian-subgroups-force-center-four} at most one
+    $G_i$ is abelian; by structure of the $D_4$ quotient there is exactly
+    one $G_i$ corresponding to the unique cyclic subgroup of order $4$ in
+    $D_4$ - call it $G_1$ - and it is abelian. The other two $G_2, G_3$ are
+    nonabelian of order $8$, so $\cong D_4$ or $Q_8$. A direct computation
+    (in the source, Theorem 6.3) using
+    Lemma~\ref{lem:commutator-equals-centerlift} rules out
+    $G_1 \cong C_4 \times C_2$ (which would force $[G,G] \cap G_1 \cong
+    C_2 \times C_2$, contradicting cyclicity of $[G,G]$ in either $D_4$ or
+    $Q_8$). So $G_1 \cong C_8$.
+\end{proof}
+
+\begin{theorem}[Case $Q_{16}$ (both $G_2, G_3 \cong Q_8$)]
+    \label{thm:case-quaternion-sixteen}
+    \uses{lem:one-Gi-cyclic-order-eight,lem:subgroup-product-card}
+    Suppose $|G| = 16$, $|Z(G)| = 2$, $G/Z(G) \cong D_4$, $G_1 \cong C_8$
+    and $G_2 \cong G_3 \cong Q_8$. Then
+    $G \cong Q_{16}$ (the generalized quaternion of order $16$).
+\end{theorem}
+\begin{proof}
+    \uses{lem:one-Gi-cyclic-order-eight,lem:subgroup-product-card}
+    Pick $g_1 \in G_1$ of order $8$ (so $\langle g_1\rangle = G_1$) and
+    $g_2 \in G_2$ with $g_2^2 = z = g_1^4$ (the common central element of
+    order $2$). Since $g_1 g_2 \in G_3 \cong Q_8$ has order $4$ and
+    squares to $z$, we get $(g_1 g_2)^2 = z$ and the commutator $g'$
+    between $g_2, g_1$ satisfies $g_1 g_2 g_1 g_2 = g_1 g' g_1 g_2^2 =
+    g' g_1^2 z$, giving $g' = g_1^{-2} = g_1^6$. Then $g_2 g_1 =
+    g_1^{6} g_1 g_2 = g_1^7 g_2 = g_1^{-1} g_2$, exactly the relation
+    defining $Q_{16}$. The subgroups $\langle g_1\rangle = G_1$ and
+    $\langle g_2 \rangle$ together produce $16$ distinct products
+    $g_1^\alpha g_2^\beta$, so $G \cong Q_{16}$.
+\end{proof}
+
+\begin{theorem}[Case semidihedral (one $D_4$, one $Q_8$)]
+    \label{thm:case-semidihedral}
+    \uses{lem:one-Gi-cyclic-order-eight,lem:subgroup-product-card}
+    With the same setup, if $G_2 \cong D_4$ and $G_3 \cong Q_8$, then
+    $G \cong C_8 \rtimes_{x \mapsto x^3} C_2$ (the semidihedral group
+    $SD_{16}$, index 8 in \texttt{retrieve 16}).
+\end{theorem}
+\begin{proof}
+    \uses{lem:one-Gi-cyclic-order-eight,lem:subgroup-product-card}
+    Pick $g_1 \in G_1$ of order $8$ and $g_3 \in G_3 \cong Q_8$ outside the
+    cyclic subgroup of order $4$ in $G_3$; then $g_1 g_3 \in G_2 \cong D_4$
+    is an element of order $2$ outside the cyclic part, so $(g_1 g_3)^2 =
+    e$. As in the source, expanding gives $g' = g_1^2$, hence if we set
+    $g_2 := g_1 g_3$ (order $2$) we obtain $g_2 g_1 = g_1^3 g_2$, the
+    relation defining $SD_{16}$. This corresponds to \texttt{c2OnC8Pow3}
+    in \texttt{SmallGroupsLibrary}.
+\end{proof}
+
+\begin{theorem}[Case $D_8$ (both $G_2, G_3 \cong D_4$)]
+    \label{thm:case-dihedral-eight}
+    \uses{lem:one-Gi-cyclic-order-eight,lem:subgroup-product-card}
+    With the same setup, if $G_2 \cong G_3 \cong D_4$, then $G \cong D_8$
+    (the dihedral group of order $16$).
+\end{theorem}
+\begin{proof}
+    \uses{lem:one-Gi-cyclic-order-eight,lem:subgroup-product-card}
+    Pick $g_1 \in G_1$ of order $8$ and $g_2 \in G_2$ of order $2$ outside
+    the cyclic-of-order-$4$ subgroup. Since $g_1 g_2 \in G_3 \cong D_4$ has
+    order $2$, expanding $(g_1 g_2)^2 = e$ gives $g' = g_1^{-2} = g_1^6$,
+    hence $g_2 g_1 = g_1^7 g_2 = g_1^{-1} g_2$, the dihedral relation. The
+    subgroups $\langle g_1\rangle$ and $\langle g_2\rangle$ produce
+    $16$ distinct elements, so $G \cong D_8$.
+\end{proof}
 
 \end{document}
