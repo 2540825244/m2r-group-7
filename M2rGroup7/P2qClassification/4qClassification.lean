@@ -7,23 +7,37 @@ import «M2rGroup7».Lemmas.HomomorphismUtils
 import «M2rGroup7».Lemmas.NumberTheoryUtils
 import «M2rGroup7».P2qClassification.CycPGroupClassification
 
-/-- The canonical nontrivial action `C_4 →* Aut(C_q)` for q ≡ 3 (mod 4), q > 3.
-    This is `canonicalAction 2 q 1 2 _ _ _ 1 _`, with the type bridged through
-    `q^1 = q`. Its image has order `2^1 = 2`, the unique order-2 subgroup of the
-    cyclic group `Aut(C_q)` of order q − 1. -/
-noncomputable def canonicalC4OnCqAction
+/-- Auxiliary: the witness `1 ≤ min 2 ((q - 1).factorization 2)` for q prime, q > 3. -/
+private lemma _hr_canonicalC4OnCqAction
     {q : ℕ} [hq : Fact q.Prime] (h_q_gt_3 : q > 3) :
-    CyclicGroup 4 →* MulAut (CyclicGroup q) :=
-  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+    1 ≤ min 2 ((q - 1).factorization 2) := by
   have h_qm1_ne : q - 1 ≠ 0 := by have := hq.out.one_lt; omega
   have h_dvd : 2 ∣ q - 1 := by
     have hq_odd : Odd q := hq.out.odd_of_ne_two (by omega)
     obtain ⟨k, rfl⟩ := hq_odd; omega
-  have hr : 1 ≤ min 2 ((q - 1).factorization 2) := by
-    refine Nat.le_min.mpr ⟨one_le_two, ?_⟩
-    rw [← Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two h_qm1_ne]
-    simpa using h_dvd
-  pow_one q ▸ canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1 hr
+  refine Nat.le_min.mpr ⟨one_le_two, ?_⟩
+  rw [← Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two h_qm1_ne]
+  simpa using h_dvd
+
+/-- The cyclic group identification `CyclicGroup q ≃* CyclicGroup (q^1)`. -/
+private noncomputable def _cyclicGroup_pow_one_equiv
+    {q : ℕ} [hq : Fact q.Prime] : CyclicGroup q ≃* CyclicGroup (q ^ 1) :=
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : NeZero (q ^ 1) := ⟨by simp [pow_one]; exact hq.out.ne_zero⟩
+  mulEquivOfCyclicCardEq (by simp [card_cyclicGroup, pow_one])
+
+/-- The canonical nontrivial action `C_4 →* Aut(C_q)` for q ≡ 3 (mod 4), q > 3.
+    This is `canonicalAction 2 q 1 2 _ _ _ 1 _`, post-composed with
+    `MulAut.congr` of the cyclic-group identification `CyclicGroup q ≃ CyclicGroup (q^1)`.
+    Its image has order `2^1 = 2`, the unique order-2 subgroup of the cyclic group
+    `Aut(C_q)` of order q − 1. -/
+noncomputable def canonicalC4OnCqAction
+    {q : ℕ} [hq : Fact q.Prime] (h_q_gt_3 : q > 3) :
+    CyclicGroup 4 →* MulAut (CyclicGroup q) :=
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  ((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
+    (canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1
+      (_hr_canonicalC4OnCqAction h_q_gt_3))
 
 /-- For q prime, q > 3, q ≡ 3 (mod 4), any nontrivial homomorphism
     `f : C_4 →* Aut(C_q)` has range of order `2^1 = 2`: the range divides both
