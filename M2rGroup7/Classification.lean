@@ -504,7 +504,9 @@ theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
     classify_prime 13 h
 
   | 14 => by
-    sorry
+    obtain (hiso | hiso) := order14_classification h
+    · exact ⟨2, by decide, hiso⟩
+    · exact ⟨1, by decide, hiso⟩
 
   | 15 => by
     sorry
