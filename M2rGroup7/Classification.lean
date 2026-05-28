@@ -499,7 +499,7 @@ theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
     sorry
 
   | 13 => by
-    sorry
+    classify_prime 13 h
 
   | 14 => by
     sorry
@@ -511,7 +511,7 @@ theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
     sorry
 
   | 17 => by
-    sorry
+    classify_prime 17 h
 
   | _ => by
     have hn := n > maximumOrder
