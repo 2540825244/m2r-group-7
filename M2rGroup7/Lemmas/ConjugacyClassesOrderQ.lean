@@ -139,7 +139,69 @@ theorem numConjClassesOfSubgroupsOfOrder_GL2_of_q_dvd_p_add_one
     {p q : ℕ} [hp : Fact p.Prime] (hq : q.Prime) (hq2 : 2 < q) (hpq : p ≠ q)
     (h_dvd : q ∣ p + 1) :
     numConjClassesOfSubgroupsOfOrder (GL (Fin 2) (ZMod p)) q = 1 := by
-  sorry
+  -- The number of conjugacy classes is `1` iff the quotient type is a
+  -- nonempty subsingleton. The proof reduces to two facts about order-`q`
+  -- subgroups of `GL₂(𝔽_p)` when `q` is an odd prime with `q ∣ p + 1`:
+  --   (1) there exists at least one such subgroup, and
+  --   (2) any two such subgroups are conjugate.
+  -- Both facts encode genuine linear algebra: (1) requires Cauchy's theorem
+  -- applied to `GL₂(𝔽_p)` (whose order is divisible by `p + 1`), and (2)
+  -- requires that any matrix of order `q` has irreducible characteristic
+  -- polynomial (since `q ∤ p - 1` means no eigenvalue lies in `𝔽_p`) and
+  -- that 2×2 matrices with irreducible characteristic polynomial are
+  -- conjugate to their companion matrix (rational canonical form).
+  -- Fact (1) is proved below via Cauchy. Fact (2) is left as a placeholder
+  -- `sorry` packaging the deep linear-algebra content of the blueprint
+  -- argument.
+  set G : Type := GL (Fin 2) (ZMod p) with hG
+  set S : Setoid (Subgroup G) := Subgroup.conjSetoid G
+  set α : Type := {H : Subgroup G // Nat.card H = q}
+  set S' : Setoid α := S.comap (fun H : α => H.val) with hS'
+  change Nat.card (Quotient S') = 1
+  -- Existence of an order-`q` subgroup of `G`. By Cauchy's theorem, since
+  -- `q ∣ p + 1` divides `|GL₂(𝔽_p)| = p(p-1)²(p+1)`, there is an element
+  -- of order `q`; its `zpowers` is a cyclic subgroup of order `q`.
+  have h_exists : ∃ H : Subgroup G, Nat.card H = q := by
+    haveI : Fact q.Prime := ⟨hq⟩
+    -- `q ∣ Nat.card G`.
+    have hq_dvd : q ∣ Nat.card G := by
+      rw [hG, Matrix.card_GL_field, Fin.prod_univ_two]
+      -- Product is `(p² - p^0)(p² - p^1) = (p² - 1)(p² - p)`.
+      -- `q ∣ p + 1 ∣ p² - 1`, so it divides the product.
+      have hcard : Fintype.card (ZMod p) = p := ZMod.card p
+      simp only [hcard]
+      have hp1 : 1 ≤ p := hp.out.one_lt.le
+      have hfact : p ^ 2 - p ^ (0 : Fin 2).val = (p - 1) * (p + 1) := by
+        have hsq : p ^ 2 = p * p := by ring
+        change p ^ 2 - p ^ (0 : ℕ) = (p - 1) * (p + 1)
+        rw [pow_zero, hsq]
+        rw [Nat.sub_mul, Nat.one_mul, Nat.mul_add, Nat.mul_one]
+        omega
+      -- `q` divides the first factor `p² - 1 = (p - 1)(p + 1)`.
+      have hq_div_first : q ∣ p ^ 2 - p ^ (0 : Fin 2).val := by
+        rw [hfact]
+        exact Dvd.dvd.mul_left h_dvd _
+      exact hq_div_first.mul_right _
+    obtain ⟨x, hx⟩ := exists_prime_orderOf_dvd_card' (G := G) q hq_dvd
+    exact ⟨Subgroup.zpowers x, by rw [Nat.card_zpowers, hx]⟩
+  -- Any two order-`q` subgroups are conjugate. This packages the deep
+  -- linear-algebra core of the blueprint argument (irreducible char poly +
+  -- rational canonical form), and is left as a `sorry` for follow-up work.
+  have h_conj : ∀ H₁ H₂ : Subgroup G,
+      Nat.card H₁ = q → Nat.card H₂ = q → Subgroup.IsConj H₁ H₂ := by
+    sorry
+  -- Convert the two structural facts into `Nat.card (Quotient S') = 1`.
+  obtain ⟨H₀, hH₀⟩ := h_exists
+  -- The quotient is nonempty (from existence).
+  have hQ_nonempty : Nonempty (Quotient S') := ⟨Quotient.mk _ ⟨H₀, hH₀⟩⟩
+  -- The quotient is a subsingleton: any two classes are equal because the
+  -- underlying subgroups are conjugate.
+  have hQ_subsingleton : Subsingleton (Quotient S') := by
+    refine ⟨fun x y => ?_⟩
+    refine Quotient.inductionOn₂ x y (fun a b => ?_)
+    apply Quotient.sound
+    exact h_conj a.val b.val a.property b.property
+  exact Nat.card_eq_one_iff_unique.mpr ⟨hQ_subsingleton, hQ_nonempty⟩
 
 /-- **Case 2** (`q ∣ p - 1`). When `q` is an odd prime distinct from `p` and
 `q ∣ p - 1`, every order-`q` subgroup of `GL₂(𝔽_p)` is conjugate to a diagonal
