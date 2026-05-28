@@ -126,12 +126,86 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
   · -- case h_nq_1 : n_q = 1
     let Q : Sylow q G := default
 
-    -- Enough to synthesize instance of type class (↑P).Normal
+    -- Enough to synthesize instance of type class (↑Q).Normal
     -- for Subgroup.exists_right_complement'_of_coprime
     haveI : Subsingleton (Sylow q G) :=
       (Nat.card_eq_one_iff_unique.mp h_nq_1).1
 
-    sorry
+    have h_Q_card : Nat.card ↥(Q : Subgroup G) = q := by
+      have := sylow_card_eq (Ne.symm (by aesop : (2 : ℕ) ≠ q))
+        (show Nat.card G = q ^ 1 * 2 ^ 2 by rw [pow_one, h]; ring) Q
+      simpa using this
+
+    -- Index of Sylow q-group is 4
+    have h_Q_idx_4 : ∀ Q : Sylow q G, (↑Q : Subgroup G).index = 4 := by
+      intro Q
+      have := sylow_index_eq (Ne.symm (by aesop : (2 : ℕ) ≠ q))
+        (show Nat.card G = q ^ 1 * 2 ^ 2 by rw [pow_one, h]; ring) Q
+      simpa using this
+
+    obtain ⟨K, hK⟩ := Subgroup.exists_right_complement'_of_coprime (N := (↑Q : Subgroup G)) (by
+      rw [h_Q_card, h_Q_idx_4]
+      exact (h_q_prime.out.coprime_of_ne (by norm_num : (2 : ℕ).Prime) (by omega)).pow_right 2)
+
+    -- Isomorphism G ≃* Q ⋊ K
+    have h_iso_g_q_k := SemidirectProduct.mulEquivSubgroup hK
+
+    -- Homomorphism from K to MulAut(Q)
+    let φ : ↥K →* MulAut ↥(↑Q : Subgroup G) :=
+        (↑Q : Subgroup G).normalizerMonoidHom.comp
+          (Subgroup.inclusion (by simp [Subgroup.normalizer_eq_top]))
+
+    -- Step 1: K has order 4
+    have hK_card : Nat.card ↥K = 4 := by
+      have h1 : Nat.card G = Nat.card ↥(↑Q : Subgroup G) * Nat.card ↥K := by
+        have heq := Nat.card_congr h_iso_g_q_k.toEquiv
+        rw [SemidirectProduct.card] at heq
+        exact heq.symm
+      rw [h_Q_card, h] at h1
+      have hq_pos : 0 < q := h_q_prime.out.pos
+      have heq2 : q * 4 = q * Nat.card ↥K := by linarith
+      exact (Nat.eq_of_mul_eq_mul_left hq_pos heq2).symm
+
+    -- Step 2: Q ≃* C_q
+    have eQ : ↥(↑Q : Subgroup G) ≃* CyclicGroup q :=
+      Classical.choice (prime_classification (n := q) h_Q_card)
+
+    -- K is isomorphic to C_4 or C_2 x C_2
+    haveI : Fact (Nat.Prime 2) := by decide
+    rcases (p_squared_classification (p := 2) hK_card) with h_K_C4 | h_K_C2C2
+    · -- case h_K_C4 : Nonempty (↥K ≃* CyclicGroup 4)
+      simp at h_K_C4
+      by_cases h_phi_triv : φ = 1
+      · -- φ trivial: G ≃* Q × K ≃* C_q × C_4 ≃* C_4 × C_q ≃* C_{4q}
+        have : Nonempty (G ≃* CyclicGroup (4 * q)) := by
+          refine ⟨?_⟩
+          have h_sdp_prod : Q ⋊[φ] ↥K ≃* Q × ↥K :=
+            SemidirectProduct.mulEquivOfTrivialAction h_phi_triv
+          have h4q : Nat.Coprime 4 q :=
+            ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2
+          -- G ≃* ↥↑Q ⋊[φ] ↥K ≃* ↥↑Q × ↥K ≃* C_q × C_4 ≃* C_4 × C_q ≃* C_{4q}
+          exact h_iso_g_q_k.symm.trans
+            (h_sdp_prod.trans
+              ((eQ.prodCongr h_K_C4.some).trans
+                (MulEquiv.prodComm.trans (CyclicGroup.prodMulEquiv h4q))))
+        tauto
+      · -- φ nontrivial: this yields Dic_q (dicyclic group), not in the disjunction
+        sorry
+    · -- case h_K_C2C2 : Nonempty (↥K ≃* CyclicGroup 2 × CyclicGroup 2)
+      by_cases h_phi_triv : φ = 1
+      · -- φ trivial: G ≃* Q × K ≃* C_q × (C_2 × C_2) ≃* (C_2 × C_2) × C_q ≃* C_2 × C_2 × C_q
+        have : Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q) := by
+          refine ⟨?_⟩
+          have h_sdp_prod : Q ⋊[φ] ↥K ≃* Q × ↥K :=
+            SemidirectProduct.mulEquivOfTrivialAction h_phi_triv
+          -- G ≃* ↥↑Q ⋊[φ] ↥K ≃* ↥↑Q × ↥K ≃* C_q × (C_2 × C_2) ≃* (C_2 × C_2) × C_q ≃* C_2 × C_2 × C_q
+          exact h_iso_g_q_k.symm.trans
+            (h_sdp_prod.trans
+              ((eQ.prodCongr h_K_C2C2.some).trans
+                (MulEquiv.prodComm.trans MulEquiv.prodAssoc)))
+        tauto
+      · -- φ nontrivial: this yields D_{2q} (dihedral group), not in the disjunction
+        sorry
 
 
 
