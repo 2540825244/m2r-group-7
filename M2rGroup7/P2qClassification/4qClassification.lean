@@ -350,24 +350,3 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
 
 
 
-theorem classify_Cqn_rtimes_Cpm_exists
-    {p q r : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2)
-    (m n : ℕ) (hm : 0 < m) (hn : 0 < n)
-    (f : CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n)))
-    (h : Nat.card f.range = p ^ r)
-    (hr : r ≤ min m ((q - 1).factorization p)) :
-      Nonempty (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m)) f ≃*
-               SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-                 (canonicalAction p q n m hpq hq_odd hn r hr)) := by
-  apply semidirectProduct_iso_if_range_eq hp (card_cyclicGroup _)
-  have h_aut_iso : MulAut (CyclicGroup (q ^ n)) ≃* (ZMod (q ^ n))ˣ := by
-    have h' := IsCyclic.mulAutMulEquiv (CyclicGroup (q ^ n))
-    rwa [card_cyclicGroup] at h'
-  haveI : Finite (MulAut (CyclicGroup (q ^ n))) :=
-    Finite.of_equiv _ h_aut_iso.toEquiv.symm
-  haveI : IsCyclic (MulAut (CyclicGroup (q ^ n))) :=
-    (MulEquiv.isCyclic h_aut_iso).mpr (ZMod.isCyclic_units_of_prime_pow q hq.out hq_odd n)
-  exact cyclic_subgroup_of_cyclic_group_is_unique
-    Nat.card_pos rfl f.range _ h
-    (canonicalAction_range_card p q n m r hpq hq_odd hn hr)
