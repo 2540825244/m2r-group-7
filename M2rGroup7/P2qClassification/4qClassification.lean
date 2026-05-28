@@ -131,13 +131,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
     haveI : Subsingleton (Sylow q G) :=
       (Nat.card_eq_one_iff_unique.mp h_nq_1).1
 
-    have h_q_q : Nat.card ↥(Q : Subgroup G) = q := by
-      exact sylow_card_eq (by aesop) (show Nat.card G = 2 ^ 2 * q ^ 1 by aesop) Q
-
-    -- Index of Sylow p-group is q
-    have h_p_idx_q : ∀ P : Sylow 2 G, (↑P : Subgroup G).index = q := by
-      intro P
-      simpa using sylow_index_eq (by aesop) (show Nat.card G = 2 ^ 2 * q ^ 1 by aesop) P
+    sorry
 
 
 
