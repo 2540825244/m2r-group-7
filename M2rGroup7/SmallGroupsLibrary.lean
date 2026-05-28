@@ -6,44 +6,23 @@ import Mathlib.GroupTheory.SpecificGroups.Alternating
 import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.GroupTheory.OrderOfElement
 
+abbrev maximumOrder : Nat := 17
 
 /-- Cyclic group generator -/
-def CyclicGroup (n : Nat) := Multiplicative (ZMod n)
-
-instance (n : Nat) : Group (CyclicGroup n) := by
-  delta CyclicGroup
-  infer_instance
+def CyclicGroup (n : Nat) [NeZero n] := Multiplicative (ZMod n)
+  deriving DecidableEq, Group, IsCyclic, Fintype, DivisionCommMonoid
 
 /-- Alternating group generator -/
-def AlternatingGroup (n : Nat) := ↥(alternatingGroup (Fin n))
+def AlternatingGroup (n : Nat) [NeZero n] := ↥(alternatingGroup (Fin n))
+  deriving DecidableEq, Group, Fintype
 
-instance (n : Nat) : Group (AlternatingGroup n) := by
-  delta AlternatingGroup
-  infer_instance
-
-instance (n : Nat) : CommGroup (CyclicGroup n) := by
-  delta CyclicGroup
-  infer_instance
-
-instance (n : Nat) : IsCyclic (CyclicGroup n) := by
-  delta CyclicGroup
-  exact isCyclic_multiplicative
-
-instance (n : Nat) : DecidableEq (CyclicGroup n) := by
-  delta CyclicGroup
-  infer_instance
-
-instance (n : Nat) [NeZero n] : Fintype (CyclicGroup n) := by
-  delta CyclicGroup
-  infer_instance
-
-theorem card_cyclicGroup (n : Nat) : Nat.card (CyclicGroup n) = n := by
+theorem card_cyclicGroup (n : Nat) [NeZero n] : Nat.card (CyclicGroup n) = n := by
   delta CyclicGroup
   rw [Nat.card_congr Multiplicative.toAdd]
   exact Nat.card_zmod n
 
 /-- Build a monoid hom out of `CyclicGroup n` from an element whose `n`th power is `1`. -/
-def cyclicHom (n : Nat) {G : Type*} [Group G] (a : G) (h : a ^ n = 1) :
+def cyclicHom (n : Nat) [NeZero n] {G : Type*} [Group G] (a : G) (h : a ^ n = 1) :
     CyclicGroup n →* G :=
   AddMonoidHom.toMultiplicativeLeft <| ZMod.lift n
     ⟨zmultiplesHom (Additive G) (Additive.ofMul a), by
@@ -117,6 +96,21 @@ def c2OnK8Psi6 : CyclicGroup 2 →* MulAut (CyclicGroup 4 × CyclicGroup 2) :=
     intro x
     exact psi6.left_inv x)
 
+-- SemidirectProduct N ⋊[φ] G is structurally N × G, so Fintype and DecidableEq lift directly.
+instance {N G : Type*} [Group N] [Group G] {φ : G →* MulAut N} [Fintype N] [Fintype G] :
+    Fintype (N ⋊[φ] G) :=
+  Fintype.ofEquiv (N × G) {
+    toFun   := fun p => ⟨p.1, p.2⟩
+    invFun  := fun x => ⟨x.left, x.right⟩
+    left_inv  := fun _ => rfl
+    right_inv := fun _ => rfl
+  }
+
+instance {N G : Type*} [Group N] [Group G] {φ : G →* MulAut N} [DecidableEq N] [DecidableEq G] :
+    DecidableEq (N ⋊[φ] G) :=
+  fun a b => decidable_of_iff (a.left = b.left ∧ a.right = b.right)
+    ⟨fun ⟨hl, hr⟩ => SemidirectProduct.ext hl hr, fun h => ⟨congr_arg _ h, congr_arg _ h⟩⟩
+
 instance : Group Unit where
   mul _ _ := ()
   mul_assoc _ _ _ := by rfl
@@ -126,6 +120,7 @@ instance : Group Unit where
   inv _ := ()
   inv_mul_cancel _ := by rfl
 
+@[reducible]
 def retrieve (n : Nat) (i : Nat) : Type :=
   match n, i with
   | 1, 1 => Unit
@@ -171,9 +166,57 @@ def retrieve (n : Nat) (i : Nat) : Type :=
   | 16, 13 => (CyclicGroup 4 × CyclicGroup 2) ⋊[c2OnK8Psi6] CyclicGroup 2
   | 16, 14 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
   | 17, 1 => CyclicGroup 17
-  | _, _ => CyclicGroup n -- Fallback to make retrieve total
+  | _, _ => PUnit -- Fallback to make retrieve total
 
--- Tell compiler that groups we get are groups
-instance (o : Nat) (i : Nat) : Group (retrieve o i) := by
+@[reducible]
+def num_entries (n : Nat) : Nat :=
+  match n with
+  | 1 => 1
+  | 2 => 1
+  | 3 => 1
+  | 4 => 2
+  | 5 => 1
+  | 6 => 2
+  | 7 => 1
+  | 8 => 5
+  | 9 => 2
+  | 10 => 2
+  | 11 => 1
+  | 12 => 5
+  | 13 => 1
+  | 14 => 2
+  | 15 => 1
+  | 16 => 14
+  | 17 => 1
+  | _ => 0
+
+def validIndex (n i : Nat) : Bool :=
+  decide (n > 0 ∧ n ≤ maximumOrder ∧ i > 0 ∧ i ≤ num_entries n)
+
+class ValidIndex (n : Nat) (i : Nat) : Prop where
+  n_pos : n > 0
+  n_range : n ≤ maximumOrder
+  i_pos : i > 0
+  i_range : i ≤ num_entries n
+
+instance (n i : Nat) : Decidable (ValidIndex n i) :=
+  decidable_of_iff (validIndex n i = true) (by
+    simp only [validIndex, decide_eq_true_eq]
+    exact ⟨fun ⟨a, b, c, d⟩ => ⟨a, b, c, d⟩,
+           fun h => ⟨h.n_pos, h.n_range, h.i_pos, h.i_range⟩⟩)
+
+instance (n : Nat) (i : Nat) [hv : ValidIndex n i] : Group (retrieve n i) := by
   unfold retrieve
   split <;> try infer_instance
+
+theorem retrieve_card (n : Nat) (i : Nat) [hv : ValidIndex n i] : Nat.card (retrieve n i) = n := by
+  obtain ⟨hn_pos, hn_range, hi_pos, hi_range⟩ := hv
+  rw [maximumOrder] at hn_range
+  interval_cases n <;>
+    simp only [num_entries] at hi_range <;>
+    interval_cases i <;>
+      simp only [retrieve] <;>
+      simp_all only [Fintype.card_prod, Fintype.card_unique, Nat.card_eq_fintype_card,
+        Nat.ofNat_pos, Nat.one_le_ofNat, Nat.reduceLeDiff, Order.lt_one_iff, Order.lt_two_iff,
+        Std.le_refl, gt_iff_lt, zero_le] <;>
+      rfl
