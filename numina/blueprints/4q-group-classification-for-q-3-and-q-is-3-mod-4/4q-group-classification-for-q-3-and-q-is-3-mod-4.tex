@@ -3,6 +3,309 @@
 
 \begin{document}
 
-% Your blueprint will go here.
+\section{Setup and assumptions}
+
+We classify (partially) finite groups $G$ of order $4q$ where $q$ is a prime with
+$q > 3$ and $q \equiv 3 \pmod 4$. We work with the additive shorthand $p = 2$ so
+that $|G| = p^2 q = 4q$. The two isomorphism types we will exhibit are the
+cyclic group $C_{4q}$ and the elementary direct product
+$C_2 \times C_2 \times C_q$.
+
+\begin{remark}
+    The complete classification of groups of order $4q$ for $q \equiv 3
+    \pmod 4$ contains four isomorphism types, the two above together with
+    $C_q \rtimes C_4$ (nontrivial) and $C_q \rtimes (C_2 \times C_2) \cong
+    D_{2q}$. The current target theorem in this blueprint asserts only the
+    disjunction $G \cong C_{4q}$ or $G \cong C_2 \times C_2 \times C_q$; the
+    nontrivial semidirect-product cases (Case 2 of the proof) are documented
+    here but treated as a residual TODO.
+\end{remark}
+
+\section{Sylow structure}
+
+\begin{lemma}[A group of order $p^2 q$ has a normal Sylow subgroup]
+    \label{lem:p2q-normal-sylow}
+    Let $p, q$ be distinct primes and let $G$ be a finite group of order
+    $p^2 q$. Then either the number of Sylow $p$-subgroups of $G$ is $1$ (so
+    the unique Sylow $p$-subgroup is normal) or the number of Sylow
+    $q$-subgroups of $G$ is $1$ (so the unique Sylow $q$-subgroup is normal).
+\end{lemma}
+\begin{proof}
+    Standard Sylow counting. Already established in the repository as
+    \texttt{p2q\_group\_has\_normal\_sylow\_subgroup}.
+\end{proof}
+
+\begin{lemma}[Sylow cardinality and index]
+    \label{lem:sylow-card-index}
+    Let $p, q$ be distinct primes, $a, b \in \mathbb{N}$, and let $G$ be a
+    finite group with $|G| = p^a q^b$. Then every Sylow $p$-subgroup of $G$
+    has order $p^a$ and index $q^b$.
+\end{lemma}
+\begin{proof}
+    From $|G| = p^a q^b$ and coprimality of $p^a$ and $q^b$, the multiplicity
+    of $p$ in $|G|$ is $a$, so every Sylow $p$-subgroup has order $p^a$ by
+    Mathlib's \texttt{Sylow.card\_eq\_multiplicity}. The index is then
+    $|G|/p^a = q^b$ by Lagrange. Already established as
+    \texttt{sylow\_card\_eq} and \texttt{sylow\_index\_eq}.
+\end{proof}
+
+\section{Background results on small groups}
+
+\begin{lemma}[Cyclic classification of prime order]
+    \label{lem:prime-classification}
+    If $|G| = n$ with $n$ prime, then $G \cong C_n$.
+\end{lemma}
+\begin{proof}
+    A group of prime order has a generator (any non-identity element), hence
+    is cyclic. Two cyclic groups of equal finite order are isomorphic via
+    Mathlib's \texttt{mulEquivOfCyclicCardEq}. Already established as
+    \texttt{prime\_classification}.
+\end{proof}
+
+\begin{lemma}[Classification of groups of order $p^2$]
+    \label{lem:p-squared-classification}
+    For any prime $p$, a group of order $p^2$ is isomorphic to either
+    $C_{p^2}$ or $C_p \times C_p$.
+\end{lemma}
+\begin{proof}
+    Any group of order $p^2$ is abelian; either it is cyclic (and isomorphic
+    to $C_{p^2}$) or it has exponent $p$, in which case it is a $2$-dimensional
+    $\mathbb{F}_p$-vector space. Already established as
+    \texttt{p\_squared\_classification}.
+\end{proof}
+
+\begin{lemma}[Aut$(C_{p^2}) \cong C_{p(p-1)}$]
+    \label{lem:aut-cyclic-p2}
+    For any prime $p$, $\mathrm{MulAut}(C_{p^2}) \cong C_{p(p-1)}$.
+\end{lemma}
+\begin{proof}
+    $\mathrm{MulAut}(C_{p^2}) \cong (\mathbb{Z}/p^2 \mathbb{Z})^\times$,
+    which is cyclic of order $\varphi(p^2) = p(p-1)$. Already established as
+    \texttt{aut\_of\_cyclic\_p2}.
+\end{proof}
+
+\begin{lemma}[Aut$(C_p \times C_p) \cong \mathrm{GL}_2(\mathbb{F}_p)$]
+    \label{lem:aut-CpCp}
+    For any prime $p$, $\mathrm{MulAut}(C_p \times C_p) \cong
+    \mathrm{GL}_2(\mathbb{F}_p)$.
+\end{lemma}
+\begin{proof}
+    $C_p \times C_p$ is a $2$-dimensional $\mathbb{F}_p$-vector space and
+    every additive automorphism is automatically $\mathbb{F}_p$-linear.
+    Already established as \texttt{aut\_of\_CpCp}.
+\end{proof}
+
+\begin{lemma}[$\mathrm{GL}_2(\mathbb{F}_2) \cong S_3$]
+    \label{lem:GL2F2-isoS3}
+    $\mathrm{GL}_2(\mathbb{F}_2)$ is isomorphic to the dihedral group of
+    order $6$ (equivalently, $S_3$).
+\end{lemma}
+\begin{proof}
+    A computation: $|\mathrm{GL}_2(\mathbb{F}_2)| = 6$ and
+    $\mathrm{GL}_2(\mathbb{F}_2)$ is non-abelian, so by the classification of
+    groups of order $6$ it must be isomorphic to $D_3$. Already established
+    as \texttt{GL2F2\_isoS3}.
+\end{proof}
+
+\section{Triviality criteria for actions}
+
+\begin{lemma}[Trivial homomorphism from coprime cardinalities]
+    \label{lem:eq-one-of-coprime-card}
+    Let $G, H$ be finite groups with $\gcd(|G|, |H|) = 1$. Then every group
+    homomorphism $\varphi : G \to H$ is the trivial homomorphism $\varphi = 1$.
+\end{lemma}
+\begin{proof}
+    The image $\varphi(G)$ is a subgroup of $H$ whose order divides both
+    $|G|$ and $|H|$, hence divides $\gcd(|G|,|H|) = 1$. Therefore
+    $|\varphi(G)| = 1$, so $\varphi(G) = \{1\}$, so $\varphi = 1$.
+    Already established as \texttt{eq\_one\_of\_coprime\_card}.
+\end{proof}
+
+\begin{lemma}[Semidirect product with trivial action is a direct product]
+    \label{lem:sdp-trivial-action}
+    Let $N, K$ be groups and let $\varphi : K \to \mathrm{Aut}(N)$ be a
+    homomorphism with $\varphi = 1$. Then $N \rtimes_\varphi K \cong N \times K$.
+\end{lemma}
+\begin{proof}
+    The underlying set of $N \rtimes_\varphi K$ is $N \times K$ and the
+    multiplication
+    $(n_1, k_1)(n_2, k_2) = (n_1 \cdot \varphi(k_1)(n_2),\ k_1 k_2)$
+    reduces to $(n_1 n_2, k_1 k_2)$ when $\varphi \equiv 1$. Hence the
+    identity pair map is a group isomorphism. Already established as
+    \texttt{SemidirectProduct.mulEquivOfTrivialAction}.
+\end{proof}
+
+\begin{lemma}[Coprime cyclic direct product]
+    \label{lem:cyclic-prod}
+    For positive integers $m, n$ with $\gcd(m, n) = 1$,
+    $C_m \times C_n \cong C_{mn}$.
+\end{lemma}
+\begin{proof}
+    $C_m \times C_n$ is cyclic (the direct product of two cyclic groups of
+    coprime orders is cyclic, since one can take the product of generators
+    and apply the Chinese Remainder Theorem on orders), and has cardinality
+    $mn$. Already established as \texttt{CyclicGroup.prodMulEquiv}.
+\end{proof}
+
+\section{Existence of complements}
+
+\begin{lemma}[Schur--Zassenhaus complement]
+    \label{lem:schur-zassenhaus}
+    Let $G$ be a finite group and $N \trianglelefteq G$ a normal subgroup
+    such that $\gcd(|N|, [G : N]) = 1$. Then there exists a subgroup
+    $K \leq G$ with $N \cap K = \{1\}$ and $N K = G$ (a right complement to
+    $N$ in $G$).
+\end{lemma}
+\begin{proof}
+    The Schur--Zassenhaus theorem, available in Mathlib as
+    \texttt{Subgroup.exists\_right\_complement'\_of\_coprime}.
+\end{proof}
+
+\begin{lemma}[Semidirect product from a complement]
+    \label{lem:sdp-from-complement}
+    Let $G$ be a group, $N \trianglelefteq G$ a normal subgroup, and
+    $K \leq G$ a complement of $N$ (so $N \cap K = \{1\}$ and $NK = G$).
+    Then $G \cong N \rtimes_\varphi K$, where
+    $\varphi : K \to \mathrm{Aut}(N)$ is the conjugation action.
+\end{lemma}
+\begin{proof}
+    Mathlib provides this isomorphism as
+    \texttt{SemidirectProduct.mulEquivSubgroup}.
+\end{proof}
+
+\section{The main classification (target theorem)}
+
+\begin{theorem}[Partial classification of groups of order $4q$]
+    \label{thm:classification-4q}
+    \uses{lem:p2q-normal-sylow, lem:sylow-card-index,
+          lem:prime-classification, lem:p-squared-classification,
+          lem:aut-cyclic-p2, lem:aut-CpCp, lem:GL2F2-isoS3,
+          lem:eq-one-of-coprime-card, lem:sdp-trivial-action,
+          lem:cyclic-prod, lem:schur-zassenhaus, lem:sdp-from-complement,
+          lem:case1-c4, lem:case1-c2c2}
+    Let $q$ be a prime with $q > 3$ and $q \equiv 3 \pmod 4$, and let $G$ be
+    a group with $|G| = 4q$. Then
+    \[
+        G \cong C_{4q} \quad \text{or} \quad G \cong C_2 \times C_2 \times C_q.
+    \]
+    (This is a partial classification: when the unique Sylow $q$-subgroup is
+    normal and the conjugation action is nontrivial, $G$ falls outside this
+    disjunction; see the Case 2 discussion below for the residual cases.)
+\end{theorem}
+\begin{proof}
+    \uses{lem:p2q-normal-sylow, lem:case1-c4, lem:case1-c2c2,
+          lem:schur-zassenhaus, lem:sdp-from-complement,
+          lem:sylow-card-index}
+    By Lemma~\ref{lem:p2q-normal-sylow} applied with $p = 2$, either the
+    Sylow $2$-subgroup or the Sylow $q$-subgroup of $G$ is normal.
+
+    \emph{Case 1: Normal Sylow $2$-subgroup $P$ with $|P| = 4$ and $[G:P] = q$.}
+    By Lemma~\ref{lem:sylow-card-index} we have $|P| = 4$ and $[G:P] = q$. By
+    Lemma~\ref{lem:schur-zassenhaus} (with $\gcd(4, q) = 1$ since $q$ is an
+    odd prime) there is a complement $K \leq G$ with $|K| = q$. By
+    Lemma~\ref{lem:sdp-from-complement}, $G \cong P \rtimes_\varphi K$ for
+    some $\varphi : K \to \mathrm{Aut}(P)$. By
+    Lemma~\ref{lem:prime-classification}, $K \cong C_q$. By
+    Lemma~\ref{lem:p-squared-classification}, $P \cong C_4$ or
+    $P \cong C_2 \times C_2$. Apply Lemma~\ref{lem:case1-c4} or
+    Lemma~\ref{lem:case1-c2c2} accordingly to conclude
+    $G \cong C_{4q}$ or $G \cong C_2 \times C_2 \times C_q$.
+
+    \emph{Case 2: Normal Sylow $q$-subgroup $N$ with $|N| = q$ and $[G:N] = 4$.}
+    By Lemma~\ref{lem:sylow-card-index}, $|N| = q$ and $[G:N] = 4$. By
+    Lemma~\ref{lem:schur-zassenhaus} there is a complement $K$ with
+    $|K| = 4$ and by Lemma~\ref{lem:sdp-from-complement},
+    $G \cong N \rtimes_\varphi K$ with $N \cong C_q$ and $K \cong C_4$ or
+    $C_2 \times C_2$. When $\varphi$ is trivial, $G \cong C_q \times K$, which
+    gives $G \cong C_{4q}$ (if $K \cong C_4$, by
+    Lemma~\ref{lem:cyclic-prod}) or $G \cong C_2 \times C_2 \times C_q$ (if
+    $K \cong C_2 \times C_2$). When $\varphi$ is nontrivial, the resulting
+    semidirect product is not isomorphic to either group in the disjunction;
+    these subcases lie outside the current target theorem and are listed as
+    TODO in the discussion of Case 2 below.
+\end{proof}
+
+\section{Case 1: normal Sylow $2$-subgroup}
+
+The two subcases of Case 1 depend on whether the Sylow $2$-subgroup $P$ (of
+order $4$) is isomorphic to $C_4$ or to $C_2 \times C_2$.
+
+\begin{lemma}[Case 1.1: $P \cong C_4$ gives $G \cong C_{4q}$]
+    \label{lem:case1-c4}
+    \uses{lem:aut-cyclic-p2, lem:eq-one-of-coprime-card,
+          lem:sdp-trivial-action, lem:cyclic-prod}
+    Let $q$ be an odd prime, let $P$ be a group with $P \cong C_4$, let
+    $K$ be a group with $K \cong C_q$, and let
+    $\varphi : K \to \mathrm{MulAut}(P)$ be any homomorphism. Then
+    $P \rtimes_\varphi K \cong C_{4q}$.
+\end{lemma}
+\begin{proof}
+    \uses{lem:aut-cyclic-p2, lem:eq-one-of-coprime-card,
+          lem:sdp-trivial-action, lem:cyclic-prod}
+    By Lemma~\ref{lem:aut-cyclic-p2} applied to $p = 2$ and using
+    $P \cong C_4 = C_{2^2}$, we have
+    $\mathrm{MulAut}(P) \cong C_{2 \cdot 1} = C_2$, so
+    $|\mathrm{MulAut}(P)| = 2$. Since $q > 2$ is an odd prime, $\gcd(q, 2) = 1$.
+    By Lemma~\ref{lem:eq-one-of-coprime-card} applied to
+    $\varphi : K \to \mathrm{MulAut}(P)$, $\varphi$ is trivial. By
+    Lemma~\ref{lem:sdp-trivial-action},
+    $P \rtimes_\varphi K \cong P \times K \cong C_4 \times C_q$. Finally, by
+    Lemma~\ref{lem:cyclic-prod} with $\gcd(4, q) = 1$, we conclude
+    $C_4 \times C_q \cong C_{4q}$.
+\end{proof}
+
+\begin{lemma}[Case 1.2: $P \cong C_2 \times C_2$ gives $G \cong C_2 \times C_2 \times C_q$]
+    \label{lem:case1-c2c2}
+    \uses{lem:aut-CpCp, lem:GL2F2-isoS3, lem:eq-one-of-coprime-card,
+          lem:sdp-trivial-action}
+    Let $q$ be a prime with $q > 3$, let $P$ be a group with
+    $P \cong C_2 \times C_2$, let $K$ be a group with $K \cong C_q$, and let
+    $\varphi : K \to \mathrm{MulAut}(P)$ be any homomorphism. Then
+    $P \rtimes_\varphi K \cong C_2 \times C_2 \times C_q$.
+\end{lemma}
+\begin{proof}
+    \uses{lem:aut-CpCp, lem:GL2F2-isoS3, lem:eq-one-of-coprime-card,
+          lem:sdp-trivial-action}
+    By Lemma~\ref{lem:aut-CpCp}, $\mathrm{MulAut}(C_2 \times C_2) \cong
+    \mathrm{GL}_2(\mathbb{F}_2)$, and by Lemma~\ref{lem:GL2F2-isoS3},
+    $\mathrm{GL}_2(\mathbb{F}_2) \cong D_3$ (a group of order $6$). Hence
+    $|\mathrm{MulAut}(P)| = 6 = 2 \cdot 3$. Since $q$ is prime with $q > 3$,
+    $q$ is coprime to both $2$ and $3$, hence $\gcd(q, 6) = 1$. By
+    Lemma~\ref{lem:eq-one-of-coprime-card},
+    $\varphi : K \to \mathrm{MulAut}(P)$ is trivial. By
+    Lemma~\ref{lem:sdp-trivial-action},
+    $P \rtimes_\varphi K \cong P \times K \cong (C_2 \times C_2) \times C_q
+    \cong C_2 \times C_2 \times C_q$ (the last step is reassociation of the
+    direct product, an instance of \texttt{MulEquiv.prodAssoc}).
+\end{proof}
+
+\section{Case 2 (residual): normal Sylow $q$-subgroup}
+
+In Case 2 the unique Sylow $q$-subgroup $N$ is normal with $|N| = q$, and a
+Schur--Zassenhaus complement $K$ has $|K| = 4$. The conjugation action gives
+$\varphi : K \to \mathrm{MulAut}(N)$. Since $N \cong C_q$,
+$\mathrm{MulAut}(N) \cong C_{q-1}$.
+
+For $q \equiv 3 \pmod 4$, $v_2(q-1) = 1$, so a homomorphism from any group of
+order $4$ into $C_{q-1}$ has image of order $1$ or $2$. The image-of-order-$1$
+case is the trivial action and reduces to the direct product
+$N \times K$, contributing
+\begin{itemize}
+    \item $C_q \times C_4 \cong C_{4q}$ when $K \cong C_4$ (already covered by
+        the Case 1 conclusion via Lemma~\ref{lem:cyclic-prod}), and
+    \item $C_q \times (C_2 \times C_2) \cong C_2 \times C_2 \times C_q$ when
+        $K \cong C_2 \times C_2$.
+\end{itemize}
+
+The image-of-order-$2$ (nontrivial action) cases give the additional
+isomorphism types
+\[
+    C_q \rtimes C_4 \quad \text{and} \quad C_q \rtimes (C_2 \times C_2) \cong D_{2q},
+\]
+which fall outside the disjunction $G \cong C_{4q} \lor G \cong C_2 \times
+C_2 \times C_q$ in the target theorem. These subcases are therefore left as
+TODO; the current target theorem statement is not provable in full as stated
+without strengthening either the hypotheses (excluding Case 2 nontrivial
+actions) or the conclusion (adding the two further isomorphism classes).
 
 \end{document}
