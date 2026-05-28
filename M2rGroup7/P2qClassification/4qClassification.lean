@@ -95,6 +95,25 @@ private lemma natCard_range_eq_two_of_nontrivial_C4_action
   interval_cases (Nat.card f.range)
   rfl
 
+/-- The range of `canonicalC4OnCqAction` has cardinality 2: composing
+    `canonicalAction 2 q 1 2 _ _ _ 1 _` (range card `2^1`) with an iso of
+    `MulAut`s preserves range cardinality. -/
+private lemma canonicalC4OnCqAction_range_card
+    {q : ℕ} [hq : Fact q.Prime] (h_q_gt_3 : q > 3) :
+    Nat.card (canonicalC4OnCqAction h_q_gt_3).range = 2 := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  show Nat.card
+      ((((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
+        (canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1
+          (_hr_canonicalC4OnCqAction h_q_gt_3))).range) = 2
+  rw [MonoidHom.range_comp,
+      Subgroup.card_map_of_injective
+        (MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.injective]
+  have := canonicalAction_range_card 2 q 1 2 1
+    (by omega : (2 : ℕ) ≠ q) (by omega : q ≠ 2) Nat.one_pos
+    (_hr_canonicalC4OnCqAction h_q_gt_3)
+  simpa using this
+
 theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3 : q > 3) (h_3_mod_4 : q ≡ 3 [MOD 4]) (h : Nat.card G = 4 * q)
  : Nonempty (G ≃* CyclicGroup (4 * q))
    ∨ Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q)
@@ -279,66 +298,46 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
               ((eQ.prodCongr h_K_C4.some).trans
                 (MulEquiv.prodComm.trans (CyclicGroup.prodMulEquiv h4q))))
         tauto
-      · -- φ nontrivial: transport φ to f : C_4 →* Aut(C_q) and apply
-        -- classify_Cqn_rtimes_Cpm_exists with p=2, m=2, n=1, r=1.
+      · -- φ nontrivial: transport φ to f : C_4 →* Aut(C_q), then identify the
+        -- resulting semidirect product with the canonical one by matching the
+        -- range cardinality (both equal 2).
         let eK := h_K_C4.some
         let f : CyclicGroup 4 →* MulAut (CyclicGroup q) :=
           ((MulAut.congr eQ).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom)
         have h_sdp_congr :
-            (Q : Subgroup G) ⋊[φ] ↥K ≃*
+            ↥(↑Q : Subgroup G) ⋊[φ] ↥K ≃*
               SemidirectProduct (CyclicGroup q) (CyclicGroup 4) f :=
           SemidirectProduct.congr' (φ₁ := φ) (fn := eQ) (fg := eK)
         have hf_ne : f ≠ 1 := by
           intro h_eq
           apply h_phi_triv
-          ext k
+          refine MonoidHom.ext fun k => ?_
           have h1 : f (eK k) = 1 := by rw [h_eq]; rfl
           have h2 : f (eK k) = (MulAut.congr eQ) (φ k) := by
             show ((MulAut.congr eQ).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom) (eK k) = _
             simp [MulEquiv.symm_apply_apply]
           rw [h2] at h1
-          have h3 : φ k = 1 := (MulEquiv.map_eq_one_iff (MulAut.congr eQ)).mp h1
-          simpa using h3
-        have hf_range :=
-          natCard_range_eq_two_of_nontrivial_C4_action h_ge_3 h_3_mod_4 f hf_ne
+          exact (MulEquiv.map_eq_one_iff (MulAut.congr eQ)).mp h1
         haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-        have h_qm1_ne : q - 1 ≠ 0 := by have := h_q_prime.out.one_lt; omega
-        have h_dvd : 2 ∣ q - 1 := by
-          have hq_odd : Odd q := h_q_prime.out.odd_of_ne_two (by omega)
-          obtain ⟨k, rfl⟩ := hq_odd; omega
-        have hr : 1 ≤ min 2 ((q - 1).factorization 2) := by
-          refine Nat.le_min.mpr ⟨one_le_two, ?_⟩
-          rw [← Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two h_qm1_ne]
-          simpa using h_dvd
-        -- Transport f from `CyclicGroup 4 →* MulAut (CyclicGroup q)` to the
-        -- `q^1` form needed by classify_Cqn_rtimes_Cpm_exists.
-        have h_iso_canon :
-            Nonempty (SemidirectProduct (CyclicGroup q) (CyclicGroup 4) f ≃*
-              SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
-                (canonicalC4OnCqAction h_ge_3)) := by
-          have := classify_Cqn_rtimes_Cpm_exists (p := 2) (q := q) (r := 1)
-            (by omega : (2 : ℕ) ≠ q) (by omega : q ≠ 2) (m := 2) (n := 1)
-            (by norm_num : (0 : ℕ) < 2) Nat.one_pos
-            (show CyclicGroup (2 ^ 2) →* MulAut (CyclicGroup (q ^ 1)) from by
-              rw [show (2 : ℕ) ^ 2 = 4 from by norm_num,
-                  show q ^ 1 = q from pow_one q]
-              exact f)
+        haveI : IsCyclic (MulAut (CyclicGroup q)) := by
+          haveI : IsCyclic (ZMod q)ˣ := ZMod.isCyclic_units_prime h_q_prime.out
+          have h_iso : MulAut (CyclicGroup q) ≃* (ZMod q)ˣ := by
+            have := IsCyclic.mulAutMulEquiv (CyclicGroup q)
+            rwa [card_cyclicGroup] at this
+          exact isCyclic_of_surjective h_iso.symm.toMonoidHom h_iso.symm.surjective
+        have h_iso_canon : Nonempty (SemidirectProduct (CyclicGroup q) (CyclicGroup 4) f ≃*
+            SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
+              (canonicalC4OnCqAction h_ge_3)) :=
+          semidirectProduct_iso_if_range_card_eq
+            (H := CyclicGroup q) (K := CyclicGroup 4) (p := 2) (m := 2)
+            ⟨by norm_num⟩ (by rw [card_cyclicGroup]; rfl)
+            f (canonicalC4OnCqAction h_ge_3) inferInstance
             (by
-              rw [show (2 : ℕ) ^ 2 = 4 from by norm_num,
-                  show q ^ 1 = q from pow_one q]
-              exact hf_range)
-            hr
-          -- Translate this back through the same equalities.
-          show Nonempty (SemidirectProduct (CyclicGroup q) (CyclicGroup 4) f ≃*
-              SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
-                (canonicalC4OnCqAction h_ge_3))
-          unfold canonicalC4OnCqAction
-          -- `this` is the corresponding iso with q^1 / 2^2; both equalities are
-          -- definitional after the rewrites inside.
-          convert this using 2 <;> simp [pow_one]
+              rw [natCard_range_eq_two_of_nontrivial_C4_action h_ge_3 h_3_mod_4 f hf_ne,
+                  canonicalC4OnCqAction_range_card h_ge_3, pow_one])
         have : Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
                   (canonicalC4OnCqAction h_ge_3)) :=
-          ⟨h_iso_g_q_k.trans (h_sdp_congr.trans h_iso_canon.some)⟩
+          ⟨h_iso_g_q_k.symm.trans (h_sdp_congr.trans h_iso_canon.some)⟩
         tauto
     · -- case h_K_C2C2 : Nonempty (↥K ≃* CyclicGroup 2 × CyclicGroup 2)
       by_cases h_phi_triv : φ = 1
