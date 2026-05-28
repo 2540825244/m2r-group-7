@@ -1,6 +1,7 @@
 import Mathlib
 import «M2rGroup7».Lemmas.GroupTheoryLemmas
 import «M2rGroup7».Lemmas.ClassificationUtils
+import «M2rGroup7».Lemmas.HomomorphismUtils
 
 /-- Core existence: for each r ≤ v_p(q-1), there is an element of Aut(C_{q^n}) of order exactly p^r.
     Construction: Aut(C_{q^n}) ≃* (ZMod q^n)ˣ is cyclic of order q^{n-1}(q-1);
@@ -176,14 +177,6 @@ noncomputable def center_semidirectProduct_iso
   · -- Surjectivity
     exact ⟨⟨⟨n, k⟩, (mem_center_semidirectProduct_iff f ⟨n, k⟩).mpr ⟨hk, hn⟩⟩, by simp⟩
 
-/-- A homomorphism with range of cardinality 1 is trivial. -/
-private lemma eq_one_of_range_card_one {G H : Type*} [Group G] [Group H]
-    {f : G →* H} (h : Nat.card f.range = 1) : f = 1 := by
-  have hbot : f.range = ⊥ := by rwa [Subgroup.eq_bot_iff_card]
-  ext g
-  have hg : f g ∈ f.range := MonoidHom.mem_range.mpr ⟨g, rfl⟩
-  rwa [hbot, Subgroup.mem_bot] at hg
-
 /-- When f is trivial, Fix = N and Ker = H, so Z(N ⋊_f H) has order |N| * |H|. -/
 theorem center_card_of_trivial_action
     {N H : Type*} [CommGroup N] [CommGroup H]
@@ -246,9 +239,7 @@ theorem center_card_of_r_pos
       have hfixed : ∀ k : CyclicGroup (p ^ m), k • x = x :=
         fun k => (hsmul k x).trans (hx k)
       -- Coprimality: gcd(q^n, p^m) = 1 since p ≠ q
-      have hcop_pq : Nat.Coprime p q :=
-        hp.out.coprime_iff_not_dvd.mpr fun hdvd =>
-          hpq ((hq.out.eq_one_or_self_of_dvd p hdvd).resolve_left hp.out.one_lt.ne')
+      have hcop_pq : Nat.Coprime p q := hp.out.coprime_of_ne hq.out hpq
       have hcop : (Nat.card (CyclicGroup (q ^ n))).Coprime (Nat.card (CyclicGroup (p ^ m))) := by
         rw [card_cyclicGroup, card_cyclicGroup]
         exact ((hcop_pq.pow_left m).pow_right n).symm
@@ -349,11 +340,7 @@ theorem classify_Cqn_rtimes_Cpm
           exact dvd_mul_left _ _
         rwa [h_range_card, h_aut_card] at h1
       have h_cop : Nat.Coprime (p ^ r) (q ^ (n - 1)) :=
-        ((hp.out.coprime_iff_not_dvd.mpr (fun hdvd =>
-          absurd (hq.out.eq_one_or_self_of_dvd p hdvd)
-            (by rintro (h1 | h2)
-                · exact hp.out.one_lt.ne' h1
-                · exact hpq h2))).pow_left r).pow_right (n - 1)
+        ((hp.out.coprime_of_ne hq.out hpq).pow_left r).pow_right (n - 1)
       exact h_cop.dvd_mul_left.mp h_pr_dvd)
   have hr : r ≤ min m ((q - 1).factorization p) := Nat.le_min.mpr ⟨hr_le_m, hr_le_vp⟩
   refine ⟨⟨r, Nat.lt_succ_of_le hr⟩, ?_, ?_⟩
@@ -400,9 +387,7 @@ theorem classify_Cqn_rtimes_Cpm
           (canonicalAction p q n m hpq hq_odd hn r' hr'_le))) :=
       Nat.card_congr (Subgroup.centerCongr hiso).toEquiv
     -- coprimality of q^n and p^k, needed for the r=0 contradiction cases
-    have hcop_pq : Nat.Coprime p q :=
-      hp.out.coprime_iff_not_dvd.mpr fun hdvd =>
-        hpq ((hq.out.eq_one_or_self_of_dvd p hdvd).resolve_left hp.out.one_lt.ne')
+    have hcop_pq : Nat.Coprime p q := hp.out.coprime_of_ne hq.out hpq
     have hqn_gt_one : 1 < q ^ n := Nat.one_lt_pow hn.ne' hq.out.one_lt
     -- Distinguish r from r' by center cardinality
     rcases Nat.eq_zero_or_pos r with rfl | hr_pos

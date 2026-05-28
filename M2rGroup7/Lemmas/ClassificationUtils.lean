@@ -1,5 +1,6 @@
 import Mathlib
 import «M2rGroup7».Lemmas.GroupTheoryLemmas
+import «M2rGroup7».Lemmas.HomomorphismUtils
 
 theorem semidirectProduct_iso_of_conjugate_action
     {H K : Type*} [Group H] [Group K]

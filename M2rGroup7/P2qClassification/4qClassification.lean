@@ -3,6 +3,7 @@ import «M2rGroup7».Lemmas.SylowUtils
 import «M2rGroup7».Lemmas.LinearAlgebraUtils
 import «M2rGroup7».Lemmas.GroupTheoryLemmas
 import «M2rGroup7».Lemmas.ClassificationUtils
+import «M2rGroup7».Lemmas.HomomorphismUtils
 
 theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3 : q > 3) (h_3_mod_4 : q ≡ 3 [MOD 4]) (h : Nat.card G = 4 * q)
  : Nonempty (G ≃* CyclicGroup (4 * q)) := by
@@ -43,9 +44,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
 
     obtain ⟨K, hK⟩ := Subgroup.exists_right_complement'_of_coprime (N := (↑P : Subgroup G)) (by
       rw [h_p_p2, h_p_idx_q]
-      have h_p_ne_q : 2 ≠ q := by aesop
-      exact (h_q_prime.out.coprime_iff_not_dvd.mpr (fun h => absurd (h_q_prime.out.eq_one_or_self_of_dvd 2 h)
-        (by rintro (h1 | h2); tauto; exact h_p_ne_q h2))).pow_left 2)
+      exact ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2)
 
     -- Isomorphism G ≃* P ⋊ K
     have h_iso_g_p_k := SemidirectProduct.mulEquivSubgroup hK
@@ -85,19 +84,9 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
       have h_aut_card : Nat.card (MulAut ↥(↑P : Subgroup G)) = 2 :=
         (Nat.card_congr h_aut_P.toEquiv).trans (card_cyclicGroup 2)
 
-      have h_gcd : q.gcd 2 = 1 := by
-        have hndvd : ¬ q ∣ 2 := fun h => absurd (Nat.le_of_dvd (by norm_num) h) (by omega)
-        exact h_q_prime.out.coprime_iff_not_dvd.mpr hndvd
-
-      have h_phi_triv : φ = 1 := by
-        have h1 : Nat.card φ.range ∣ q := by
-          have := Subgroup.card_range_dvd φ; rw [hK_card] at this; exact this
-        have h2 : Nat.card φ.range ∣ 2 := by
-          have := Subgroup.card_subgroup_dvd_card φ.range; rw [h_aut_card] at this; exact this
-        have h3 : Nat.card φ.range ∣ 1 := by
-          have := Nat.dvd_gcd h1 h2; rwa [h_gcd] at this
-        exact MonoidHom.range_eq_bot_iff.mp (Subgroup.card_eq_one.mp (Nat.dvd_one.mp h3))
------- Can be shortened a lot I feel
+      have h_phi_triv : φ = 1 :=
+        eq_one_of_coprime_card (by rw [hK_card, h_aut_card];
+          exact h_q_prime.out.coprime_of_ne (by norm_num) (by omega))
       refine ⟨?_⟩
       -- Directly construct ↥↑P ⋊[φ] ↥K ≃* ↥↑P × ↥K using φ = 1 element-wise
       have hφ1 : ∀ (k : ↥K) (n : ↥P), φ k n = n := fun k n => by
@@ -112,8 +101,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
           (by simp [SemidirectProduct.mul_right]) }
       -- gcd(2, q) = 1 since q is an odd prime
       have h2q : Nat.Coprime 2 q :=
-        (show Nat.Prime 2 from by norm_num).coprime_iff_not_dvd.mpr
-          fun h2q => absurd (h_q_prime.out.eq_one_or_self_of_dvd 2 h2q) (by omega)
+        (by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)
       -- CyclicGroup 4 × CyclicGroup q is cyclic since gcd(4, q) = 1
       haveI : IsCyclic (CyclicGroup 4 × CyclicGroup q) :=
         Group.isCyclic_prod_iff.mpr ⟨inferInstance, inferInstance,
@@ -136,23 +124,12 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
       have h_mul_aut_p_card : Nat.card (MulAut P) = 6 :=
         h_aut_dih.elim fun e => (Nat.card_congr e.toEquiv).trans h_dih_3_card
 
-      have h1 : Nat.card φ.range ∣ q := by
-        have := Subgroup.card_range_dvd φ
-        rw [hK_card] at this; exact this
-      have h2 : Nat.card φ.range ∣ 6 := by
-        have := Subgroup.card_subgroup_dvd_card φ.range
-        rw [h_mul_aut_p_card] at this; exact this
-      have h_gcd6 : Nat.gcd q 6 = 1 := by
-        have h_cop2 : Nat.Coprime q 2 :=
-          h_q_prime.out.coprime_iff_not_dvd.mpr fun h =>
-            absurd (Nat.le_of_dvd (by norm_num) h) (by omega)
-        have h_cop3 : Nat.Coprime q 3 :=
-          h_q_prime.out.coprime_iff_not_dvd.mpr fun h =>
-            absurd (Nat.le_of_dvd (by norm_num) h) (by omega)
-        simpa using h_cop2.mul_right h_cop3
-      have h3 : Nat.card φ.range ∣ 1 := by
-        have := Nat.dvd_gcd h1 h2; rwa [h_gcd6] at this
-
+      have h_phi_triv : φ = 1 :=
+        eq_one_of_coprime_card (by
+          rw [hK_card, h_mul_aut_p_card]
+          have h_cop2 : Nat.Coprime q 2 := h_q_prime.out.coprime_of_ne (by norm_num) (by omega)
+          have h_cop3 : Nat.Coprime q 3 := h_q_prime.out.coprime_of_ne (by norm_num) (by omega)
+          simpa using h_cop2.mul_right h_cop3)
       sorry
   · -- case h_nq_1 : n_q = 1
     sorry

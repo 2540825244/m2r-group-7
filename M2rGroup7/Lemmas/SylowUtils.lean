@@ -1,5 +1,6 @@
 import Mathlib
 import «M2rGroup7».Lemmas.GroupTheoryLemmas
+import «M2rGroup7».Lemmas.NumberTheoryUtils
 
 variable (G : Type*) [Group G]
 
@@ -12,11 +13,7 @@ lemma sylow_card_eq {p q : ℕ} {a b : ℕ}
     Nat.card ↥(P : Subgroup G) = p ^ a := by
   rw [Sylow.card_eq_multiplicity, h]
   have hcop : Nat.Coprime (p ^ a) (q ^ b) :=
-    ((hp.out.coprime_iff_not_dvd.mpr fun hdvd =>
-      absurd (hq.out.eq_one_or_self_of_dvd p hdvd)
-        (by rintro (h1 | h2)
-            · exact hp.out.one_lt.ne' h1
-            · exact hpq h2)).pow_left a).pow_right b
+    ((hp.out.coprime_of_ne hq.out hpq).pow_left a).pow_right b
   rw [Nat.factorization_mul_of_coprime hcop, Finsupp.add_apply,
       Nat.factorization_pow_self hp.out]
   have hqb : (q ^ b).factorization p = 0 := by
