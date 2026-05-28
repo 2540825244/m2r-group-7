@@ -36,8 +36,8 @@ theorem center_eq_top_iff : Subgroup.center G = ⊤ ↔ IsMulCommutative G := by
 
 /-- An abelian group of order `p^3` is isomorphic to one of `CyclicGroup p^3`,
     `CyclicGroup p^2 × CyclicGroup p`, `CyclicGroup p × CyclicGroup p × CyclicGroup p`. -/
-theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_na : ¬IsMulCommutative G) (h : Nat.card G = p^3) :
-  True := by
+theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
+  (h_na : ¬IsMulCommutative G) (h : Nat.card G = p ^ 3) : True := by
   -- Define Z as the center of G
   set Z := Subgroup.center G with hZ
   -- Claim 1: |Z(G)| = p and so Z(G) isomorphic to C_p
@@ -124,8 +124,7 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
 
     contrapose! h_na
     rw [isMulCommutative_iff]
-    intro a
-    intro b
+    intro a b
     specialize h_comm a b
     exact h_comm
 
@@ -176,7 +175,8 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
 
   -- Step 1: Z(G) contains [G, G] as Z(G) is normal and G/N abelian iff N contains [G, G]
 
-  -- Step 2: [G, G] is either trivial group or Z(G) but it is trivial iff G is abelian which is not true
+  -- Step 2: [G, G] is either trivial group or Z(G) but it is trivial iff G is abelian
+  -- which is not true
 
 
 
@@ -234,7 +234,8 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
 
   sorry
 
-theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [IsMulCommutative G] (h : Nat.card G = p^3) :
+theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [IsMulCommutative G]
+  (h : Nat.card G = p ^ 3) :
   (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
   (Nonempty (MulEquiv G (CyclicGroup (p^2) × CyclicGroup p))) ∨
   (Nonempty (MulEquiv G (CyclicGroup p × CyclicGroup p × CyclicGroup p)))
@@ -283,7 +284,8 @@ theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [Is
         have : p ≠ 0 := hn.elim.ne_zero
         have : p ≠ 1 := hn.elim.ne_one
         subst hcard_quot
-        simp_all only [Nat.card_zpowers, Nat.card_pos, ne_eq, not_false_eq_true, pow_right_inj₀, Nat.reduceEqDiff, H]
+        simp_all only [Nat.card_zpowers, Nat.card_pos, ne_eq, not_false_eq_true, pow_right_inj₀,
+                       Nat.reduceEqDiff, H]
       -- Step 5: t₀^p ∈ H  (every element of the order-p quotient has exponent p)
       have ht₀p_mem : t₀ ^ p ∈ H := by
         have hord : orderOf (QuotientGroup.mk' H t₀) ∣ p :=
@@ -312,19 +314,19 @@ theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [Is
       obtain ⟨m, hm⟩ := hpdvdk
       let t := t₀ * g ^ (-m)
       have ht_pow : t ^ p = 1 := by
-        show (t₀ * g ^ (-m : ℤ)) ^ p = 1
+        change (t₀ * g ^ (-m : ℤ)) ^ p = 1
         rw [mul_pow]
         have h2 : (g ^ (-m : ℤ)) ^ p = g ^ (-k : ℤ) := by
           rw [← zpow_natCast (g ^ (-m : ℤ)) p, ← zpow_mul]
           congr 1; rw [neg_mul, mul_comm m (p : ℤ), ← hm]
         rw [h2, ← hk, ← zpow_add, add_neg_cancel, zpow_zero]
       have ht_notH : t ∉ H := by
-        show t₀ * g ^ (-m : ℤ) ∉ H
+        change t₀ * g ^ (-m : ℤ) ∉ H
         intro hmem
         apply ht₀
         have hgm : g ^ (m : ℤ) ∈ H := Subgroup.mem_zpowers_iff.mpr ⟨m, rfl⟩
         have heq : t₀ = t₀ * g ^ (-m : ℤ) * g ^ (m : ℤ) := by
-          simp [mul_assoc, ← zpow_add, neg_add_cancel]
+          simp [mul_assoc]
         rw [heq]; exact H.mul_mem hmem hgm
       have ht_ord : orderOf t = p :=
         orderOf_eq_prime ht_pow (fun heq => ht_notH (heq ▸ H.one_mem))
@@ -350,7 +352,6 @@ theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [Is
       exact ⟨(mulEquivProd hHnorm hKnorm hinf hsup).trans
         ((mulEquivOfCyclicCardEq (hH.trans (card_cyclicGroup _).symm)).prodCongr
          (mulEquivOfCyclicCardEq (hK.trans (card_cyclicGroup _).symm)))⟩
-
     · -- Case 3: no element of order ≥ p², so every element satisfies g^p = 1
       right; right
       -- Every element satisfies g^p = 1
@@ -395,18 +396,17 @@ theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [Is
           right_inv := fun f => by ext i; simp
           map_mul' := fun g1 g2 => by
             ext i
-            simp only [ofMul_mul, LinearEquiv.map_add, Pi.add_apply, Pi.mul_apply,
-              ← ofAdd_add, toAdd_ofAdd]
+            simp only [ofMul_mul, LinearEquiv.map_add, Pi.add_apply, toAdd_ofAdd]
             trivial }
       have e_fin3 : (Fin 3 → CyclicGroup p) ≃* CyclicGroup p × CyclicGroup p × CyclicGroup p :=
         { toFun := fun f => (f 0, f 1, f 2)
           invFun := fun ⟨a, b, c⟩ => Fin.cons a (Fin.cons b (fun _ => c))
           left_inv := fun f => funext fun i => by
             fin_cases i <;>
-              simp [Fin.cons_zero, Fin.cons_succ]
+              simp only [Fin.cons_zero, Fin.reduceFinMk]
               <;> trivial
           right_inv := fun ⟨a, b, c⟩ => by
-            simp [Fin.cons_zero, Fin.cons_succ]
+            simp only [Fin.isValue, Fin.cons_zero, Fin.cons_one, Prod.mk.injEq, true_and]
             trivial
           map_mul' := fun f g => rfl }
       exact ⟨e_mul.trans e_fin3⟩
