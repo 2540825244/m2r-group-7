@@ -124,9 +124,24 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
             ((h_c2_c2.some.prodCongr eK).trans MulEquiv.prodAssoc))
       tauto
   · -- case h_nq_1 : n_q = 1
-    sorry
+    let Q : Sylow q G := default
 
-theorem classify_Cqn_rtimes_Cpm_
+    -- Enough to synthesize instance of type class (↑P).Normal
+    -- for Subgroup.exists_right_complement'_of_coprime
+    haveI : Subsingleton (Sylow q G) :=
+      (Nat.card_eq_one_iff_unique.mp h_nq_1).1
+
+    have h_q_q : Nat.card ↥(Q : Subgroup G) = q := by
+      exact sylow_card_eq (by aesop) (show Nat.card G = 2 ^ 2 * q ^ 1 by aesop) Q
+
+    -- Index of Sylow p-group is q
+    have h_p_idx_q : ∀ P : Sylow 2 G, (↑P : Subgroup G).index = q := by
+      intro P
+      simpa using sylow_index_eq (by aesop) (show Nat.card G = 2 ^ 2 * q ^ 1 by aesop) P
+
+
+
+theorem classify_Cqn_rtimes_Cpm_exists
     {p q r : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
     (hpq : p ≠ q) (hq_odd : q ≠ 2)
     (m n : ℕ) (hm : 0 < m) (hn : 0 < n)

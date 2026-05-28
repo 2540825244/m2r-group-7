@@ -2,7 +2,7 @@ import Mathlib
 import «M2rGroup7».Lemmas.GroupTheoryLemmas
 import «M2rGroup7».Lemmas.HomomorphismUtils
 
-/-- When the action φ is trivial, N ⋊[φ] K ≃* N × K via the identity map on pairs. -/
+/-- When the homomorphism φ is trivial, N ⋊[φ] K ≃* N × K via the identity map on pairs. -/
 noncomputable def SemidirectProduct.mulEquivOfTrivialAction
     {N K : Type*} [Group N] [Group K] {φ : K →* MulAut N} (hφ : φ = 1) :
     SemidirectProduct N K φ ≃* N × K where
@@ -18,6 +18,7 @@ noncomputable def SemidirectProduct.mulEquivOfTrivialAction
       (by simp [SemidirectProduct.mul_left, hact])
       (by simp [SemidirectProduct.mul_right])
 
+/-- Simplified conjugacy condition for isomorphism of semi direct products -/
 theorem semidirectProduct_iso_of_conjugate_action
     {H K : Type*} [Group H] [Group K]
     {f_1 f_2 : K →* MulAut H}
@@ -28,27 +29,6 @@ theorem semidirectProduct_iso_of_conjugate_action
     ext n
     simp [MulEquiv.trans_apply, hconj (β.symm g), MulAut.mul_apply,
           MulAut.inv_apply, MulEquiv.apply_symm_apply]⟩
-
-
-noncomputable def powerMapAut {K : Type*} [CommGroup K] [Finite K]
-      (c : ℕ) (hc : Nat.Coprime c (Nat.card K)) : MulAut K := by
-    -- Power map is a group hom (commutativity gives mul_pow)
-    let β : K →* K :=
-      { toFun    := (· ^ c)
-        map_one' := one_pow c
-        map_mul' := fun x y => mul_pow x y c }
-    -- β is injective: show trivial kernel
-    have hβ_inj : Function.Injective β :=
-      (injective_iff_map_eq_one β).mpr fun x hx => by
-        -- hx : x ^ c = 1
-        have h1 : orderOf x ∣ c          := orderOf_dvd_of_pow_eq_one hx
-        have h2 : orderOf x ∣ Nat.card K := orderOf_dvd_natCard x
-        -- orderOf x ∣ gcd(c, |K|) = 1
-        have h3 : orderOf x ∣ 1 := by
-          have := Nat.dvd_gcd h1 h2; rwa [hc] at this
-        exact orderOf_eq_one_iff.mp (Nat.dvd_one.mp h3)
-    -- Injective endomorphism on a finite type is surjective, hence bijective
-    exact MulEquiv.ofBijective β ⟨hβ_inj, Finite.injective_iff_surjective.mp hβ_inj⟩
 
 /-- If K is cyclic p-group, two homomorphisms f g : K → Aut(H) define
     isomorphic semidirect products if they have the same image. -/
@@ -163,16 +143,24 @@ lemma semidirectProduct_iso_if_range_card_eq
 
       grind [semidirectProduct_iso_if_range_eq]
 
+/-- Given f : C_p × C_p →* Aut(C_q) with image of order p, and σ a generator of f.range
+    (i.e. σ ∈ f.range with orderOf σ = p), there exist elements x, y of C_p × C_p that
+    together generate C_p × C_p, with f(x) = σ and f(y) = 1. -/
+lemma exists_generators_of_CpCp_action
+    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (f : CyclicGroup p × CyclicGroup p →* MulAut (CyclicGroup q))
+    (hf_range : Nat.card f.range = p)
+    (σ : MulAut (CyclicGroup q))
+    (hσ_mem : σ ∈ f.range)
+    (hσ_order : orderOf σ = p) :
+    ∃ x y : CyclicGroup p × CyclicGroup p,
+      Subgroup.zpowers x ⊔ Subgroup.zpowers y = ⊤ ∧
+      f x = σ ∧ f y = 1 := by
+  sorry
+
 /-- Given two nontrivial homomorphisms f_1, f_2 : C_p × C_p →* Aut(C_q) whose images
     both have order p (and p ∣ q − 1), there exists an automorphism
-    β : Aut(C_p × C_p) such that f_2 = f_1 ∘ β.
-
-    Proof sketch: since Aut(C_q) ≅ (ℤ/q)* is cyclic of order q−1 and p ∣ q−1,
-    there is a unique subgroup of order p, so f_1.range = f_2.range.
-    Fix a generator σ of this common subgroup.  For each i, the kernel of f_i
-    has order p (index-p subgroup of C_p × C_p), so we can find generators
-    x_i, y_i of C_p × C_p with f_i(x_i) = σ and f_i(y_i) = 1.
-    The linear map x_1 ↦ x_2, y_1 ↦ y_2 gives the desired β. -/
+    β : Aut(C_p × C_p) such that f_2 = f_1 ∘ β. -/
 lemma exists_aut_of_CpCp_conjugating_actions
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
     (h_pdvd : p ∣ q - 1)
@@ -184,19 +172,17 @@ lemma exists_aut_of_CpCp_conjugating_actions
   sorry
 
 /-- Direct product of cyclic groups of coprime orders is cyclic of product order. -/
-noncomputable def CyclicGroup.prodMulEquiv {m n : ℕ} (hcop : Nat.Coprime m n) :
+noncomputable def CyclicGroup.prodMulEquiv {m n : ℕ} [NeZero m] [NeZero n]
+    (hcop : Nat.Coprime m n) :
     CyclicGroup m × CyclicGroup n ≃* CyclicGroup (m * n) := by
+  haveI : NeZero (m * n) := ⟨Nat.mul_ne_zero (NeZero.ne m) (NeZero.ne n)⟩
   haveI : IsCyclic (CyclicGroup m × CyclicGroup n) :=
     Group.isCyclic_prod_iff.mpr ⟨inferInstance, inferInstance,
       by rw [card_cyclicGroup, card_cyclicGroup]; exact hcop⟩
-  exact mulEquivOfCyclicCardEq (by simp [Nat.card_prod, card_cyclicGroup])
+  exact mulEquivOfCyclicCardEq (by simp only [Nat.card_prod, card_cyclicGroup])
 
 /-- Any two nontrivial semidirect products C_q ⋊ (C_p × C_p) arising from homomorphisms
-    with image of order p are isomorphic, provided p ∣ q − 1.
-
-    The key step is `exists_aut_of_CpCp_conjugating_actions`, which produces
-    β : Aut(C_p × C_p) with f_2 = f_1 ∘ β; then
-    `semidirectProduct_iso_of_conjugate_action` (with h = 1) gives the equivalence. -/
+    with image of order p are isomorphic, provided p ∣ q − 1. -/
 theorem semidirectProduct_CpCp_iso
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
     (h_pdvd : p ∣ q - 1)
