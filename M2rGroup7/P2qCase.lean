@@ -69,9 +69,7 @@ theorem p2q_classification {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_p
 
     -- n_p is 1 (mod p)
 
-    have h_n_p_one_mod_p : n_p ≡ 1 [MOD p] := by
-      show Nat.card (Sylow p G) ≡ 1 [MOD p]
-      exact card_sylow_modEq_one p G
+    have h_n_p_one_mod_p : n_p ≡ 1 [MOD p] := card_sylow_modEq_one p G
 
     -- Claim 1: n_p = 1 or n_q = 1
 

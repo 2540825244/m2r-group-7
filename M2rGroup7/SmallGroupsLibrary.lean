@@ -5,21 +5,19 @@ import Mathlib.GroupTheory.SpecificGroups.Quaternion
 import Mathlib.GroupTheory.SpecificGroups.Alternating
 import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.GroupTheory.OrderOfElement
-
+import Mathlib
 
 /-- Cyclic group generator -/
 def CyclicGroup (n : Nat) := Multiplicative (ZMod n)
+  deriving Group, CommGroup, IsCyclic -- might be a better way than using delta
 
-instance (n : Nat) : Group (CyclicGroup n) := by
-  delta CyclicGroup
-  infer_instance
+instance (n : Nat) : Group (CyclicGroup n) := inferInstanceAs <| Group (Multiplicative (ZMod n))
 
 /-- Alternating group generator -/
 def AlternatingGroup (n : Nat) := ↥(alternatingGroup (Fin n))
 
-instance (n : Nat) : Group (AlternatingGroup n) := by
-  delta AlternatingGroup
-  infer_instance
+instance (n : Nat) : Group (AlternatingGroup n) :=
+  inferInstanceAs <| Group ↥(alternatingGroup (Fin n)) -- a second approach, also better
 
 instance (n : Nat) : CommGroup (CyclicGroup n) := by
   delta CyclicGroup
@@ -55,7 +53,6 @@ def c4OnC2sqSwap : CyclicGroup 4 →* MulAut (CyclicGroup 2 × CyclicGroup 2) :=
   let swap : MulAut (CyclicGroup 2 × CyclicGroup 2) := MulEquiv.prodComm
   cyclicHom 4 swap (by
     have h2 : swap ^ 2 = 1 := by ext ⟨a, b⟩ <;> rfl
-    change swap ^ 4 = 1
     rw [show (4 : ℕ) = 2 * 2 from rfl, pow_mul, h2, one_pow])
 
 /-- The non-trivial action of `C_4` on `C_4` by inversion, factoring through `C_4/C_2 = C_2`. -/
@@ -100,6 +97,7 @@ def c2OnC8Pow3 : CyclicGroup 2 →* MulAut (CyclicGroup 8) :=
 /-- The unique element of order 2 in `CyclicGroup 4`. -/
 def c4Half : CyclicGroup 4 := Multiplicative.ofAdd (2 : ZMod 4)
 
+-- comment: "K_8" is (I think) not standard notation.
 /-- The order-2 automorphism of `K_8 = C_4 × C_2` sending `x ↦ x^3` and `y ↦ x²y`, where
 `x` generates `C_4` and `y` generates `C_2`. On pairs: `(a, b) ↦ (a^3 · c4Half^b, b)`. -/
 def psi6 : MulAut (CyclicGroup 4 × CyclicGroup 2) where
@@ -117,6 +115,7 @@ def c2OnK8Psi6 : CyclicGroup 2 →* MulAut (CyclicGroup 4 × CyclicGroup 2) :=
     intro x
     exact psi6.left_inv x)
 
+-- if you `import Mathlib` then this instance is there already.
 instance : Group Unit where
   mul _ _ := ()
   mul_assoc _ _ _ := by rfl
@@ -176,4 +175,7 @@ def retrieve (n : Nat) (i : Nat) : Type :=
 -- Tell compiler that groups we get are groups
 instance (o : Nat) (i : Nat) : Group (retrieve o i) := by
   unfold retrieve
-  split <;> try infer_instance
+  split <;> infer_instance -- don't need `try`
+
+  -- conjecture: if (n,i) is a valid index then retrieve n i has order n ;-)
+-- hard challenge: for which N can you prove that every group of order n<=N occurs on your table
