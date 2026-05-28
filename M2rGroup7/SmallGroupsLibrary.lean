@@ -10,7 +10,7 @@ abbrev maximumOrder : Nat := 17
 
 /-- Cyclic group generator -/
 def CyclicGroup (n : Nat) [NeZero n] := Multiplicative (ZMod n)
-  deriving DecidableEq, Group, IsCyclic, Fintype, DivisionCommMonoid
+  deriving DecidableEq, Group, CommGroup, IsCyclic, Fintype, DivisionCommMonoid
 
 /-- Alternating group generator -/
 def AlternatingGroup (n : Nat) [NeZero n] := ↥(alternatingGroup (Fin n))

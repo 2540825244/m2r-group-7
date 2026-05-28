@@ -33,6 +33,7 @@ lemma sylow_index_eq {p q : ℕ} {a b : ℕ}
   rw [sylow_card_eq hpq h P, h] at hcard
   exact Nat.eq_of_mul_eq_mul_right (pow_pos hp.out.pos a) (hcard.trans (mul_comm _ _))
 
+/-- Every group G of order p^2 q has either a normal Sylow p-group or normal Sylow q-group -/
 lemma p2q_group_has_normal_sylow_subgroup {p : ℕ} {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_prime : Fact q.Prime] (h_p_ne_q : p ≠ q) (h : Nat.card G = p^2 * q)
   : Nat.card (Sylow p G) = 1 ∨ Nat.card (Sylow q G) = 1 := by
   let n_p := Nat.card (Sylow p G)

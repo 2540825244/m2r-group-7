@@ -41,6 +41,7 @@ lemma monoidHom_eq_of_generator_eq
     obtain ⟨l, hl⟩ := Subgroup.mem_zpowers_iff.mp (hg x)
     rw [← hl, map_zpow f_1 g l, map_zpow f_2 g l, h]
 
+/-- Given a cyclic group and d dividing its order, there exists a unique subgroup of order d. -/
 lemma cyclic_subgroup_of_cyclic_group_is_unique {n d : ℕ} [Group G] [IsCyclic G]
   (h_n_pos : n > 0) (h_ord : Nat.card G = n) (K1 K2 : Subgroup G)
   (h1 : Nat.card K1 = d)
@@ -115,11 +116,16 @@ lemma cyclic_subgroup_of_cyclic_group_is_unique {n d : ℕ} [Group G] [IsCyclic 
     have hK2 : K2 = H := h_eq K2 h2
     exact hK1.trans hK2.symm
 
+instance {p : ℕ} [h : Fact p.Prime] {n : ℕ} : NeZero (p ^ n) := by
+  have hp : Nat.Prime p := h.out
+  exact ⟨(pow_pos hp.pos n).ne'⟩
+
 instance {p : ℕ} [h : Fact p.Prime] : NeZero (p * (p - 1)) := by
   have hp : Nat.Prime p := h.out
   have h2 : 2 ≤ p := hp.two_le
   exact ⟨Nat.mul_ne_zero (by omega) (by omega)⟩
 
+/-- Aut(C_(p^2)) is isomorphic to C_(p * (p - 1)) -/
 lemma aut_of_cyclic_p2 {p : ℕ} [h_p_prime : Fact p.Prime] : Nonempty (MulAut (CyclicGroup (p ^ 2)) ≃* CyclicGroup (p * (p - 1))) := by
     -- Aut(C_(p^2)) ≃* (ZMod (p ^ 2))ˣ
     have h_aut_c_p2_iso_cyclic : MulAut (CyclicGroup (p ^ 2)) ≃* (ZMod (p ^ 2))ˣ := by
