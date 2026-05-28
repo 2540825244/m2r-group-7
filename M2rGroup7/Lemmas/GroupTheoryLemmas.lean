@@ -115,6 +115,11 @@ lemma cyclic_subgroup_of_cyclic_group_is_unique {n d : ℕ} [Group G] [IsCyclic 
     have hK2 : K2 = H := h_eq K2 h2
     exact hK1.trans hK2.symm
 
+instance {p : ℕ} [h : Fact p.Prime] : NeZero (p * (p - 1)) := by
+  have hp : Nat.Prime p := h.out
+  have h2 : 2 ≤ p := hp.two_le
+  exact ⟨Nat.mul_ne_zero (by omega) (by omega)⟩
+
 lemma aut_of_cyclic_p2 {p : ℕ} [h_p_prime : Fact p.Prime] : Nonempty (MulAut (CyclicGroup (p ^ 2)) ≃* CyclicGroup (p * (p - 1))) := by
     -- Aut(C_(p^2)) ≃* (ZMod (p ^ 2))ˣ
     have h_aut_c_p2_iso_cyclic : MulAut (CyclicGroup (p ^ 2)) ≃* (ZMod (p ^ 2))ˣ := by
