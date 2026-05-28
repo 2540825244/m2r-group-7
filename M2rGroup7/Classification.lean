@@ -490,7 +490,9 @@ theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
   | 9 => by classify_prime_sq 3 h
 
   | 10 => by
-    sorry
+    obtain (hiso | hiso) := order10_classification h
+    · exact ⟨2, by decide, hiso⟩
+    · exact ⟨1, by decide, hiso⟩
 
   | 11 => by
     classify_prime 11 h
