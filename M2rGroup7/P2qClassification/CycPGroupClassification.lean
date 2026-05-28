@@ -259,21 +259,23 @@ theorem center_card_of_r_pos
       rcases IsPGroup.smul_mul_inv_trivial_or_surjective hqgrp hcop with htrivial | hsurj
       · -- Trivial action: f = 1, so Im(f) = {1}, |Im(f)| = 1 = p^r — but r > 0
         exfalso
-        have hf_one : f = 1 := by
-          ext k; ext y; simp only [MulAut.one_apply]
+        have hf_one : f = 1 := MonoidHom.ext fun k => MulEquiv.ext fun y => by
+          show (f k) y = y
           have : k • y = y := mul_inv_eq_one.mp (htrivial y k)
-          rw [← hsmul k y] at this; exact this
+          rw [← hsmul k y]; exact this
         linarith [canonicalAction_range_card p q n m r hpq hq_odd hn hle,
                   show Nat.card f.range = 1 by simp [hf_one],
-                  Nat.one_lt_pow hr hp.out.one_lt]
+                  Nat.one_lt_pow hr.ne' hp.out.one_lt]
       · -- Surjective: for x ∈ Fix, write x = k₀ • q₀ * q₀⁻¹; induction gives x^(p^m) = 1
         obtain ⟨k₀, q₀, hq_eq⟩ := hsurj x
         -- Key: k₀ • (k₀ • q₀) = x * (k₀ • q₀)
         have step : k₀ • (k₀ • q₀) = x * (k₀ • q₀) := by
           have h3 : k₀ • (k₀ • q₀) * (k₀ • q₀)⁻¹ = x := by
-            rw [← smul_inv', ← smul_mul, hq_eq, hfixed k₀]
+            have aux := congr_arg (k₀ • ·) hq_eq
+            simp only [smul_mul', smul_inv'] at aux
+            exact aux.trans (hfixed k₀)
           calc k₀ • (k₀ • q₀)
-              = k₀ • (k₀ • q₀) * (k₀ • q₀)⁻¹ * (k₀ • q₀) := by group
+              = k₀ • (k₀ • q₀) * (k₀ • q₀)⁻¹ * (k₀ • q₀) := (inv_mul_cancel_right _ _).symm
             _ = x * (k₀ • q₀) := by rw [h3]
         -- By induction: k₀^n • (k₀ • q₀) = x^n * (k₀ • q₀)
         have ind : ∀ n : ℕ, k₀ ^ n • (k₀ • q₀) = x ^ n * (k₀ • q₀) := by
@@ -281,17 +283,18 @@ theorem center_card_of_r_pos
           | zero => simp
           | succ n ih =>
             rw [pow_succ, mul_smul, show k₀ • (k₀ • q₀) = x * (k₀ • q₀) from step,
-                smul_mul, hfixed (k₀ ^ n), ih]; ring
+                smul_mul', hfixed (k₀ ^ n), ih]; group
         -- k₀^(p^m) = 1 in CyclicGroup(p^m), so x^(p^m) = 1
         have hkpm : k₀ ^ p ^ m = 1 := by
-          have := pow_natCard_eq_one (G := CyclicGroup (p ^ m)) k₀
-          rwa [card_cyclicGroup] at this
-        have hind := ind (p ^ m)
-        rw [hkpm, one_smul] at hind
+          have h : k₀ ^ Nat.card (CyclicGroup (p ^ m)) = 1 := pow_card_eq_one'
+          rwa [card_cyclicGroup] at h
         -- hind : k₀ • q₀ = x^(p^m) * (k₀ • q₀), so x^(p^m) = 1
+        have hind : k₀ • q₀ = x ^ p ^ m * (k₀ • q₀) := by
+          have h := ind (p ^ m)
+          have h_lhs : k₀ ^ p ^ m • (k₀ • q₀) = k₀ • q₀ := by rw [hkpm]; exact one_smul _ _
+          rw [h_lhs] at h; exact h
         have hxpm : x ^ p ^ m = 1 :=
-          mul_right_cancel (a := x ^ p ^ m) (b := k₀ • q₀) (c := k₀ • q₀)
-            (hind.symm.trans (one_mul _).symm)
+          mul_right_cancel (hind.symm.trans (one_mul _).symm)
         -- orderOf x | p^m and | q^n; gcd = 1 forces x = 1
         have h1 : orderOf x ∣ p ^ m := orderOf_dvd_of_pow_eq_one hxpm
         have h2 : orderOf x ∣ q ^ n := by
@@ -301,7 +304,7 @@ theorem center_card_of_r_pos
           have := Nat.dvd_gcd h1 h2
           rwa [Nat.Coprime.gcd_eq_one ((hcop_pq.pow_left m).pow_right n)] at this
         exact orderOf_eq_one_iff.mp (Nat.dvd_one.mp h3)
-    · rintro rfl; intro h; simp
+    · aesop
   -- |Ker(f)| = p^(m-r) by first isomorphism: |C_{p^m}| = |Ker(f)| × |Im(f)|
   have h_ker : Nat.card f.ker = p ^ (m - r) := by
     have h_lagrange : Nat.card f.ker * f.ker.index = Nat.card (CyclicGroup (p ^ m)) :=
@@ -367,5 +370,68 @@ theorem classify_Cqn_rtimes_Cpm
       Nat.card_pos rfl f.range _ h_range_card
       (canonicalAction_range_card p q n m r hpq hq_odd hn hr)
   · -- r is uniquely determined by the isomorphism class
-    intro ⟨r', _⟩ _; simp only [Fin.mk.injEq]
-    sorry
+    intro ⟨r', hr'_lt⟩ hr'_iso; simp only [Fin.mk.injEq]
+    have hr'_le : r' ≤ min m ((q - 1).factorization p) := Nat.lt_succ_iff.mp hr'_lt
+    -- Re-derive f ≅ canonicalAction r (same construction as the existence branch)
+    have hiso_r : Nonempty (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m)) f ≃*
+        SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+          (canonicalAction p q n m hpq hq_odd hn r hr)) := by
+      apply semidirectProduct_iso_if_range_eq hp (card_cyclicGroup _)
+      have h_aut_iso : MulAut (CyclicGroup (q ^ n)) ≃* (ZMod (q ^ n))ˣ := by
+        have h := IsCyclic.mulAutMulEquiv (CyclicGroup (q ^ n)); rwa [card_cyclicGroup] at h
+      haveI : Finite (MulAut (CyclicGroup (q ^ n))) := Finite.of_equiv _ h_aut_iso.toEquiv.symm
+      haveI : IsCyclic (MulAut (CyclicGroup (q ^ n))) :=
+        (MulEquiv.isCyclic h_aut_iso).mpr (ZMod.isCyclic_units_of_prime_pow q hq.out hq_odd n)
+      exact cyclic_subgroup_of_cyclic_group_is_unique Nat.card_pos rfl f.range _
+        h_range_card (canonicalAction_range_card p q n m r hpq hq_odd hn hr)
+    obtain ⟨φ_r⟩ := hiso_r
+    obtain ⟨φ_r'⟩ := hr'_iso
+    -- canonicalAction r ≅ canonicalAction r'
+    have hiso : SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+          (canonicalAction p q n m hpq hq_odd hn r hr) ≃*
+        SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+          (canonicalAction p q n m hpq hq_odd hn r' hr'_le) :=
+      φ_r.symm.trans φ_r'
+    -- Isomorphic groups have isomorphic centers, hence equal center cardinalities
+    have h_center_eq :
+        Nat.card (Subgroup.center (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+          (canonicalAction p q n m hpq hq_odd hn r hr))) =
+        Nat.card (Subgroup.center (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+          (canonicalAction p q n m hpq hq_odd hn r' hr'_le))) :=
+      Nat.card_congr (Subgroup.centerCongr hiso).toEquiv
+    -- coprimality of q^n and p^k, needed for the r=0 contradiction cases
+    have hcop_pq : Nat.Coprime p q :=
+      hp.out.coprime_iff_not_dvd.mpr fun hdvd =>
+        hpq ((hq.out.eq_one_or_self_of_dvd p hdvd).resolve_left hp.out.one_lt.ne')
+    have hqn_gt_one : 1 < q ^ n := Nat.one_lt_pow hn.ne' hq.out.one_lt
+    -- Distinguish r from r' by center cardinality
+    rcases Nat.eq_zero_or_pos r with rfl | hr_pos
+    · rcases Nat.eq_zero_or_pos r' with rfl | hr'_pos
+      · rfl
+      · exfalso
+        rw [center_card_of_r_zero p q n m hpq hq_odd hn,
+            center_card_of_r_pos p q n m r' hpq hq_odd hn hr'_pos hr'_le] at h_center_eq
+        -- q^n * p^m = p^(m-r') is impossible: q^n > 1 but gcd(q^n, p^(m-r')) = 1
+        have hcop : Nat.Coprime (q ^ n) (p ^ (m - r')) :=
+          (hcop_pq.symm.pow_left n).pow_right (m - r')
+        have h_not_dvd : ¬ (q ^ n ∣ p ^ (m - r')) := fun hdvd =>
+          absurd (Nat.le_of_dvd Nat.one_pos (hcop ▸ Nat.dvd_gcd (dvd_refl _) hdvd))
+            (by linarith)
+        exact h_not_dvd (h_center_eq ▸ dvd_mul_right (q ^ n) (p ^ m))
+    · rcases Nat.eq_zero_or_pos r' with rfl | hr'_pos
+      · exfalso
+        rw [center_card_of_r_pos p q n m r hpq hq_odd hn hr_pos hr,
+            center_card_of_r_zero p q n m hpq hq_odd hn] at h_center_eq
+        have hcop : Nat.Coprime (q ^ n) (p ^ (m - r)) :=
+          (hcop_pq.symm.pow_left n).pow_right (m - r)
+        have h_not_dvd : ¬ (q ^ n ∣ p ^ (m - r)) := fun hdvd =>
+          absurd (Nat.le_of_dvd Nat.one_pos (hcop ▸ Nat.dvd_gcd (dvd_refl _) hdvd))
+            (by linarith)
+        exact h_not_dvd (h_center_eq.symm ▸ dvd_mul_right (q ^ n) (p ^ m))
+      · -- Both r, r' > 0: p^(m-r) = p^(m-r') → m-r = m-r' → r = r'
+        rw [center_card_of_r_pos p q n m r hpq hq_odd hn hr_pos hr,
+            center_card_of_r_pos p q n m r' hpq hq_odd hn hr'_pos hr'_le] at h_center_eq
+        have h_exp : m - r = m - r' := Nat.pow_right_injective hp.out.two_le h_center_eq
+        have hr_le_m := hr.trans (min_le_left m _)
+        have hr'_le_m := hr'_le.trans (min_le_left m _)
+        omega
