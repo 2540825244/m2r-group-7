@@ -145,3 +145,41 @@ lemma semidirectProduct_iso_if_range_card_eq
           h_range_card_eq.symm
 
       grind [semidirectProduct_iso_if_range_eq]
+
+/-- Given two nontrivial homomorphisms f_1, f_2 : C_p × C_p →* Aut(C_q) whose images
+    both have order p (and p ∣ q − 1), there exists an automorphism
+    β : Aut(C_p × C_p) such that f_2 = f_1 ∘ β.
+
+    Proof sketch: since Aut(C_q) ≅ (ℤ/q)* is cyclic of order q−1 and p ∣ q−1,
+    there is a unique subgroup of order p, so f_1.range = f_2.range.
+    Fix a generator σ of this common subgroup.  For each i, the kernel of f_i
+    has order p (index-p subgroup of C_p × C_p), so we can find generators
+    x_i, y_i of C_p × C_p with f_i(x_i) = σ and f_i(y_i) = 1.
+    The linear map x_1 ↦ x_2, y_1 ↦ y_2 gives the desired β. -/
+lemma exists_aut_of_CpCp_conjugating_actions
+    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (h_pdvd : p ∣ q - 1)
+    (f_1 f_2 : CyclicGroup p × CyclicGroup p →* MulAut (CyclicGroup q))
+    (hf1_range : Nat.card f_1.range = p)
+    (hf2_range : Nat.card f_2.range = p) :
+    ∃ β : MulAut (CyclicGroup p × CyclicGroup p),
+      ∀ x : CyclicGroup p × CyclicGroup p, f_2 x = f_1 (β x) := by
+  sorry
+
+/-- Any two nontrivial semidirect products C_q ⋊ (C_p × C_p) arising from homomorphisms
+    with image of order p are isomorphic, provided p ∣ q − 1.
+
+    The key step is `exists_aut_of_CpCp_conjugating_actions`, which produces
+    β : Aut(C_p × C_p) with f_2 = f_1 ∘ β; then
+    `semidirectProduct_iso_of_conjugate_action` (with h = 1) gives the equivalence. -/
+theorem semidirectProduct_CpCp_iso
+    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (h_pdvd : p ∣ q - 1)
+    (f_1 f_2 : CyclicGroup p × CyclicGroup p →* MulAut (CyclicGroup q))
+    (_ : f_1 ≠ 1) (_ : f_2 ≠ 1)
+    (hf1_range : Nat.card f_1.range = p)
+    (hf2_range : Nat.card f_2.range = p) :
+    Nonempty (SemidirectProduct (CyclicGroup q) (CyclicGroup p × CyclicGroup p) f_1 ≃*
+              SemidirectProduct (CyclicGroup q) (CyclicGroup p × CyclicGroup p) f_2) := by
+  obtain ⟨β, hβ⟩ := exists_aut_of_CpCp_conjugating_actions h_pdvd f_1 f_2 hf1_range hf2_range
+  exact semidirectProduct_iso_of_conjugate_action 1 β (fun x => by simp [hβ x])
