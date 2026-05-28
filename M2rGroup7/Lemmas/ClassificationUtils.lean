@@ -2,6 +2,22 @@ import Mathlib
 import «M2rGroup7».Lemmas.GroupTheoryLemmas
 import «M2rGroup7».Lemmas.HomomorphismUtils
 
+/-- When the action φ is trivial, N ⋊[φ] K ≃* N × K via the identity map on pairs. -/
+noncomputable def SemidirectProduct.mulEquivOfTrivialAction
+    {N K : Type*} [Group N] [Group K] {φ : K →* MulAut N} (hφ : φ = 1) :
+    SemidirectProduct N K φ ≃* N × K where
+  toFun x := (x.left, x.right)
+  invFun p := ⟨p.1, p.2⟩
+  left_inv x := SemidirectProduct.ext rfl rfl
+  right_inv _ := rfl
+  map_mul' x y := by
+    have hact : ∀ (k : K) (n : N), φ k n = n := fun k n => by
+      have hk : φ k = 1 := DFunLike.congr_fun hφ k
+      simp [hk]
+    exact Prod.ext
+      (by simp [SemidirectProduct.mul_left, hact])
+      (by simp [SemidirectProduct.mul_right])
+
 theorem semidirectProduct_iso_of_conjugate_action
     {H K : Type*} [Group H] [Group K]
     {f_1 f_2 : K →* MulAut H}
@@ -166,6 +182,14 @@ lemma exists_aut_of_CpCp_conjugating_actions
     ∃ β : MulAut (CyclicGroup p × CyclicGroup p),
       ∀ x : CyclicGroup p × CyclicGroup p, f_2 x = f_1 (β x) := by
   sorry
+
+/-- Direct product of cyclic groups of coprime orders is cyclic of product order. -/
+noncomputable def CyclicGroup.prodMulEquiv {m n : ℕ} (hcop : Nat.Coprime m n) :
+    CyclicGroup m × CyclicGroup n ≃* CyclicGroup (m * n) := by
+  haveI : IsCyclic (CyclicGroup m × CyclicGroup n) :=
+    Group.isCyclic_prod_iff.mpr ⟨inferInstance, inferInstance,
+      by rw [card_cyclicGroup, card_cyclicGroup]; exact hcop⟩
+  exact mulEquivOfCyclicCardEq (by simp [Nat.card_prod, card_cyclicGroup])
 
 /-- Any two nontrivial semidirect products C_q ⋊ (C_p × C_p) arising from homomorphisms
     with image of order p are isomorphic, provided p ∣ q − 1.

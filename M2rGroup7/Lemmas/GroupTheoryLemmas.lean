@@ -206,3 +206,12 @@ lemma DihedralGroup3_unique_sylow3 :
 theorem MonoidHom.card_range_dvd_gcd {G G' : Type*} [Group G] [Group G'] (f : G →* G') :
       Nat.card ↥f.range ∣ Nat.gcd (Nat.card G) (Nat.card G') :=
     Nat.dvd_gcd (Subgroup.card_range_dvd f) (Subgroup.card_subgroup_dvd_card f.range)
+
+theorem prime_classification [hn : Fact n.Prime] [Group G] (h : Nat.card G = n) :
+(Nonempty (G ≃* CyclicGroup n)) := by
+  apply Nonempty.intro
+  have h_g_card : Nat.card G = n := h
+  have : IsCyclic G := isCyclic_of_prime_card h_g_card
+  refine (mulEquivOfCyclicCardEq ?_)
+  have h_c_card: Nat.card (CyclicGroup n) = n := card_cyclicGroup n
+  rw [h_g_card, h_c_card]

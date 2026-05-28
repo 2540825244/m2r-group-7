@@ -4,9 +4,11 @@ import «M2rGroup7».Lemmas.LinearAlgebraUtils
 import «M2rGroup7».Lemmas.GroupTheoryLemmas
 import «M2rGroup7».Lemmas.ClassificationUtils
 import «M2rGroup7».Lemmas.HomomorphismUtils
+import «M2rGroup7».Lemmas.NumberTheoryUtils
+import «M2rGroup7».P2qClassification.CycPGroupClassification
 
 theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3 : q > 3) (h_3_mod_4 : q ≡ 3 [MOD 4]) (h : Nat.card G = 4 * q)
- : Nonempty (G ≃* CyclicGroup (4 * q)) := by
+ : Nonempty (G ≃* CyclicGroup (4 * q)) ∨ Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q) := by
 
   -- G is finite
   haveI : Finite G := by
@@ -23,16 +25,11 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
   rcases n_2_or_n_q_one with h_n2_1 | h_nq_1
   · -- case h_np1 : n_p = 1
     let P : Sylow 2 G := default
-    -- lemma start
+
+    -- Enough to synthesize instance of type class (↑P).Normal
+    -- for Subgroup.exists_right_complement'_of_coprime
     haveI : Subsingleton (Sylow 2 G) :=
       (Nat.card_eq_one_iff_unique.mp h_n2_1).1
-
-    have : P.Normal := by
-      exact Sylow.normal_of_subsingleton P
-
-    -- P is normal
-    haveI hPnormal : (↑P : Subgroup G).Normal := Sylow.normal_of_subsingleton P
-    -- lemma end
 
     have h_p_p2 : Nat.card ↥(P : Subgroup G) = 4 := by
       exact sylow_card_eq (by aesop) (show Nat.card G = 2 ^ 2 * q ^ 1 by aesop) P
@@ -54,6 +51,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
         (↑P : Subgroup G).normalizerMonoidHom.comp
           (Subgroup.inclusion (by simp [Subgroup.normalizer_eq_top]))
 
+    -- Could be a lemma
     -- Step 1: K has order q
     have hK_card : Nat.card ↥K = q := by
       have h1 : Nat.card G = Nat.card ↥(↑P : Subgroup G) * Nat.card ↥K := by
@@ -63,13 +61,9 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
       rw [h_p_p2, h] at h1
       grind
 
-    -- Step 2: K is cyclic (order q is prime)
-    haveI hK_cyclic : IsCyclic ↥K := isCyclic_of_prime_card hK_card
-
-    -- Step 3: K ≃* C_q
+    -- Step 2: K ≃* C_q
     have eK : ↥K ≃* CyclicGroup q :=
-      mulEquivOfCyclicCardEq (hK_card.trans (card_cyclicGroup q).symm)
-    --
+      Classical.choice (prime_classification (n := q) hK_card)
 
     -- P is isomorphic to C_2 x C_2 or C_4
     haveI : Fact (Nat.Prime 2) := by decide
@@ -85,34 +79,20 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
         (Nat.card_congr h_aut_P.toEquiv).trans (card_cyclicGroup 2)
 
       have h_phi_triv : φ = 1 :=
-        eq_one_of_coprime_card (by rw [hK_card, h_aut_card];
-          exact h_q_prime.out.coprime_of_ne (by norm_num) (by omega))
-      refine ⟨?_⟩
-      -- Directly construct ↥↑P ⋊[φ] ↥K ≃* ↥↑P × ↥K using φ = 1 element-wise
-      have hφ1 : ∀ (k : ↥K) (n : ↥P), φ k n = n := fun k n => by
-        have : φ k = 1 := DFunLike.congr_fun h_phi_triv k; simp [this]
-      have h_sdp_prod : P ⋊[φ] ↥K ≃* P × ↥K := {
-        toFun    := fun x => (x.left, x.right)
-        invFun   := fun p => ⟨p.1, p.2⟩
-        left_inv := fun x => SemidirectProduct.ext rfl rfl
-        right_inv := fun _ => rfl
-        map_mul' := fun x y => Prod.ext
-          (by simp [SemidirectProduct.mul_left, hφ1])
-          (by simp [SemidirectProduct.mul_right]) }
-      -- gcd(2, q) = 1 since q is an odd prime
-      have h2q : Nat.Coprime 2 q :=
-        (by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)
-      -- CyclicGroup 4 × CyclicGroup q is cyclic since gcd(4, q) = 1
-      haveI : IsCyclic (CyclicGroup 4 × CyclicGroup q) :=
-        Group.isCyclic_prod_iff.mpr ⟨inferInstance, inferInstance,
-          by rw [card_cyclicGroup, card_cyclicGroup]; exact h2q.pow_left 2⟩
-      have h_card : Nat.card (CyclicGroup 4 × CyclicGroup q) = Nat.card (CyclicGroup (4 * q)) := by
-        simp [Nat.card_prod, card_cyclicGroup]
-      -- G ≃* ↥↑P ⋊[φ] ↥K ≃* ↥↑P × ↥K ≃* C₄ × Cq ≃* C_{4q}
-      exact h_iso_g_p_k.symm.trans
-        (h_sdp_prod.trans
-          ((h_c4.some.prodCongr eK).trans (mulEquivOfCyclicCardEq h_card)))
---------
+        eq_one_of_coprime_card (by
+          rw [hK_card, h_aut_card]
+          exact h_q_prime.out.coprime_of_ne (by norm_num : (2 : ℕ).Prime) (by omega))
+      have : Nonempty (G ≃* CyclicGroup (4 * q)) := by
+        refine ⟨?_⟩
+        have h_sdp_prod : P ⋊[φ] ↥K ≃* P × ↥K :=
+          SemidirectProduct.mulEquivOfTrivialAction h_phi_triv
+        have h4q : Nat.Coprime 4 q :=
+          ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2
+        -- G ≃* ↥↑P ⋊[φ] ↥K ≃* ↥↑P × ↥K ≃* C₄ × Cq ≃* C_{4q}
+        exact h_iso_g_p_k.symm.trans
+          (h_sdp_prod.trans
+            ((h_c4.some.prodCongr eK).trans (CyclicGroup.prodMulEquiv h4q)))
+      tauto
     · -- case h_c2_c2 : Nonempty (↥↑P ≃* CyclicGroup 2 × CyclicGroup 2)
       -- Aut(P) ≃* Aut(C_2 x C_2) ≃* GL_2(F_2) ≃* D_3
       have h_aut_dih : Nonempty (MulAut P ≃* DihedralGroup 3) := by
@@ -130,7 +110,19 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
           have h_cop2 : Nat.Coprime q 2 := h_q_prime.out.coprime_of_ne (by norm_num) (by omega)
           have h_cop3 : Nat.Coprime q 3 := h_q_prime.out.coprime_of_ne (by norm_num) (by omega)
           simpa using h_cop2.mul_right h_cop3)
-      sorry
+
+      have : Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q) := by
+        refine ⟨?_⟩
+        have h_sdp_prod : P ⋊[φ] ↥K ≃* P × ↥K :=
+          SemidirectProduct.mulEquivOfTrivialAction h_phi_triv
+
+        have h4q : Nat.Coprime 4 q :=
+          ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2
+        -- G ≃* ↥↑P ⋊[φ] ↥K ≃* ↥↑P × ↥K ≃* C_2 × C ≃* C_{4q}
+        exact h_iso_g_p_k.symm.trans
+          (h_sdp_prod.trans
+            ((h_c2_c2.some.prodCongr eK).trans MulEquiv.prodAssoc))
+      tauto
   · -- case h_nq_1 : n_q = 1
     sorry
 
