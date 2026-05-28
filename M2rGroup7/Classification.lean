@@ -231,8 +231,8 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
   -- Step 1: G/Z is C_p x C_p so for every element g, (gZ)^p = Z
 
   -- Step 2: a^p, b^p in Z
+  trivial
 
-  sorry
 
 theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [IsMulCommutative G]
   (h : Nat.card G = p ^ 3) :
