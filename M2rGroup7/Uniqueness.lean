@@ -17,7 +17,7 @@ def combine {α : Type u} {β : Type u'} [DecidableEq α] [DecidableEq β]
       · exact inv.preservation e
       · exact inv'.preservation e
 
-infixl:65 " ⊗ " => combine
+infixl:65 " ⊗ " => combine -- same precedence as `+`
 
 lemma not_iso_by {G H : Type v}
   [Group G] [Group H] [Fintype G] [Fintype H] [DecidableEq G] [DecidableEq H]
