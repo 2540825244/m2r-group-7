@@ -21,3 +21,9 @@ name = "M2rGroup7"
 name = "OrderPQ"
 git = "https://github.com/2540825244/order-p-q"
 rev = "main"
+
+[[require]]
+name = "Paperproof"
+git = "https://github.com/Paper-Proof/paperproof.git"
+subDir = "lean"
+rev = "main"

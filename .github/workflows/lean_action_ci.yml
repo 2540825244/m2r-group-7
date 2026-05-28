@@ -18,6 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: leanprover/lean-action@v1
-      - uses: leanprover-community/docgen-action@v1
+      - name: Build and deploy docs on main only
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: leanprover-community/docgen-action@v1
         with:
           deploy: ${{ github.ref == 'refs/heads/main' }}
