@@ -178,11 +178,9 @@ lemma exists_generators_of_CpCp_action
   set y₀ : CyclicGroup p × CyclicGroup p := (1, g) with hy₀_def
   -- Orders of x₀ and y₀
   have hx₀_order : orderOf x₀ = p := by
-    change orderOf (g, (1 : CyclicGroup p)) = p
-    rw [Prod.orderOf, orderOf_one, hg_order, Nat.lcm_one_right]
+    rw [hx₀_def, Prod.orderOf, orderOf_one, hg_order, Nat.lcm_one_right]
   have hy₀_order : orderOf y₀ = p := by
-    change orderOf ((1 : CyclicGroup p), g) = p
-    rw [Prod.orderOf, orderOf_one, hg_order, Nat.lcm_one_left]
+    rw [hy₀_def, Prod.orderOf, orderOf_one, hg_order, Nat.lcm_one_left]
   -- x₀, y₀ generate everything
   have h_gen_top : Subgroup.zpowers x₀ ⊔ Subgroup.zpowers y₀ = ⊤ := by
     rw [eq_top_iff]
@@ -206,13 +204,12 @@ lemma exists_generators_of_CpCp_action
   have helper : ∀ τ : MulAut (CyclicGroup q), τ ∈ Subgroup.zpowers σ → τ ≠ 1 →
       ∃ m : ℤ, τ ^ m = σ := by
     intro τ hτ_mem hτ_ne
-    haveI hp_prime : Nat.Prime p := hp.out
     have h_τ_order_dvd : orderOf τ ∣ p := by
       have h1 : orderOf (⟨τ, hτ_mem⟩ : Subgroup.zpowers σ) ∣ Nat.card (Subgroup.zpowers σ) :=
         orderOf_dvd_natCard _
       rwa [Subgroup.orderOf_mk, hσ_zpow_card] at h1
     have h_τ_order : orderOf τ = p := by
-      rcases (Nat.dvd_prime hp_prime).mp h_τ_order_dvd with h1 | hp'
+      rcases (Nat.dvd_prime hp.out).mp h_τ_order_dvd with h1 | hp'
       · exact absurd (orderOf_eq_one_iff.mp h1) hτ_ne
       · exact hp'
     have h_τ_zpow_eq : Subgroup.zpowers τ = Subgroup.zpowers σ := by
@@ -236,14 +233,9 @@ lemma exists_generators_of_CpCp_action
         have h_div : orderOf (w₀^m) ∣ p := by
           apply orderOf_dvd_of_pow_eq_one
           have h_w₀p : w₀ ^ (p : ℤ) = 1 := by
-            have h1 : w₀ ^ orderOf w₀ = 1 := pow_orderOf_eq_one w₀
-            have h2 : w₀ ^ ((orderOf w₀ : ℕ) : ℤ) = 1 := by rw [zpow_natCast]; exact h1
-            rw [hw₀_order] at h2; exact h2
-          calc ((w₀ ^ m) ^ p : CyclicGroup p × CyclicGroup p)
-              = w₀ ^ (m * (p : ℤ)) := by rw [← zpow_natCast (w₀ ^ m) p, ← zpow_mul]
-            _ = w₀ ^ ((p : ℤ) * m) := by rw [mul_comm]
-            _ = (w₀ ^ (p : ℤ)) ^ m := by rw [zpow_mul]
-            _ = 1 := by rw [h_w₀p, one_zpow]
+            have := zpow_natCast w₀ (orderOf w₀) ▸ pow_orderOf_eq_one w₀
+            rwa [hw₀_order] at this
+          rw [← zpow_natCast (w₀ ^ m) p, ← zpow_mul, mul_comm, zpow_mul, h_w₀p, one_zpow]
         exact Nat.dvd_antisymm h_div h_f_dvd
       refine Subgroup.eq_of_le_of_card_ge ?_ ?_
       · exact Subgroup.zpowers_le.mpr (Subgroup.zpow_mem _ (Subgroup.mem_zpowers w₀) m)
@@ -281,19 +273,17 @@ lemma exists_generators_of_CpCp_action
     obtain ⟨n, hn⟩ := Subgroup.mem_zpowers_iff.mp hfy₀_mem
     let x := x₀^m
     let y := y₀ * x^(-n)
-    have hfx_eq : f x = σ := hfxm_eq
     have hfy_eq : f y = 1 := by
-      change f (y₀ * x^(-n)) = 1
-      rw [map_mul, map_zpow, hfx_eq, ← hn]
+      change f (y₀ * x ^ (-n)) = 1
+      rw [map_mul, map_zpow, hfxm_eq, ← hn]
       group
-    refine ⟨x, y, ?_, hfx_eq, hfy_eq⟩
+    refine ⟨x, y, ?_, hfxm_eq, hfy_eq⟩
     rw [eq_top_iff]
     intro z _
     have hz_top : z ∈ Subgroup.zpowers x₀ ⊔ Subgroup.zpowers y₀ :=
       h_gen_top ▸ Subgroup.mem_top z
     have h_x₀_mem : x₀ ∈ Subgroup.zpowers x ⊔ Subgroup.zpowers y := by
-      change x₀ ∈ Subgroup.zpowers (x₀^m) ⊔ Subgroup.zpowers y
-      rw [h_zpow_x_eq]
+      rw [show x = x₀ ^ m from rfl, h_zpow_x_eq]
       exact Subgroup.mem_sup_left (Subgroup.mem_zpowers x₀)
     have h_y₀_mem : y₀ ∈ Subgroup.zpowers x ⊔ Subgroup.zpowers y := by
       have h_y₀_eq : y₀ = y * x^n := by
