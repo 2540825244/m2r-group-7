@@ -381,10 +381,40 @@ lemma exists_aut_of_CpCp_conjugating_actions
   letI inst_mod : Module (ZMod p) (Additive H) := AddCommGroup.zmodModule h_nsmul_p
   -- Build LinearMaps from Fin 2 → ZMod p to Additive H using Basis.constr.
   let b_std : Module.Basis (Fin 2) (ZMod p) (Fin 2 → ZMod p) := Pi.basisFun (ZMod p) (Fin 2)
-  let vec₁ : Fin 2 → Additive H := ![Additive.ofMul x₁, Additive.ofMul y₁]
-  let vec₂ : Fin 2 → Additive H := ![Additive.ofMul x₂, Additive.ofMul y₂]
-  let φ₁ : (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H := b_std.constr (ZMod p) vec₁
-  let φ₂ : (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H := b_std.constr (ZMod p) vec₂
+  -- Helper: for any x, y : H with the generation property, the LinearMap
+  -- sending the basis to (Additive.ofMul x, Additive.ofMul y) is surjective.
+  have h_surj : ∀ (x y : H), Subgroup.zpowers x ⊔ Subgroup.zpowers y = ⊤ →
+      Function.Surjective (b_std.constr (ZMod p) (![Additive.ofMul x, Additive.ofMul y]) :
+        (Fin 2 → ZMod p) → Additive H) := by
+    intro x y h_gen
+    intro h
+    -- Convert h to a multiplicative element of H.
+    have h_mem : Additive.toMul h ∈ Subgroup.zpowers x ⊔ Subgroup.zpowers y :=
+      h_gen ▸ Subgroup.mem_top _
+    rw [Subgroup.mem_sup] at h_mem
+    obtain ⟨u, hu_mem, v, hv_mem, huv⟩ := h_mem
+    obtain ⟨a, ha⟩ := Subgroup.mem_zpowers_iff.mp hu_mem
+    obtain ⟨b, hb⟩ := Subgroup.mem_zpowers_iff.mp hv_mem
+    -- h_mul = u * v = x^a * y^b
+    have h_mul : Additive.toMul h = x ^ a * y ^ b := by rw [← huv, ← ha, ← hb]
+    -- Translate to additive: h = a • (Additive.ofMul x) + b • (Additive.ofMul y)
+    have h_add : h = (a : ℤ) • Additive.ofMul x + (b : ℤ) • Additive.ofMul y := by
+      have hzpow_x : Additive.ofMul (x ^ a) = (a : ℤ) • Additive.ofMul x := ofMul_zpow a x
+      have hzpow_y : Additive.ofMul (y ^ b) = (b : ℤ) • Additive.ofMul y := ofMul_zpow b y
+      have : Additive.ofMul (Additive.toMul h) = h := rfl
+      rw [← this, h_mul, ofMul_mul, hzpow_x, hzpow_y]
+    refine ⟨![(a : ZMod p), (b : ZMod p)], ?_⟩
+    -- Compute b_std.constr (ZMod p) vec applied to ![a, b]
+    -- The result is a • (Additive.ofMul x) + b • (Additive.ofMul y) in ZMod p smul.
+    rw [h_add]
+    rw [show (![(a : ZMod p), (b : ZMod p)] : Fin 2 → ZMod p) =
+        (a : ZMod p) • b_std 0 + (b : ZMod p) • b_std 1 from ?_]
+    · rw [map_add]
+      rw [LinearMap.map_smul, LinearMap.map_smul]
+      simp only [Module.Basis.constr_basis]
+      show (a : ZMod p) • vec₁ 0 + (b : ZMod p) • vec₁ 1 = _ -- This shows the let vec₁ unfolds in goal
+      sorry
+    · sorry
   sorry
 
 /-- Direct product of cyclic groups of coprime orders is cyclic of product order. -/
