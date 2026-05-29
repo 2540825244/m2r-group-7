@@ -163,6 +163,24 @@ lemma aut_of_cyclic_p2 {p : ℕ} [h_p_prime : Fact p.Prime] : Nonempty (MulAut (
 
     exact Nonempty.intro h_aut_equiv
 
+/-- For a prime `q`, the automorphism group of `CyclicGroup q` is cyclic. -/
+instance isCyclic_mulAut_cyclicGroup_prime {q : ℕ} [Fact q.Prime] :
+    IsCyclic (MulAut (CyclicGroup q)) := by
+  haveI : IsCyclic (ZMod q)ˣ := ZMod.isCyclic_units_prime (Fact.out : q.Prime)
+  have h_iso : MulAut (CyclicGroup q) ≃* (ZMod q)ˣ := by
+    have := IsCyclic.mulAutMulEquiv (CyclicGroup q)
+    rwa [card_cyclicGroup] at this
+  exact isCyclic_of_surjective h_iso.symm.toMonoidHom h_iso.symm.surjective
+
+/-- For a prime `q`, `|Aut(C_q)| = q - 1`. -/
+lemma card_mulAut_cyclicGroup_prime {q : ℕ} [hq : Fact q.Prime] :
+    Nat.card (MulAut (CyclicGroup q)) = q - 1 := by
+  have h_aut_iso : MulAut (CyclicGroup q) ≃* (ZMod q)ˣ := by
+    have h := IsCyclic.mulAutMulEquiv (CyclicGroup q)
+    rwa [card_cyclicGroup] at h
+  rw [Nat.card_congr h_aut_iso.toEquiv, Nat.card_eq_fintype_card,
+      ZMod.card_units_eq_totient, Nat.totient_prime hq.out]
+
 -- canonicalAction and classify_Cqn_rtimes_Cpm are in SylowUtils.lean
 -- (they use semidirectProduct_iso_iff_range_eq from that file)
 
