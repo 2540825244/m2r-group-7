@@ -72,7 +72,9 @@ private noncomputable def canonicalAction_one_iso_canonicalC4OnCqAction
 theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3 : q > 3) (h_3_mod_4 : q ≡ 3 [MOD 4]) (h : Nat.card G = 4 * q)
  : Nonempty (G ≃* CyclicGroup (4 * q))
    ∨ Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q)
-   ∨ Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4) (canonicalC4OnCqAction h_ge_3)) := by
+   ∨ Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4) (canonicalC4OnCqAction h_ge_3))
+   ∨ Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2)
+                      (canonicalC2C2OnCqAction h_ge_3)) := by
 
   -- G is finite
   haveI : Finite G := by
@@ -343,7 +345,53 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
           have h_le_2 : Nat.card φ'.range ≤ 2 :=
             Nat.le_of_dvd (by norm_num) h_range_dvd_2
           omega
-        -- WIP: this is the nontrivial C_q ⋊ (C_2 × C_2) case; the required
-        -- isomorphism lemmas (semidirectProduct_CpCp_iso and its dependencies)
-        -- have outstanding sorries and are left for future work.
-        sorry
+        -- Nontrivial C_q ⋊ (C_2 × C_2): transport to the canonical reference action
+        -- via `semidirectProduct_CpCp_iso` (which uses α = 1 in the conjugacy condition).
+        have h_canon_range :
+            Nat.card (canonicalC2C2OnCqAction (q := q) h_ge_3).range = 2 := by
+          haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+          have h_inner_range :
+              Nat.card (canonicalAction 2 q 1 1 (by omega) (by omega) Nat.one_pos 1
+                (by have := one_le_min_two_factorization_two h_ge_3; omega)).range = 2 := by
+            simpa using canonicalAction_range_card 2 q 1 1 1 (by omega) (by omega) Nat.one_pos
+              (by have := one_le_min_two_factorization_two h_ge_3; omega)
+          -- Both the post-composition with `MulAut.congr` (an isomorphism) and the
+          -- precomposition with `MonoidHom.fst` (surjective) preserve the range cardinality.
+          have h_fst_surj :
+              Function.Surjective (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2)) :=
+            fun x => ⟨(x, 1), rfl⟩
+          have h_congr_eq :=
+            MonoidHom.range_eq_map
+              (((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
+                (canonicalAction 2 q 1 1 (by omega) (by omega) Nat.one_pos 1
+                  (by have := one_le_min_two_factorization_two h_ge_3; omega)))
+          have h_card_congr :
+              Nat.card (((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
+                (canonicalAction 2 q 1 1 (by omega) (by omega) Nat.one_pos 1
+                  (by have := one_le_min_two_factorization_two h_ge_3; omega))).range = 2 := by
+            rw [MonoidHom.range_comp]
+            rw [Subgroup.map_equiv_eq_comap_symm]
+            rw [← MulEquiv.toMonoidHom_eq_coe]
+            haveI : Finite (canonicalAction 2 q 1 1 (by omega) (by omega) Nat.one_pos 1
+                (by have := one_le_min_two_factorization_two h_ge_3; omega)).range :=
+              Nat.finite_of_card_ne_zero (by rw [h_inner_range]; decide)
+            rw [Nat.card_congr
+              (((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm).subgroupMap _).toEquiv]
+            simpa using h_inner_range
+          unfold canonicalC2C2OnCqAction
+          rw [MonoidHom.range_comp, Subgroup.map_top_of_surjective _ h_fst_surj]
+          simpa using h_card_congr
+        have h_canon_ne : canonicalC2C2OnCqAction (q := q) h_ge_3 ≠ 1 := by
+          intro hc
+          have := h_canon_range
+          rw [hc] at this
+          simp at this
+        obtain ⟨e_canon_to_phi'⟩ :=
+          semidirectProduct_CpCp_iso (p := 2) (q := q)
+            (two_dvd_prime_sub_one (by omega : q ≠ 2))
+            (canonicalC2C2OnCqAction h_ge_3) φ'
+            h_canon_ne hφ'_ne h_canon_range h_range_card
+        have : Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2)
+                                 (canonicalC2C2OnCqAction h_ge_3)) :=
+          ⟨h_iso_g_q_k.trans (h_sdp_congr.trans e_canon_to_phi'.symm)⟩
+        tauto
