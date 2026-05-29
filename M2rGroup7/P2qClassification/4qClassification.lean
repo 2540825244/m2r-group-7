@@ -14,30 +14,28 @@ private noncomputable def _cyclicGroup_pow_one_equiv
   haveI : NeZero (q ^ 1) := ⟨by rw [pow_one]; exact hq.out.ne_zero⟩
   mulEquivOfCyclicCardEq (by simp only [card_cyclicGroup, pow_one])
 
-/-- The canonical nontrivial action `C_4 →* Aut(C_q)` for q ≡ 3 (mod 4), q > 3.
-    This is `canonicalAction 2 q 1 2 _ _ _ 1 _`, post-composed with
-    `MulAut.congr` of the cyclic-group identification `CyclicGroup q ≃ CyclicGroup (q^1)`.
-    Its image has order `2^1 = 2`, the unique order-2 subgroup of the cyclic group
-    `Aut(C_q)` of order q − 1. -/
+/-- Shared core for the canonical `C_4 →* Aut(C_q)` actions, parametrised by image-order
+    exponent `r`. -/
+private noncomputable def _canonicalC4OnCqAction
+    {q : ℕ} [hq : Fact q.Prime] (h_q_ne_2 : q ≠ 2)
+    (r : ℕ) (hr : r ≤ min 2 ((q - 1).factorization 2)) :
+    CyclicGroup 4 →* MulAut (CyclicGroup q) :=
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  ((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
+    (canonicalAction 2 q 1 2 (by omega) h_q_ne_2 Nat.one_pos r hr)
+
+/-- The canonical nontrivial action `C_4 →* Aut(C_q)` for q > 3 prime (image order 2). -/
 noncomputable def canonicalC4OnCqAction
     {q : ℕ} [hq : Fact q.Prime] (h_q_gt_3 : q > 3) :
     CyclicGroup 4 →* MulAut (CyclicGroup q) :=
-  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-  ((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
-    (canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1
-      (one_le_min_two_factorization_two h_q_gt_3))
+  _canonicalC4OnCqAction (by omega) 1 (one_le_min_two_factorization_two h_q_gt_3)
 
-/-- The canonical action `C_4 →* Aut(C_q)` of image order 4, for q ≡ 1 (mod 4), q > 3.
-    This is `canonicalAction 2 q 1 2 _ _ _ 2 _`, post-composed with the cyclic-group
-    identification `CyclicGroup q ≃ CyclicGroup (q^1)`. Its image is the unique subgroup
-    of order 4 in `Aut(C_q)` (which exists precisely because 4 ∣ q − 1). -/
+/-- The canonical action `C_4 →* Aut(C_q)` of image order 4, for q ≡ 1 (mod 4), q > 3. -/
 noncomputable def canonicalC4OnCqAction_r2
     {q : ℕ} [hq : Fact q.Prime] (h_1_mod_4 : q ≡ 1 [MOD 4]) :
     CyclicGroup 4 →* MulAut (CyclicGroup q) :=
-  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-  ((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
-    (canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 2
-      (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4))
+  _canonicalC4OnCqAction (by simp only [Nat.ModEq] at h_1_mod_4; omega) 2
+    (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4)
 
 /-- The canonical nontrivial action `C_2 × C_2 →* Aut(C_q)` for q > 3 prime.
     This is `canonicalAction 2 q 1 1 _ _ _ 1 _` (image of order `2^1 = 2`), bridged
@@ -53,54 +51,44 @@ noncomputable def canonicalC2C2OnCqAction
         (by have := one_le_min_two_factorization_two h_q_gt_3; omega))).comp
     (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))
 
-/-- The canonical semidirect product `C_{q^1} ⋊_{canonicalAction 1} C_{2^2}` is isomorphic
-    to `C_q ⋊_{canonicalC4OnCqAction} C_4`.
+/-- Shared bridge: `C_{q^1} ⋊_{canonicalAction r} C_{2^2} ≃* C_q ⋊_{_canonicalC4OnCqAction r} C_4`.
+    Factors out the common proof for `r = 1` and `r = 2`. -/
+private noncomputable def _canonicalAction_r_iso_C4OnCqAction
+    {q : ℕ} [hq : Fact q.Prime] (h_q_ne_2 : q ≠ 2)
+    {r : ℕ} (hr : r ≤ min 2 ((q - 1).factorization 2)) :
+    SemidirectProduct (CyclicGroup (q ^ 1)) (CyclicGroup (2 ^ 2))
+      (canonicalAction 2 q 1 2 (by omega) h_q_ne_2 Nat.one_pos r hr) ≃*
+    SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
+      (_canonicalC4OnCqAction h_q_ne_2 r hr) := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  have h_action_eq :
+      (MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).toMonoidHom.comp
+          ((_canonicalC4OnCqAction h_q_ne_2 r hr).comp (MulEquiv.refl (CyclicGroup 4)).symm) =
+        canonicalAction 2 q 1 2 (by omega) h_q_ne_2 Nat.one_pos r hr := by
+    ext k
+    simp [_canonicalC4OnCqAction]
+  exact (h_action_eq ▸ SemidirectProduct.congr'
+    (φ₁ := _canonicalC4OnCqAction h_q_ne_2 r hr)
+    (fn := _cyclicGroup_pow_one_equiv (q := q)) (fg := MulEquiv.refl _)).symm
 
-    The "back bridge": `classify_sdp` (and `classify_Cqn_rtimes_Cpm`) is stated in terms of
-    `CyclicGroup (q^n)` and `CyclicGroup (p^m)`, while the conclusion of `classification_4q`
-    is in terms of `CyclicGroup q` and `CyclicGroup 4`. The `q ↔ q^1` direction is the
-    structural mismatch (`CyclicGroup q` and `CyclicGroup (q^1)` are not definitionally equal),
-    so a `MulEquiv` is genuinely needed; the `4 ↔ 2^2` direction is definitional. -/
 private noncomputable def canonicalAction_one_iso_canonicalC4OnCqAction
     {q : ℕ} [hq : Fact q.Prime] (h_ge_3 : q > 3) :
     SemidirectProduct (CyclicGroup (q ^ 1)) (CyclicGroup (2 ^ 2))
       (canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1
         (one_le_min_two_factorization_two h_ge_3)) ≃*
-    SemidirectProduct (CyclicGroup q) (CyclicGroup 4) (canonicalC4OnCqAction h_ge_3) := by
-  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-  -- After transporting via `pq_iso : C_q ≃* C_(q^1)`, the action `canonicalC4OnCqAction`
-  -- unfolds (definitionally) to `canonicalAction r=1`, by `MulEquiv.apply_symm_apply`.
-  have h_action_eq :
-      (MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).toMonoidHom.comp
-          ((canonicalC4OnCqAction h_ge_3).comp (MulEquiv.refl (CyclicGroup 4)).symm) =
-        canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1
-          (one_le_min_two_factorization_two h_ge_3) := by
-    ext k
-    simp [canonicalC4OnCqAction]
-  exact (h_action_eq ▸ SemidirectProduct.congr'
-    (φ₁ := canonicalC4OnCqAction h_ge_3)
-    (fn := _cyclicGroup_pow_one_equiv (q := q)) (fg := MulEquiv.refl _)).symm
+    SemidirectProduct (CyclicGroup q) (CyclicGroup 4) (canonicalC4OnCqAction h_ge_3) :=
+  _canonicalAction_r_iso_C4OnCqAction (by omega) (one_le_min_two_factorization_two h_ge_3)
 
-/-- Back bridge for r = 2: `C_{q^1} ⋊ C_{2^2}` with canonical r = 2 action is isomorphic to
-    `C_q ⋊ C_4` with `canonicalC4OnCqAction_r2`. Same shape as the r = 1 bridge. -/
 private noncomputable def canonicalAction_two_iso_canonicalC4OnCqAction_r2
     {q : ℕ} [hq : Fact q.Prime] (h_1_mod_4 : q ≡ 1 [MOD 4]) :
     SemidirectProduct (CyclicGroup (q ^ 1)) (CyclicGroup (2 ^ 2))
-      (canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 2
+      (canonicalAction 2 q 1 2 (by simp only [Nat.ModEq] at h_1_mod_4; omega)
+          (by simp only [Nat.ModEq] at h_1_mod_4; omega) Nat.one_pos 2
         (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4)) ≃*
     SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
-      (canonicalC4OnCqAction_r2 h_1_mod_4) := by
-  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-  have h_action_eq :
-      (MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).toMonoidHom.comp
-          ((canonicalC4OnCqAction_r2 h_1_mod_4).comp (MulEquiv.refl (CyclicGroup 4)).symm) =
-        canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 2
-          (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4) := by
-    ext k
-    simp [canonicalC4OnCqAction_r2]
-  exact (h_action_eq ▸ SemidirectProduct.congr'
-    (φ₁ := canonicalC4OnCqAction_r2 h_1_mod_4)
-    (fn := _cyclicGroup_pow_one_equiv (q := q)) (fg := MulEquiv.refl _)).symm
+      (canonicalC4OnCqAction_r2 h_1_mod_4) :=
+  _canonicalAction_r_iso_C4OnCqAction (by simp only [Nat.ModEq] at h_1_mod_4; omega)
+    (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4)
 
 /-- Classification of groups `G` of order `4q` for q > 3 prime. There are at most
     five isomorphism classes:
