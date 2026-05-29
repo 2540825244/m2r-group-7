@@ -3,6 +3,7 @@ import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
+import «M2rGroup7».UT3
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import Mathlib.SetTheory.Cardinal.Finite
@@ -27,8 +28,6 @@ import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.GroupTheory.Commutator.Basic
 import Mathlib.Data.Bracket
 import Mathlib.Algebra.Group.TypeTags.Basic
-
-def maximumOrder : Nat := 9
 
 open scoped commutatorElement
 
@@ -60,10 +59,17 @@ theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
   have h_c_card: Nat.card (CyclicGroup n) = n := card_cyclicGroup n
   rw [h_g_card, h_c_card]
 
-theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_na : ¬IsMulCommutative G) (h : Nat.card G = p^3) :
-  True := by
+theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
+  (h_na : ¬IsMulCommutative G) (h : Nat.card G = p^3) :
+  (p = 2 ∧ ((Nonempty (MulEquiv G (DihedralGroup 4))) ∨
+             (Nonempty (MulEquiv G (QuaternionGroup 2))))) ∨
+  (p ≠ 2 ∧ ((Nonempty (MulEquiv G (UT3 p))) ∨
+             (Nonempty (MulEquiv G (CyclicGroup (p^2) ⋊[cpSqAction p] CyclicGroup p))))) := by
+
   set Z := Subgroup.center G with hZ
+
   -- Claim 1: |Z(G)| = p and so Z(G) isomorphic to C_p
+
   have h_z_order_divides_p_3 := by
     apply Subgroup.card_subgroup_dvd_card Z
   rw [h] at h_z_order_divides_p_3
@@ -407,6 +413,37 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
     · exact Or.inr h_p2
     · exact absurd h_p3 ha_order_ne_three
 
+  have hb_order_dvd : orderOf b ∣ p ^ 3 := by
+    have := orderOf_dvd_natCard b
+    rwa [h] at this
+
+  have hb_order_cases : orderOf b = 1 ∨ orderOf b = p ∨ orderOf b = p ^ 2 ∨ orderOf b = p ^ 3 := by
+    have := (Nat.dvd_prime_pow hn.out).mp hb_order_dvd
+    obtain ⟨i, hi, hib⟩ := this
+    interval_cases i <;> simp_all
+
+  have hb_order_ne_one : orderOf b ≠ 1 := by
+    intro h
+    apply hbZ_ne
+    rw [← hb]
+    show (↑b : G ⧸ Z) = ↑(1 : G)
+    rw [QuotientGroup.eq]
+    simp [orderOf_eq_one_iff.mp h]
+
+  have hb_order_ne_three : orderOf b ≠ p ^ 3 := by
+    intro h_order_eq_three
+    rw [← h] at h_order_eq_three
+    apply Eq.ge at h_order_eq_three
+    have hcyc : IsCyclic G := isCyclic_of_card_le_orderOf b h_order_eq_three
+    exact h_na (isMulCommutative_iff.mpr (fun x y => hcyc.commutative.comm x y))
+
+  have hb_order : orderOf b = p ∨ orderOf b = p ^ 2 := by
+    rcases hb_order_cases with h1 | h2 | h3 | h4
+    · exact absurd h1 hb_order_ne_one
+    · exact Or.inl h2
+    · exact Or.inr h3
+    · exact absurd h4 hb_order_ne_three
+
   -- Claim 9: a^p, b^p in Z
 
   have hCp_exp : ∀ c : CyclicGroup p, c ^ p = 1 := by
@@ -446,6 +483,41 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime] (h_
     rw [show (1 : G ⧸ Z) = ↑(1 : G) from by simp] at hmk
     rw [QuotientGroup.eq] at hmk
     simpa using hmk
+  
+  by_cases hp2 : p = 2
+  · left
+    constructor
+    · exact hp2
+    · subst hp2
+      rcases ha_order with ha_p | ha_p2 <;> rcases hb_order with hb_p | hb_p2
+      · -- Case A: both order 2
+        left
+        sorry
+      · -- Case B: a order 2, b order 4
+        left
+        sorry
+      · -- Case B2: a order 4, b order 2
+        left
+        sorry
+      · -- Case C: both order 4
+        right
+        sorry
+  · right
+    constructor
+    · exact hp2
+    · rcases ha_order with ha_p | ha_p2 <;> rcases hb_order with hb_p | hb_p2
+      · -- Case A odd: both order p
+        left
+        sorry
+      · -- Case B odd: a order p, b order p^2
+        right
+        sorry
+      · -- Case B2 odd: a order p^2, b order p
+        right
+        sorry
+      · -- Case C odd: both order p^2
+        right
+        sorry
 
 theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [CommGroup G] (h : Nat.card G = p^3) :
   (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
