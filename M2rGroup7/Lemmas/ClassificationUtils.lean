@@ -332,8 +332,9 @@ lemma exists_aut_of_CpCp_conjugating_actions
     exact hp.out.one_lt.ne' h_card_one
   obtain ⟨σ', hσ'_mem, hσ'_ne⟩ : ∃ σ' ∈ f_1.range, σ' ≠ 1 := by
     by_contra h_all
-    push_neg at h_all
-    exact h_range_nontrivial ((Subgroup.eq_bot_iff_forall _).mpr h_all)
+    refine h_range_nontrivial ((Subgroup.eq_bot_iff_forall _).mpr fun x hx => ?_)
+    by_contra hne
+    exact h_all ⟨x, hx, hne⟩
   set σ : MulAut (CyclicGroup q) := σ' with hσ_def
   have hσ_mem₁ : σ ∈ f_1.range := hσ'_mem
   have hσ_mem₂ : σ ∈ f_2.range := h_range_eq ▸ hσ_mem₁
