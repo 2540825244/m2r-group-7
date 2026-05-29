@@ -7,18 +7,6 @@ import «M2rGroup7».Lemmas.HomomorphismUtils
 import «M2rGroup7».Lemmas.NumberTheoryUtils
 import «M2rGroup7».P2qClassification.CycPGroupClassification
 
-/-- Auxiliary: the witness `1 ≤ min 2 ((q - 1).factorization 2)` for q prime, q > 3. -/
-private lemma _hr_canonicalC4OnCqAction
-    {q : ℕ} [hq : Fact q.Prime] (h_q_gt_3 : q > 3) :
-    1 ≤ min 2 ((q - 1).factorization 2) := by
-  have h_qm1_ne : q - 1 ≠ 0 := by have := hq.out.one_lt; omega
-  have h_dvd : 2 ∣ q - 1 := by
-    have hq_odd : Odd q := hq.out.odd_of_ne_two (by omega)
-    obtain ⟨k, rfl⟩ := hq_odd; omega
-  refine Nat.le_min.mpr ⟨one_le_two, ?_⟩
-  rw [← Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two h_qm1_ne]
-  simpa using h_dvd
-
 /-- The cyclic group identification `CyclicGroup q ≃* CyclicGroup (q^1)`. -/
 private noncomputable def _cyclicGroup_pow_one_equiv
     {q : ℕ} [hq : Fact q.Prime] : CyclicGroup q ≃* CyclicGroup (q ^ 1) :=
@@ -37,7 +25,7 @@ noncomputable def canonicalC4OnCqAction
   haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
   ((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
     (canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1
-      (_hr_canonicalC4OnCqAction h_q_gt_3))
+      (one_le_min_two_factorization_two h_q_gt_3))
 
 /-- For q prime, q > 3, q ≡ 3 (mod 4), any nontrivial homomorphism
     `f : C_4 →* Aut(C_q)` has range of order `2^1 = 2`: the range divides both
@@ -58,26 +46,7 @@ private lemma natCard_range_eq_two_of_nontrivial_C4_action
   have h_dvd_qm1 : Nat.card f.range ∣ q - 1 := by
     rw [← h_aut_card]
     exact Subgroup.card_subgroup_dvd_card f.range
-  have h_mod : (q - 1) % 4 = 2 := by
-    have h1 : q % 4 = 3 := h_3_mod_4
-    have h2 : q > 0 := hq.out.pos
-    omega
-  -- gcd(4, q-1) = 2 since (q-1) % 4 = 2.
-  have h_gcd : Nat.gcd 4 (q - 1) = 2 := by
-    have h2_dvd_gcd : 2 ∣ Nat.gcd 4 (q - 1) :=
-      Nat.dvd_gcd (by norm_num) (by omega)
-    have h_gcd_dvd_4 : Nat.gcd 4 (q - 1) ∣ 4 := Nat.gcd_dvd_left _ _
-    have h_gcd_dvd_qm1 : Nat.gcd 4 (q - 1) ∣ q - 1 := Nat.gcd_dvd_right _ _
-    have h_not_4_dvd : ¬ (4 ∣ q - 1) := by
-      intro h_dvd; rw [Nat.dvd_iff_mod_eq_zero] at h_dvd; omega
-    have h_pos : 0 < Nat.gcd 4 (q - 1) :=
-      Nat.gcd_pos_of_pos_left _ (by norm_num)
-    have h_le : Nat.gcd 4 (q - 1) ≤ 4 := Nat.le_of_dvd (by norm_num) h_gcd_dvd_4
-    interval_cases Nat.gcd 4 (q - 1)
-    · exact absurd h2_dvd_gcd (by decide)
-    · rfl
-    · exact absurd h_gcd_dvd_4 (by decide)
-    · exact absurd h_gcd_dvd_qm1 h_not_4_dvd
+  have h_gcd : Nat.gcd 4 (q - 1) = 2 := gcd_four_of_prime_three_mod_four h_3_mod_4
   have h_dvd_2 : Nat.card f.range ∣ 2 := by
     rw [← h_gcd]; exact Nat.dvd_gcd h_dvd_4 h_dvd_qm1
   -- f ≠ 1, hence range ≠ ⊥, hence |range| > 1.
@@ -105,14 +74,38 @@ private lemma canonicalC4OnCqAction_range_card
   show Nat.card
       ((((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
         (canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1
-          (_hr_canonicalC4OnCqAction h_q_gt_3))).range) = 2
+          (one_le_min_two_factorization_two h_q_gt_3))).range) = 2
   rw [MonoidHom.range_comp,
       Subgroup.card_map_of_injective
         (MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.injective]
   have := canonicalAction_range_card 2 q 1 2 1
     (by omega : (2 : ℕ) ≠ q) (by omega : q ≠ 2) Nat.one_pos
-    (_hr_canonicalC4OnCqAction h_q_gt_3)
+    (one_le_min_two_factorization_two h_q_gt_3)
   simpa using this
+
+/-- The canonical semidirect product C_{q^1} ⋊_{canonicalAction 1} C_{2^2} is isomorphic
+    to C_q ⋊_{canonicalC4OnCqAction} C_4. This is the back-bridge needed when applying
+    classify_sdp in the 4q classification. -/
+private noncomputable def canonicalAction_one_iso_canonicalC4OnCqAction
+    {q : ℕ} [hq : Fact q.Prime] (h_ge_3 : q > 3) :
+    SemidirectProduct (CyclicGroup (q ^ 1)) (CyclicGroup (2 ^ 2))
+      (canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1
+        (one_le_min_two_factorization_two h_ge_3)) ≃*
+    SemidirectProduct (CyclicGroup q) (CyclicGroup 4) (canonicalC4OnCqAction h_ge_3) := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  let pq_iso : CyclicGroup q ≃* CyclicGroup (q ^ 1) := _cyclicGroup_pow_one_equiv
+  have h_action_eq :
+      (MulAut.congr pq_iso).toMonoidHom.comp
+          ((canonicalC4OnCqAction h_ge_3).comp (MulEquiv.refl (CyclicGroup 4)).symm) =
+        canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1
+          (one_le_min_two_factorization_two h_ge_3) := by
+    refine MonoidHom.ext fun k => ?_
+    simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, MulEquiv.refl_symm]
+    change (MulAut.congr pq_iso) (canonicalC4OnCqAction h_ge_3 k) = _
+    simp only [canonicalC4OnCqAction, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom]
+    exact MulEquiv.apply_symm_apply (MulAut.congr pq_iso) _
+  exact (h_action_eq ▸ SemidirectProduct.congr'
+    (φ₁ := canonicalC4OnCqAction h_ge_3) (fn := pq_iso) (fg := MulEquiv.refl _)).symm
 
 theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3 : q > 3) (h_3_mod_4 : q ≡ 3 [MOD 4]) (h : Nat.card G = 4 * q)
  : Nonempty (G ≃* CyclicGroup (4 * q))
@@ -283,61 +276,60 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
     haveI : Fact (Nat.Prime 2) := by decide
     rcases (p_squared_classification (p := 2) hK_card) with h_K_C4 | h_K_C2C2
     · -- case h_K_C4 : Nonempty (↥K ≃* CyclicGroup 4)
-      simp at h_K_C4
-      by_cases h_phi_triv : φ = 1
-      · -- φ trivial: G ≃* Q × K ≃* C_q × C_4 ≃* C_4 × C_q ≃* C_{4q}
-        have : Nonempty (G ≃* CyclicGroup (4 * q)) := by
-          refine ⟨?_⟩
-          have h_sdp_prod : Q ⋊[φ] ↥K ≃* Q × ↥K :=
-            SemidirectProduct.mulEquivOfTrivialAction h_phi_triv
-          have h4q : Nat.Coprime 4 q :=
-            ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2
-          -- G ≃* ↥↑Q ⋊[φ] ↥K ≃* ↥↑Q × ↥K ≃* C_q × C_4 ≃* C_4 × C_q ≃* C_{4q}
-          exact h_iso_g_q_k.symm.trans
-            (h_sdp_prod.trans
-              ((eQ.prodCongr h_K_C4.some).trans
-                (MulEquiv.prodComm.trans (CyclicGroup.prodMulEquiv h4q))))
+      simp only [Nat.reducePow] at h_K_C4
+      haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+      haveI : IsCyclic ↥(↑Q : Subgroup G) := (MulEquiv.isCyclic eQ).mpr inferInstance
+      haveI : IsCyclic ↥K := (MulEquiv.isCyclic h_K_C4.some).mpr inferInstance
+      -- Apply classify_sdp directly to Q ⋊_φ K
+      obtain ⟨r, hr_iso, _⟩ :=
+        classify_sdp (p := 2) (q := q) (by omega) (by omega) 2 1
+          (by norm_num) (by norm_num)
+          (hN := h_Q_card.trans (pow_one q).symm)
+          (hK := hK_card.trans (by norm_num : (4 : ℕ) = 2 ^ 2))
+          φ
+      -- (q - 1).factorization 2 = 1 since q ≡ 3 (mod 4)
+      have h_vp_eq_1 : (q - 1).factorization 2 = 1 :=
+        factorization_two_of_prime_three_mod_four h_3_mod_4
+      have h_r01 : r.val = 0 ∨ r.val = 1 := by
+        have h := r.isLt
+        have : min 2 ((q - 1).factorization 2) = 1 := by simp [h_vp_eq_1]
+        omega
+      have h4q : Nat.Coprime 4 q :=
+        ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2
+      cases h_r01 with
+      | inl hr0 =>
+        -- r = 0: canonicalAction 0 is trivial → G ≃* C_{4q}
+        obtain ⟨e⟩ := hr_iso
+        have h_trivial :
+            canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos r.val
+              (Nat.lt_succ_iff.mp r.isLt) = 1 :=
+          eq_one_of_range_card_one (by
+            have := canonicalAction_range_card 2 q 1 2 r.val (by omega) (by omega) Nat.one_pos
+              (Nat.lt_succ_iff.mp r.isLt)
+            rw [this, hr0, pow_zero])
+        have : Nonempty (G ≃* CyclicGroup (4 * q)) :=
+          ⟨h_iso_g_q_k.symm.trans (e.trans
+            ((SemidirectProduct.mulEquivOfTrivialAction h_trivial).trans
+              (show CyclicGroup (q ^ 1) × CyclicGroup (2 ^ 2) ≃* CyclicGroup (4 * q) from
+                ((_cyclicGroup_pow_one_equiv (q := q)).symm.prodCongr
+                    (MulEquiv.refl (CyclicGroup (2 ^ 2)))).trans
+                  (MulEquiv.prodComm.trans
+                    (CyclicGroup.prodMulEquiv (m := 2 ^ 2) (n := q) (by simpa using h4q))))))⟩
         tauto
-      · -- φ nontrivial: transport φ to f : C_4 →* Aut(C_q), then identify the
-        -- resulting semidirect product with the canonical one by matching the
-        -- range cardinality (both equal 2).
-        let eK := h_K_C4.some
-        let f : CyclicGroup 4 →* MulAut (CyclicGroup q) :=
-          ((MulAut.congr eQ).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom)
-        have h_sdp_congr :
-            ↥(↑Q : Subgroup G) ⋊[φ] ↥K ≃*
-              SemidirectProduct (CyclicGroup q) (CyclicGroup 4) f :=
-          SemidirectProduct.congr' (φ₁ := φ) (fn := eQ) (fg := eK)
-        have hf_ne : f ≠ 1 := by
-          intro h_eq
-          apply h_phi_triv
-          refine MonoidHom.ext fun k => ?_
-          have h1 : f (eK k) = 1 := by rw [h_eq]; rfl
-          have h2 : f (eK k) = (MulAut.congr eQ) (φ k) := by
-            show ((MulAut.congr eQ).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom) (eK k) = _
-            simp [MulEquiv.symm_apply_apply]
-          rw [h2] at h1
-          exact (MulEquiv.map_eq_one_iff (MulAut.congr eQ)).mp h1
-        haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-        haveI : IsCyclic (MulAut (CyclicGroup q)) := by
-          haveI : IsCyclic (ZMod q)ˣ := ZMod.isCyclic_units_prime h_q_prime.out
-          have h_iso : MulAut (CyclicGroup q) ≃* (ZMod q)ˣ := by
-            have := IsCyclic.mulAutMulEquiv (CyclicGroup q)
-            rwa [card_cyclicGroup] at this
-          exact isCyclic_of_surjective h_iso.symm.toMonoidHom h_iso.symm.surjective
-        have h_iso_canon : Nonempty (SemidirectProduct (CyclicGroup q) (CyclicGroup 4) f ≃*
-            SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
-              (canonicalC4OnCqAction h_ge_3)) :=
-          semidirectProduct_iso_if_range_card_eq
-            (H := CyclicGroup q) (K := CyclicGroup 4) (p := 2) (m := 2)
-            ⟨by norm_num⟩ (by rw [card_cyclicGroup]; rfl)
-            f (canonicalC4OnCqAction h_ge_3) inferInstance
-            (by
-              rw [natCard_range_eq_two_of_nontrivial_C4_action h_ge_3 h_3_mod_4 f hf_ne,
-                  canonicalC4OnCqAction_range_card h_ge_3, pow_one])
+      | inr hr1 =>
+        -- r = 1: G ≃* C_q ⋊_{canonicalC4OnCqAction} C_4
+        obtain ⟨e⟩ := hr_iso
         have : Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
-                  (canonicalC4OnCqAction h_ge_3)) :=
-          ⟨h_iso_g_q_k.symm.trans (h_sdp_congr.trans h_iso_canon.some)⟩
+                (canonicalC4OnCqAction h_ge_3)) :=
+          ⟨h_iso_g_q_k.symm.trans (e.trans
+            (show SemidirectProduct (CyclicGroup (q ^ 1)) (CyclicGroup (2 ^ 2))
+                    (canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos r.val
+                      (Nat.lt_succ_iff.mp r.isLt)) ≃*
+                  SemidirectProduct (CyclicGroup q) (CyclicGroup 4) (canonicalC4OnCqAction h_ge_3) by
+              obtain ⟨rv, rlt⟩ := r
+              simp only [Fin.val_mk] at hr1 ⊢
+              subst hr1
+              exact canonicalAction_one_iso_canonicalC4OnCqAction h_ge_3))⟩
         tauto
     · -- case h_K_C2C2 : Nonempty (↥K ≃* CyclicGroup 2 × CyclicGroup 2)
       by_cases h_phi_triv : φ = 1
@@ -352,11 +344,53 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
               ((eQ.prodCongr h_K_C2C2.some).trans
                 (MulEquiv.prodComm.trans MulEquiv.prodAssoc)))
         tauto
-      · -- φ nontrivial: yields a semidirect product C_q ⋊ (C_2 × C_2) with
-        -- nontrivial action (the 4th class in the classification of order 4q).
-        -- This case is left for future work — adding the 4th disjunct and
-        -- closing this branch requires a separate (C_2 × C_2)-flavoured helper.
+      · -- φ nontrivial: transport to φ' : C_2 × C_2 →* Aut(C_q), show |Im(φ')| = 2
+        -- (|Im| | gcd(4, q-1) = 2 and |Im| > 1 since φ' ≠ 1), then WIP
+        let eK := h_K_C2C2.some
+        let φ' : CyclicGroup 2 × CyclicGroup 2 →* MulAut (CyclicGroup q) :=
+          ((MulAut.congr eQ).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom)
+        have h_sdp_congr :
+            ↥(↑Q : Subgroup G) ⋊[φ] ↥K ≃*
+              SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2) φ' :=
+          SemidirectProduct.congr' (φ₁ := φ) (fn := eQ) (fg := eK)
+        -- φ' ≠ 1 since φ ≠ 1
+        have hφ'_ne : φ' ≠ 1 := by
+          intro h_eq
+          apply h_phi_triv
+          refine MonoidHom.ext fun k => ?_
+          have h1 : φ' (eK k) = 1 := by rw [h_eq]; simp
+          have h2 : φ' (eK k) = (MulAut.congr eQ) (φ k) := by
+            show ((MulAut.congr eQ).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom) (eK k) = _
+            simp [MulEquiv.symm_apply_apply]
+          rw [h2] at h1
+          exact (MulEquiv.map_eq_one_iff (MulAut.congr eQ)).mp h1
+        -- |Aut(C_q)| = q - 1
+        have h_aut_card : Nat.card (MulAut (CyclicGroup q)) = q - 1 := by
+          have h_aut_iso : MulAut (CyclicGroup q) ≃* (ZMod q)ˣ := by
+            have h := IsCyclic.mulAutMulEquiv (CyclicGroup q)
+            rwa [card_cyclicGroup] at h
+          rw [Nat.card_congr h_aut_iso.toEquiv, Nat.card_eq_fintype_card,
+              ZMod.card_units_eq_totient, Nat.totient_prime h_q_prime.out]
+        -- |Im(φ')| | gcd(|C_2 × C_2|, |Aut(C_q)|) = gcd(4, q-1) = 2
+        have h_range_dvd_2 : Nat.card φ'.range ∣ 2 :=
+          calc Nat.card φ'.range
+              ∣ Nat.gcd (Nat.card (CyclicGroup 2 × CyclicGroup 2))
+                         (Nat.card (MulAut (CyclicGroup q))) :=
+                MonoidHom.card_range_dvd_gcd φ'
+            _ = Nat.gcd 4 (q - 1) := by
+                have h1 : Nat.card (CyclicGroup 2 × CyclicGroup 2) = 4 := by
+                  rw [Nat.card_prod, card_cyclicGroup]
+                rw [h1]; rw [h_aut_card]
+            _ = 2 := gcd_four_of_prime_three_mod_four h_3_mod_4
+        -- |Im(φ')| = 2 (since > 1 as φ' ≠ 1, and ≤ 2 from above)
+        have h_range_card : Nat.card φ'.range = 2 := by
+          have h_pos : 0 < Nat.card φ'.range := Nat.card_pos
+          have h_ne_1 : Nat.card φ'.range ≠ 1 :=
+            fun h => hφ'_ne (eq_one_of_range_card_one h)
+          have h_le_2 : Nat.card φ'.range ≤ 2 :=
+            Nat.le_of_dvd (by norm_num) h_range_dvd_2
+          omega
+        -- WIP: this is the nontrivial C_q ⋊ (C_2 × C_2) case; the required
+        -- isomorphism lemmas (semidirectProduct_CpCp_iso and its dependencies)
+        -- have outstanding sorries and are left for future work.
         sorry
-
-
-
