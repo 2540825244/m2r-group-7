@@ -388,20 +388,19 @@ lemma exists_aut_of_CpCp_conjugating_actions
   -- preimage is ![a mod p, b mod p].
   -- Both spaces are 2-dimensional over ZMod p.
   haveI : Fintype H := instFintypeProd _ _
-  haveI : Fintype (Additive H) := Additive.fintype
   haveI : Fintype (ZMod p) := ZMod.fintype p
+  haveI : Fintype (Additive H) := Additive.fintype
   -- finrank (Additive H) = 2 (since cardinality = p^2).
-  have h_card_addH : Fintype.card (Additive H) = p ^ 2 := by
-    rw [Fintype.card_additive (α := H)]
-    show Fintype.card (CyclicGroup p × CyclicGroup p) = p ^ 2
-    rw [Fintype.card_prod]
-    have hcp : Fintype.card (CyclicGroup p) = p := by
-      rw [← Nat.card_eq_fintype_card, card_cyclicGroup]
-    rw [hcp]; ring
-  have h_card_zmod : Fintype.card (ZMod p) = p := ZMod.card p
+  have h_card_addH : Nat.card (Additive H) = p ^ 2 := by
+    rw [show Nat.card (Additive H) = Nat.card H from Nat.card_congr Additive.toMul]
+    show Nat.card (CyclicGroup p × CyclicGroup p) = p ^ 2
+    rw [Nat.card_prod, card_cyclicGroup]; ring
+  have h_card_zmod : Nat.card (ZMod p) = p := by
+    rw [Nat.card_eq_fintype_card, ZMod.card]
   have h_finrank_addH : Module.finrank (ZMod p) (Additive H) = 2 := by
     have h := Module.card_eq_pow_finrank (K := ZMod p) (V := Additive H)
-    rw [h_card_addH, h_card_zmod] at h
+    rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card,
+        h_card_addH, h_card_zmod] at h
     have hp2 : 2 ≤ p := hp.out.two_le
     exact (Nat.pow_right_injective hp2 h).symm
   have h_surj_linmap : ∀ (x y : H), Subgroup.zpowers x ⊔ Subgroup.zpowers y = ⊤ →
@@ -436,7 +435,103 @@ lemma exists_aut_of_CpCp_conjugating_actions
         Module.Basis.constr_basis, Module.Basis.constr_basis]
     show (a : ZMod p) • Additive.ofMul x + (b : ZMod p) • Additive.ofMul y = h
     rw [Int.cast_smul_eq_zsmul, Int.cast_smul_eq_zsmul, ← h_add]
-  sorry
+  -- Apply h_surj_linmap to (x₁, y₁) and (x₂, y₂) to get surjective LinearMaps.
+  have h_surj₁ : LinearMap.range
+      (b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁] :
+        (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H) = ⊤ := h_surj_linmap x₁ y₁ h_gen₁
+  have h_surj₂ : LinearMap.range
+      (b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂] :
+        (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H) = ⊤ := h_surj_linmap x₂ y₂ h_gen₂
+  -- Show injectivity using finrank equality. finrank source = 2, finrank target = 2.
+  have h_finrank_pi : Module.finrank (ZMod p) (Fin 2 → ZMod p) = 2 := by
+    rw [Module.finrank_pi]; rfl
+  have h_finrank_eq : Module.finrank (ZMod p) (Fin 2 → ZMod p) =
+      Module.finrank (ZMod p) (Additive H) := by
+    rw [h_finrank_pi, h_finrank_addH]
+  haveI h_findim_pi : FiniteDimensional (ZMod p) (Fin 2 → ZMod p) := inferInstance
+  haveI h_findim_addH : FiniteDimensional (ZMod p) (Additive H) :=
+    Module.finite_of_finrank_eq_succ h_finrank_addH
+  have h_inj₁ : Function.Injective
+      (b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁] :
+        (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H) := by
+    rw [LinearMap.injective_iff_surjective_of_finrank_eq_finrank h_finrank_eq,
+        ← LinearMap.range_eq_top]
+    exact h_surj₁
+  have h_inj₂ : Function.Injective
+      (b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂] :
+        (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H) := by
+    rw [LinearMap.injective_iff_surjective_of_finrank_eq_finrank h_finrank_eq,
+        ← LinearMap.range_eq_top]
+    exact h_surj₂
+  -- Get φ₁, φ₂ as LinearEquivs
+  let φ₁ : (Fin 2 → ZMod p) ≃ₗ[ZMod p] Additive H :=
+    LinearEquiv.ofBijective
+      (b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁])
+      ⟨h_inj₁, LinearMap.range_eq_top.mp h_surj₁⟩
+  let φ₂ : (Fin 2 → ZMod p) ≃ₗ[ZMod p] Additive H :=
+    LinearEquiv.ofBijective
+      (b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂])
+      ⟨h_inj₂, LinearMap.range_eq_top.mp h_surj₂⟩
+  -- Compose: β_lin := φ₁ ∘ φ₂.symm : Additive H ≃ₗ[ZMod p] Additive H
+  let β_lin : Additive H ≃ₗ[ZMod p] Additive H := φ₂.symm.trans φ₁
+  -- Convert to AddEquiv on Additive H, then MulEquiv on H.
+  let β_add : Additive H ≃+ Additive H := β_lin.toAddEquiv
+  let β : MulAut H := AddAutAdditive (G := H) β_add
+  -- Properties: β (toMul (ofMul x₂)) = toMul (ofMul x₁), i.e., β x₂ = x₁.
+  have h_e₀ : (b_std 0 : Fin 2 → ZMod p) = ![1, 0] := by
+    ext i; fin_cases i <;> simp [b_std, Pi.basisFun_apply, Pi.single]
+  have h_e₁ : (b_std 1 : Fin 2 → ZMod p) = ![0, 1] := by
+    ext i; fin_cases i <;> simp [b_std, Pi.basisFun_apply, Pi.single]
+  have h_φ₂_e₀ : φ₂ (b_std 0) = Additive.ofMul x₂ := by
+    show b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂] (b_std 0) = _
+    rw [Module.Basis.constr_basis]
+  have h_φ₂_e₁ : φ₂ (b_std 1) = Additive.ofMul y₂ := by
+    show b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂] (b_std 1) = _
+    rw [Module.Basis.constr_basis]
+  have h_φ₁_e₀ : φ₁ (b_std 0) = Additive.ofMul x₁ := by
+    show b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁] (b_std 0) = _
+    rw [Module.Basis.constr_basis]
+  have h_φ₁_e₁ : φ₁ (b_std 1) = Additive.ofMul y₁ := by
+    show b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁] (b_std 1) = _
+    rw [Module.Basis.constr_basis]
+  have h_φ₂_inv_x₂ : φ₂.symm (Additive.ofMul x₂) = b_std 0 := by
+    rw [← h_φ₂_e₀]; exact φ₂.symm_apply_apply (b_std 0)
+  have h_φ₂_inv_y₂ : φ₂.symm (Additive.ofMul y₂) = b_std 1 := by
+    rw [← h_φ₂_e₁]; exact φ₂.symm_apply_apply (b_std 1)
+  have h_β_x₂ : β x₂ = x₁ := by
+    show β.toMonoidHom x₂ = x₁
+    -- β x₂ = (AddAutAdditive β_add) x₂ = β_add (Additive.ofMul x₂)... we need to unfold.
+    have h_β_lin_x₂ : β_lin (Additive.ofMul x₂) = Additive.ofMul x₁ := by
+      show φ₁ (φ₂.symm (Additive.ofMul x₂)) = Additive.ofMul x₁
+      rw [h_φ₂_inv_x₂, h_φ₁_e₀]
+    have h_β_add_x₂ : β_add (Additive.ofMul x₂) = Additive.ofMul x₁ := h_β_lin_x₂
+    -- (AddAutAdditive β_add).toMonoidHom x₂ = Additive.toMul (β_add (Additive.ofMul x₂))
+    show Additive.toMul (β_add (Additive.ofMul x₂)) = x₁
+    rw [h_β_add_x₂]; rfl
+  have h_β_y₂ : β y₂ = y₁ := by
+    show β.toMonoidHom y₂ = y₁
+    have h_β_lin_y₂ : β_lin (Additive.ofMul y₂) = Additive.ofMul y₁ := by
+      show φ₁ (φ₂.symm (Additive.ofMul y₂)) = Additive.ofMul y₁
+      rw [h_φ₂_inv_y₂, h_φ₁_e₁]
+    have h_β_add_y₂ : β_add (Additive.ofMul y₂) = Additive.ofMul y₁ := h_β_lin_y₂
+    show Additive.toMul (β_add (Additive.ofMul y₂)) = y₁
+    rw [h_β_add_y₂]; rfl
+  -- Final: provide β and verify f_2 = f_1 ∘ β.
+  refine ⟨β, fun z => ?_⟩
+  -- f_2 z = f_1 (β z). It suffices to check on x₂ and y₂ which generate H.
+  -- Use the generation hypothesis: z = u * v where u ∈ ⟨x₂⟩ and v ∈ ⟨y₂⟩.
+  have hz_top : z ∈ Subgroup.zpowers x₂ ⊔ Subgroup.zpowers y₂ :=
+    h_gen₂ ▸ Subgroup.mem_top z
+  rw [Subgroup.mem_sup] at hz_top
+  obtain ⟨u, hu_mem, v, hv_mem, huv⟩ := hz_top
+  obtain ⟨a, ha⟩ := Subgroup.mem_zpowers_iff.mp hu_mem
+  obtain ⟨b, hb⟩ := Subgroup.mem_zpowers_iff.mp hv_mem
+  have hz_eq : z = x₂ ^ a * y₂ ^ b := by rw [← huv, ha, hb]
+  rw [hz_eq]
+  rw [map_mul, map_zpow, map_zpow, hfx₂, hfy₂, one_zpow, mul_one]
+  -- For RHS: β.toMonoidHom (x₂^a * y₂^b) = β x₂ ^ a * β y₂ ^ b
+  rw [map_mul, map_zpow, map_zpow, h_β_x₂, h_β_y₂, map_mul, map_zpow, map_zpow,
+      hfx₁, hfy₁, one_zpow, mul_one]
 
 /-- Direct product of cyclic groups of coprime orders is cyclic of product order. -/
 noncomputable def CyclicGroup.prodMulEquiv {m n : ℕ} [NeZero m] [NeZero n]
