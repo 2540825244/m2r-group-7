@@ -484,16 +484,16 @@ lemma exists_aut_of_CpCp_conjugating_actions
     ext i; fin_cases i <;> simp [b_std, Pi.basisFun_apply, Pi.single]
   have h_φ₂_e₀ : φ₂ (b_std 0) = Additive.ofMul x₂ := by
     show b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂] (b_std 0) = _
-    rw [Module.Basis.constr_basis]
+    rw [Module.Basis.constr_basis]; rfl
   have h_φ₂_e₁ : φ₂ (b_std 1) = Additive.ofMul y₂ := by
     show b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂] (b_std 1) = _
-    rw [Module.Basis.constr_basis]
+    rw [Module.Basis.constr_basis]; rfl
   have h_φ₁_e₀ : φ₁ (b_std 0) = Additive.ofMul x₁ := by
     show b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁] (b_std 0) = _
-    rw [Module.Basis.constr_basis]
+    rw [Module.Basis.constr_basis]; rfl
   have h_φ₁_e₁ : φ₁ (b_std 1) = Additive.ofMul y₁ := by
     show b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁] (b_std 1) = _
-    rw [Module.Basis.constr_basis]
+    rw [Module.Basis.constr_basis]; rfl
   have h_φ₂_inv_x₂ : φ₂.symm (Additive.ofMul x₂) = b_std 0 := by
     rw [← h_φ₂_e₀]; exact φ₂.symm_apply_apply (b_std 0)
   have h_φ₂_inv_y₂ : φ₂.symm (Additive.ofMul y₂) = b_std 1 := by
