@@ -1645,18 +1645,58 @@ theorem center_two_quaternion
     rw [hQ_card, h_sixteen]
   exact ⟨(MulEquiv.ofBijective F hf_bij).symm⟩
 
+include h_sixteen in
+/-- Sub-stub: when `|G| = 16` and `|Z(G)| = 2`, the quotient `G/Z(G)` is
+isomorphic to the dihedral group `D_4` of order 8. This is the structural
+reduction of `thm:center-two`: cyclic and abelian-quotient cases are ruled out
+via `cyclic_center_quotient_abelian` and
+`two_abelian_subgroups_force_center_four`, and the elementary-abelian quotient
+is ruled out by `thm:no-Z2cubed-quotient` (not yet formalized). -/
+theorem center_two_quotient_dihedral (h : Nat.card (Subgroup.center G) = 2) :
+    Nonempty ((G ⧸ Subgroup.center G) ≃* DihedralGroup 4) := by
+  sorry
+
+include h_sixteen in
+/-- Sub-stub: given `|G| = 16`, `|Z(G)| = 2`, and `G/Z(G) ≅ D_4`, exactly one
+of the three structural witness pairs exists in `G`, matching the dihedral,
+semidihedral, or quaternion leaf case. This is the witness-extraction step of
+`thm:center-two`, using `lem:one-Gi-cyclic-order-eight` to obtain a cyclic
+order-8 subgroup of `G` and the order-8 classification on the two non-abelian
+order-8 subgroups to identify the conjugation rule. -/
+theorem center_two_witness (h : Nat.card (Subgroup.center G) = 2)
+    (_hquot : Nonempty ((G ⧸ Subgroup.center G) ≃* DihedralGroup 4)) :
+    (∃ x y : G, orderOf x = 8 ∧ orderOf y = 2 ∧
+        y ∉ Subgroup.zpowers x ∧ y * x * y = x⁻¹) ∨
+    (∃ x y : G, orderOf x = 8 ∧ orderOf y = 2 ∧
+        y ∉ Subgroup.zpowers x ∧ y * x * y = x ^ 3) ∨
+    (∃ x y : G, orderOf x = 8 ∧ y ^ 2 = x ^ 4 ∧
+        y ∉ Subgroup.zpowers x ∧ y * x * y⁻¹ = x⁻¹) := by
+  sorry
+
+include h_sixteen in
 theorem center_order_two (h : Nat.card (Subgroup.center G) = 2)
   : Nonempty (G ≃* DihedralGroup 8) ∨
     Nonempty (G ≃* CyclicGroup 8 ⋊[c2OnC8Pow3] CyclicGroup 2) ∨
     Nonempty (G ≃* QuaternionGroup 4)
   := by
-  -- Pending: reduction G/Z(G) ≅ D_4 (via order-8 classification of G/Z(G) and
-  -- ruling out C_8, C_4 × C_2, Q_8, and C_2^3), three order-8 subgroup
-  -- correspondence setup, then dispatch to one of the leaf sub-theorems
-  -- `center_two_dihedral` / `center_two_semidihedral` / `center_two_quaternion`
-  -- by extracting the corresponding witness pair (x, y). See run milestones.md
-  -- for the full breakdown.
-  sorry
+  -- Step 1: reduce to the structural fact `G/Z(G) ≅ D_4`.
+  have hquot : Nonempty ((G ⧸ Subgroup.center G) ≃* DihedralGroup 4) :=
+    center_two_quotient_dihedral (h_sixteen := h_sixteen) G h
+  -- Step 2: extract one of three structural witness pairs.
+  obtain (hd | hs | hq) :=
+    center_two_witness (h_sixteen := h_sixteen) G h hquot
+  · -- Dihedral case.
+    obtain ⟨x, y, hx, hy, hyx, hrel⟩ := hd
+    exact Or.inl
+      (center_two_dihedral (h_sixteen := h_sixteen) G x hx y hy hyx hrel)
+  · -- Semidihedral case.
+    obtain ⟨x, y, hx, hy, hyx, hrel⟩ := hs
+    exact Or.inr (Or.inl
+      (center_two_semidihedral (h_sixteen := h_sixteen) G x hx y hy hyx hrel))
+  · -- Quaternion case.
+    obtain ⟨x, y, hx, hys, hyx, hrel⟩ := hq
+    exact Or.inr (Or.inr
+      (center_two_quaternion (h_sixteen := h_sixteen) G x hx y hys hyx hrel))
 
 end OrderSixteen
 
@@ -1686,7 +1726,8 @@ theorem sixteen_classification {G : Type*} [Group G] (h_sixteen : Nat.card G = 1
     simp only [pow_zero] at hk_eq; linarith
   · -- k = 1: |Z(G)| = 2
     norm_num at hk_eq
-    obtain (hiso | hiso | hiso) := OrderSixteen.center_order_two G hk_eq
+    obtain (hiso | hiso | hiso) :=
+      OrderSixteen.center_order_two (h_sixteen := h_sixteen) G hk_eq
     · exact ⟨7, by decide, hiso⟩
     · exact ⟨8, by decide, hiso⟩
     · exact ⟨9, by decide, hiso⟩
