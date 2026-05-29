@@ -1091,7 +1091,353 @@ theorem center_two_semidihedral
     (hy_notin : y ∉ Subgroup.zpowers x)
     (h_rel : y * x * y = x ^ 3) :
     Nonempty (G ≃* CyclicGroup 8 ⋊[c2OnC8Pow3] CyclicGroup 2) := by
-  sorry
+  -- y has order 2, so y² = 1 and y = y⁻¹.
+  have hy_sq : y * y = 1 := by
+    have := pow_orderOf_eq_one y
+    rw [hy_order, sq] at this; exact this
+  have hy_inv : y⁻¹ = y :=
+    (eq_inv_of_mul_eq_one_left hy_sq).symm
+  -- Powers of x are well-defined mod 8.
+  have hx_pow_eq : ∀ a b : ℕ, a ≡ b [MOD 8] → x ^ a = x ^ b := by
+    intro a b hab
+    rw [pow_eq_pow_iff_modEq, hx_order]; exact hab
+  -- x^(ZMod 8 value) is consistent with ZMod addition.
+  have hx_val_add : ∀ i j : ZMod 8, x ^ (i + j).val = x ^ i.val * x ^ j.val := by
+    intro i j
+    rw [← pow_add]
+    apply hx_pow_eq
+    rw [Nat.ModEq, ZMod.val_add]
+    omega
+  -- y * x^k * y = x^(3k) (via conj_pow on the relation y * x * y = x^3).
+  have hyxky : ∀ k : ℕ, y * x ^ k * y = x ^ (3 * k) := by
+    intro k
+    have h_conj : (y * x * y⁻¹) ^ k = y * x ^ k * y⁻¹ := conj_pow
+    have h_yxy : y * x * y⁻¹ = x ^ 3 := by rw [hy_inv]; exact h_rel
+    rw [h_yxy, hy_inv] at h_conj
+    rw [← h_conj, ← pow_mul]
+  -- Key fact: for any k1, k2 : ZMod 8, 3 * k1.val + k2.val ≡ ((3 : ZMod 8) * k1 + k2).val [MOD 8].
+  have h_three_mul_val : ∀ k1 k2 : ZMod 8,
+      3 * k1.val + k2.val ≡ ((3 : ZMod 8) * k1 + k2).val [MOD 8] := by
+    intro k1 k2
+    have hcast : (((3 * k1.val + k2.val : ℕ) : ZMod 8))
+        = ((((3 : ZMod 8) * k1 + k2).val : ℕ) : ZMod 8) := by
+      push_cast
+      rw [ZMod.natCast_zmod_val, ZMod.natCast_zmod_val, ZMod.natCast_zmod_val]
+    exact (ZMod.natCast_eq_natCast_iff _ _ _).mp hcast
+  -- Key helper: x^k * y = y * x^((3k : ZMod 8).val) (since y * y = 1, multiply hyxky on left by y).
+  have hxy_swap : ∀ k : ℕ, x ^ k * y = y * x ^ ((3 * (k : ZMod 8)).val) := by
+    intro k
+    have h1 : y * x ^ k * y = x ^ (3 * k) := hyxky k
+    have h2 : y * (y * x ^ k * y) = y * x ^ (3 * k) := by rw [h1]
+    have h3 : y * (y * x ^ k * y) = x ^ k * y := by
+      rw [show y * (y * x ^ k * y) = (y * y) * x ^ k * y from by group, hy_sq, one_mul]
+    rw [h3] at h2
+    rw [h2]
+    congr 1
+    apply hx_pow_eq
+    -- need 3 * k ≡ (3 * (k : ZMod 8)).val [MOD 8]
+    have hcast : ((3 * k : ℕ) : ZMod 8) = (((3 * (k : ZMod 8)).val : ℕ) : ZMod 8) := by
+      push_cast
+      rw [ZMod.natCast_zmod_val]
+    exact (ZMod.natCast_eq_natCast_iff _ _ _).mp hcast
+  -- Case split lemma on CyclicGroup 2: each element has toAdd ∈ {0, 1}.
+  have hc2_cases : ∀ g : CyclicGroup 2, (Multiplicative.toAdd g).val = 0 ∨
+                   (Multiplicative.toAdd g).val = 1 := by
+    intro g
+    have h : (Multiplicative.toAdd g).val < 2 := ZMod.val_lt _
+    omega
+  -- c2OnC8Pow3 at the identity is identity.
+  have hphi_one : ∀ n : CyclicGroup 8, c2OnC8Pow3 1 n = n := by
+    intro n
+    rw [map_one]
+    rfl
+  -- c2OnC8Pow3 at the non-trivial element sends n to n^3.
+  have hphi_nontriv : ∀ n : CyclicGroup 8,
+      c2OnC8Pow3 (Multiplicative.ofAdd (1 : ZMod 2)) n = n ^ 3 := by
+    intro n
+    rfl
+  -- For y^k where k = 0 or 1 (since y has order 2). Convert (toAdd g).val for g : CyclicGroup 2.
+  -- We'll need to relate x^((toAdd n).val) for n : CyclicGroup 8.
+  -- Multiplicativity of `n ↦ x^(toAdd n).val`:
+  have hx_toAdd_mul : ∀ n₁ n₂ : CyclicGroup 8,
+      x ^ (Multiplicative.toAdd (n₁ * n₂)).val
+        = x ^ (Multiplicative.toAdd n₁).val * x ^ (Multiplicative.toAdd n₂).val := by
+    intro n₁ n₂
+    -- toAdd (n₁ * n₂) = toAdd n₁ + toAdd n₂.
+    change x ^ ((Multiplicative.toAdd n₁ + Multiplicative.toAdd n₂)).val
+      = x ^ (Multiplicative.toAdd n₁).val * x ^ (Multiplicative.toAdd n₂).val
+    exact hx_val_add _ _
+  -- x ^ ((Multiplicative.toAdd (n^3)).val) = (x ^ (Multiplicative.toAdd n).val)^3 mod 8.
+  have hx_toAdd_pow3 : ∀ n : CyclicGroup 8,
+      x ^ (Multiplicative.toAdd (n ^ 3)).val
+        = x ^ (3 * (Multiplicative.toAdd n).val) := by
+    intro n
+    apply hx_pow_eq
+    -- toAdd (n^3) = 3 • toAdd n = 3 * toAdd n (in ZMod 8).
+    have h : Multiplicative.toAdd (n ^ 3) = 3 * Multiplicative.toAdd n := by
+      change (3 : ℕ) • Multiplicative.toAdd n = 3 * Multiplicative.toAdd n
+      simp [nsmul_eq_mul]
+    rw [h]
+    -- Need (3 * toAdd n).val ≡ 3 * (toAdd n).val [MOD 8].
+    have hcast : (((3 * Multiplicative.toAdd n).val : ℕ) : ZMod 8)
+        = ((3 * (Multiplicative.toAdd n).val : ℕ) : ZMod 8) := by
+      push_cast
+      rw [ZMod.natCast_zmod_val, ZMod.natCast_zmod_val]
+    exact (ZMod.natCast_eq_natCast_iff _ _ _).mp hcast
+  -- Define the forward map.
+  let f_fun : CyclicGroup 8 ⋊[c2OnC8Pow3] CyclicGroup 2 → G := fun a =>
+    x ^ (Multiplicative.toAdd a.left).val * y ^ (Multiplicative.toAdd a.right).val
+  have hf_one : f_fun 1 = 1 := by
+    change x ^ (Multiplicative.toAdd (1 : CyclicGroup 8)).val
+       * y ^ (Multiplicative.toAdd (1 : CyclicGroup 2)).val = 1
+    have h1 : (Multiplicative.toAdd (1 : CyclicGroup 8)).val = 0 := by
+      change (0 : ZMod 8).val = 0
+      simp
+    have h2 : (Multiplicative.toAdd (1 : CyclicGroup 2)).val = 0 := by
+      change (0 : ZMod 2).val = 0
+      simp
+    rw [h1, h2]; simp
+  have hf_mul : ∀ a b : CyclicGroup 8 ⋊[c2OnC8Pow3] CyclicGroup 2,
+      f_fun (a * b) = f_fun a * f_fun b := by
+    intro a b
+    change x ^ (Multiplicative.toAdd (a * b).left).val
+         * y ^ (Multiplicative.toAdd (a * b).right).val
+       = (x ^ (Multiplicative.toAdd a.left).val * y ^ (Multiplicative.toAdd a.right).val)
+       * (x ^ (Multiplicative.toAdd b.left).val * y ^ (Multiplicative.toAdd b.right).val)
+    -- (a * b).left = a.left * c2OnC8Pow3 a.right b.left.
+    -- (a * b).right = a.right * b.right.
+    rw [SemidirectProduct.mul_left, SemidirectProduct.mul_right]
+    -- Case split on a.right (the CyclicGroup 2 element).
+    -- Derived swap: x^(3k) * y = y * x^k (from y * x^k = x^(3k) * y, derived from hyxky).
+    have hxy_swap_inv : ∀ k : ℕ, x ^ (3 * k) * y = y * x ^ k := by
+      intro k
+      have h1 : y * x ^ k * y = x ^ (3 * k) := hyxky k
+      -- Multiply both sides on the right by y:
+      -- (y * x^k * y) * y = x^(3k) * y
+      -- y * x^k = x^(3k) * y
+      have h2 : y * x ^ k * y * y = x ^ (3 * k) * y := by rw [h1]
+      rw [mul_assoc (y * x ^ k) y y, hy_sq, mul_one] at h2
+      -- h2 : y * x^k = x^(3k) * y
+      exact h2.symm
+    -- (Multiplicative.toAdd g₁ + Multiplicative.toAdd g₂).val handling for CyclicGroup 2:
+    -- For g₁ = ofAdd 1 and g₂ = ofAdd 1: 1 + 1 = 2 ≡ 0 in ZMod 2, so toAdd (g₁ * g₂) = 0.
+    rcases hc2_cases a.right with ha | ha
+    · -- a.right = 1, so c2OnC8Pow3 a.right = id, y^0 = 1.
+      have ha_eq : a.right = 1 := by
+        apply Multiplicative.toAdd.injective
+        rw [show (Multiplicative.toAdd (1 : CyclicGroup 2)) = (0 : ZMod 2) from rfl]
+        rw [ZMod.val_eq_zero] at ha
+        exact ha
+      rw [ha_eq, hphi_one]
+      have hay0 : y ^ (Multiplicative.toAdd (1 : CyclicGroup 2)).val = 1 := by
+        rw [show (Multiplicative.toAdd (1 : CyclicGroup 2)) = (0 : ZMod 2) from rfl]
+        simp
+      rw [hay0]
+      simp only [mul_one]
+      -- Goal: x^(toAdd (a.left * b.left)).val * y^(toAdd (1 * b.right)).val
+      --     = x^(toAdd a.left).val * (x^(toAdd b.left).val * y^(toAdd b.right).val)
+      rw [hx_toAdd_mul, one_mul, mul_assoc]
+    · -- a.right ≠ 1, so a.right = Multiplicative.ofAdd 1, hence c2OnC8Pow3 a.right = (·^3).
+      have ha_eq : a.right = Multiplicative.ofAdd (1 : ZMod 2) := by
+        apply Multiplicative.toAdd.injective
+        rw [show Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 2)) = (1 : ZMod 2) from rfl]
+        have h1 : (Multiplicative.toAdd a.right).val = 1 := ha
+        have hcast : (((Multiplicative.toAdd a.right).val : ℕ) : ZMod 2)
+            = ((1 : ℕ) : ZMod 2) := by rw [h1]
+        rw [ZMod.natCast_zmod_val] at hcast
+        rw [hcast]; rfl
+      rw [ha_eq, hphi_nontriv]
+      have hay1 : y ^ (Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 2))).val = y := by
+        rw [show (Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 2))) = (1 : ZMod 2) from rfl]
+        rw [show ((1 : ZMod 2)).val = 1 from rfl]
+        simp
+      rw [hay1]
+      -- Goal: x^(toAdd (a.left * b.left^3)).val * y^(toAdd (ofAdd 1 * b.right)).val
+      --     = x^(toAdd a.left).val * y * (x^(toAdd b.left).val * y^(toAdd b.right).val)
+      rw [hx_toAdd_mul]
+      -- Massage b.left^3 by replacing with explicit equivalent (b.left*b.left*b.left).
+      have hpow3_eq : (b.left ^ (3 : ℕ) : CyclicGroup 8) = b.left * b.left * b.left := by
+        rw [pow_succ, pow_succ, pow_one]
+      rw [show (b.left ^ 3 : CyclicGroup 8) = b.left * b.left * b.left from hpow3_eq]
+      rw [hx_toAdd_mul, hx_toAdd_mul]
+      -- Now LHS has x^(toAdd a.left).val * (x^(toAdd b.left).val * x^(toAdd b.left).val
+      --     * x^(toAdd b.left).val) * y^(toAdd (ofAdd 1 * b.right)).val
+      -- Combine the three x^k via pow_add: x^k * x^k * x^k = x^(3k).
+      rw [← pow_add, ← pow_add]
+      -- Now: x^(toAdd a.left).val * x^((toAdd b.left).val + (toAdd b.left).val
+      --     + (toAdd b.left).val) * y^...
+      have h3k : (Multiplicative.toAdd b.left).val + (Multiplicative.toAdd b.left).val
+          + (Multiplicative.toAdd b.left).val = 3 * (Multiplicative.toAdd b.left).val := by ring
+      rw [h3k]
+      -- LHS: x^(toAdd a.left).val * x^(3*(toAdd b.left).val) * y^(toAdd (ofAdd 1 * b.right)).val
+      -- RHS: x^(toAdd a.left).val * y * (x^(toAdd b.left).val * y^(toAdd b.right).val)
+      -- Apply mul_assoc to LHS and RHS explicitly.
+      rw [mul_assoc (x ^ (Multiplicative.toAdd a.left).val) (x ^ (3 * (Multiplicative.toAdd b.left).val)) _]
+      rw [mul_assoc (x ^ (Multiplicative.toAdd a.left).val) y _]
+      congr 1
+      -- Now goal: x^(3*b.left.val) * y^(toAdd (ofAdd 1 * b.right)).val
+      --        = y * (x^b.left.val * y^b.right.val)
+      rcases hc2_cases b.right with hb | hb
+      · -- b.right = 1: y^(toAdd b.right).val = 1, y^(toAdd (ofAdd 1 * 1)).val = y.
+        have hbr_eq : b.right = 1 := by
+          apply Multiplicative.toAdd.injective
+          rw [show (Multiplicative.toAdd (1 : CyclicGroup 2)) = (0 : ZMod 2) from rfl]
+          rw [ZMod.val_eq_zero] at hb
+          exact hb
+        rw [hbr_eq, mul_one]
+        rw [hay1]
+        have hy_pow_0 : y ^ (Multiplicative.toAdd (1 : CyclicGroup 2)).val = 1 := by
+          rw [show (Multiplicative.toAdd (1 : CyclicGroup 2)) = (0 : ZMod 2) from rfl]
+          simp
+        rw [hy_pow_0, mul_one]
+        -- Goal: x^(3*(toAdd b.left).val) * y = y * x^(toAdd b.left).val
+        exact hxy_swap_inv _
+      · -- b.right = ofAdd 1: y^(toAdd b.right).val = y, y^(toAdd (ofAdd 1 * ofAdd 1)).val = y^0 = 1.
+        have hbr_eq : b.right = Multiplicative.ofAdd (1 : ZMod 2) := by
+          apply Multiplicative.toAdd.injective
+          rw [show Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 2)) = (1 : ZMod 2) from rfl]
+          have h1 : (Multiplicative.toAdd b.right).val = 1 := hb
+          have hcast : (((Multiplicative.toAdd b.right).val : ℕ) : ZMod 2)
+              = ((1 : ℕ) : ZMod 2) := by rw [h1]
+          rw [ZMod.natCast_zmod_val] at hcast
+          rw [hcast]; rfl
+        rw [hbr_eq]
+        -- Goal after rw: x^(3*(toAdd b.left).val) * y^(toAdd (ofAdd 1 * ofAdd 1)).val
+        --             = y * (x^(toAdd b.left).val * y^(toAdd ofAdd 1).val)
+        -- Note (toAdd (ofAdd 1 * ofAdd 1)).val = 0 and (toAdd ofAdd 1).val = 1 by decide.
+        -- Use simp to unfold things.
+        -- Compute the y exponents directly.
+        have h_y_zero : y ^ (Multiplicative.toAdd
+            (Multiplicative.ofAdd (1 : ZMod 2) * Multiplicative.ofAdd (1 : ZMod 2))).val
+            = (1 : G) := by
+          have htadd : Multiplicative.toAdd
+              (Multiplicative.ofAdd (1 : ZMod 2) * Multiplicative.ofAdd (1 : ZMod 2))
+              = ((1 : ZMod 2) + 1) := rfl
+          rw [htadd]
+          rw [show ((1 : ZMod 2) + 1) = 0 from by decide]
+          show y ^ ((0 : ZMod 2)).val = (1 : G)
+          simp
+        have h_y_one : y ^ (Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 2))).val = y := by
+          show y ^ ((1 : ZMod 2)).val = y
+          simp [show ((1 : ZMod 2)).val = 1 from rfl]
+        suffices h : x ^ (3 * (Multiplicative.toAdd b.left).val) * (1 : G)
+            = y * (x ^ (Multiplicative.toAdd b.left).val * y) by
+          calc x ^ (3 * (Multiplicative.toAdd b.left).val) *
+                  y ^ (Multiplicative.toAdd
+                    (Multiplicative.ofAdd (1 : ZMod 2) * Multiplicative.ofAdd (1 : ZMod 2))).val
+              = x ^ (3 * (Multiplicative.toAdd b.left).val) * 1 := by rw [h_y_zero]
+            _ = y * (x ^ (Multiplicative.toAdd b.left).val * y) := h
+            _ = y * (x ^ (Multiplicative.toAdd b.left).val *
+                y ^ (Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 2))).val) := by rw [h_y_one]
+        rw [mul_one]
+        -- Goal: x^(3*(toAdd b.left).val) = y * (x^(toAdd b.left).val * y)
+        rw [← mul_assoc, ← hyxky]
+  -- Build the MonoidHom.
+  let F : (CyclicGroup 8 ⋊[c2OnC8Pow3] CyclicGroup 2) →* G :=
+    { toFun := f_fun
+      map_one' := hf_one
+      map_mul' := hf_mul }
+  -- Injectivity.
+  have hf_inj : Function.Injective f_fun := by
+    intro a b hab
+    change x ^ (Multiplicative.toAdd a.left).val * y ^ (Multiplicative.toAdd a.right).val
+       = x ^ (Multiplicative.toAdd b.left).val * y ^ (Multiplicative.toAdd b.right).val at hab
+    rcases hc2_cases a.right with ha | ha
+    · rcases hc2_cases b.right with hb | hb
+      · -- Both a.right = 1 and b.right = 1.
+        rw [ha, hb] at hab
+        simp only [pow_zero, mul_one] at hab
+        have hmod : (Multiplicative.toAdd a.left).val ≡ (Multiplicative.toAdd b.left).val [MOD 8] := by
+          have hpow := (pow_eq_pow_iff_modEq).mp hab
+          rw [hx_order] at hpow; exact hpow
+        have ha_eq : a.right = b.right := by
+          apply Multiplicative.toAdd.injective
+          have := ha.trans hb.symm
+          have h1 : ((Multiplicative.toAdd a.right).val : ZMod 2)
+              = ((Multiplicative.toAdd b.right).val : ZMod 2) := by
+            rw [ha, hb]
+          rw [ZMod.natCast_zmod_val, ZMod.natCast_zmod_val] at h1
+          exact h1
+        have hl_eq : a.left = b.left := by
+          apply Multiplicative.toAdd.injective
+          have hi : ((((Multiplicative.toAdd a.left).val) : ℕ) : ZMod 8)
+              = Multiplicative.toAdd a.left := ZMod.natCast_zmod_val _
+          have hj : ((((Multiplicative.toAdd b.left).val) : ℕ) : ZMod 8)
+              = Multiplicative.toAdd b.left := ZMod.natCast_zmod_val _
+          have heq : ((((Multiplicative.toAdd a.left).val) : ℕ) : ZMod 8)
+              = ((((Multiplicative.toAdd b.left).val) : ℕ) : ZMod 8) :=
+            (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+          rw [hi, hj] at heq
+          exact heq
+        exact SemidirectProduct.ext hl_eq ha_eq
+      · -- a.right = 1, b.right = ofAdd 1: contradiction.
+        exfalso
+        rw [ha, hb] at hab
+        simp only [pow_zero, mul_one, pow_one] at hab
+        -- hab: x^(toAdd a.left).val = x^(toAdd b.left).val * y
+        have hy_eq : y = (x ^ (Multiplicative.toAdd b.left).val)⁻¹
+                       * x ^ (Multiplicative.toAdd a.left).val := by
+          have : (x ^ (Multiplicative.toAdd b.left).val)⁻¹ * x ^ (Multiplicative.toAdd a.left).val
+              = (x ^ (Multiplicative.toAdd b.left).val)⁻¹ *
+                  (x ^ (Multiplicative.toAdd b.left).val * y) := by rw [hab]
+          rw [← mul_assoc, inv_mul_cancel, one_mul] at this
+          exact this.symm
+        apply hy_notin
+        rw [hy_eq]
+        exact Subgroup.mul_mem _ (Subgroup.inv_mem _ (Subgroup.npow_mem_zpowers x _))
+          (Subgroup.npow_mem_zpowers x _)
+    · rcases hc2_cases b.right with hb | hb
+      · -- a.right = ofAdd 1, b.right = 1: contradiction.
+        exfalso
+        rw [ha, hb] at hab
+        simp only [pow_one, pow_zero, mul_one] at hab
+        -- hab: x^(toAdd a.left).val * y = x^(toAdd b.left).val
+        have hy_eq : y = (x ^ (Multiplicative.toAdd a.left).val)⁻¹
+                       * x ^ (Multiplicative.toAdd b.left).val := by
+          have : (x ^ (Multiplicative.toAdd a.left).val)⁻¹ *
+                 (x ^ (Multiplicative.toAdd a.left).val * y)
+              = (x ^ (Multiplicative.toAdd a.left).val)⁻¹ * x ^ (Multiplicative.toAdd b.left).val
+              := by rw [hab]
+          rw [← mul_assoc, inv_mul_cancel, one_mul] at this
+          exact this
+        apply hy_notin
+        rw [hy_eq]
+        exact Subgroup.mul_mem _ (Subgroup.inv_mem _ (Subgroup.npow_mem_zpowers x _))
+          (Subgroup.npow_mem_zpowers x _)
+      · -- Both a.right = ofAdd 1 and b.right = ofAdd 1.
+        rw [ha, hb] at hab
+        simp only [pow_one] at hab
+        -- hab: x^(toAdd a.left).val * y = x^(toAdd b.left).val * y
+        have hab' : x ^ (Multiplicative.toAdd a.left).val = x ^ (Multiplicative.toAdd b.left).val :=
+          mul_right_cancel hab
+        have hmod : (Multiplicative.toAdd a.left).val ≡ (Multiplicative.toAdd b.left).val [MOD 8] := by
+          have hpow := (pow_eq_pow_iff_modEq).mp hab'
+          rw [hx_order] at hpow; exact hpow
+        have ha_eq : a.right = b.right := by
+          apply Multiplicative.toAdd.injective
+          have h1 : ((Multiplicative.toAdd a.right).val : ZMod 2)
+              = ((Multiplicative.toAdd b.right).val : ZMod 2) := by rw [ha, hb]
+          rw [ZMod.natCast_zmod_val, ZMod.natCast_zmod_val] at h1
+          exact h1
+        have hl_eq : a.left = b.left := by
+          apply Multiplicative.toAdd.injective
+          have hi : ((((Multiplicative.toAdd a.left).val) : ℕ) : ZMod 8)
+              = Multiplicative.toAdd a.left := ZMod.natCast_zmod_val _
+          have hj : ((((Multiplicative.toAdd b.left).val) : ℕ) : ZMod 8)
+              = Multiplicative.toAdd b.left := ZMod.natCast_zmod_val _
+          have heq : ((((Multiplicative.toAdd a.left).val) : ℕ) : ZMod 8)
+              = ((((Multiplicative.toAdd b.left).val) : ℕ) : ZMod 8) :=
+            (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+          rw [hi, hj] at heq
+          exact heq
+        exact SemidirectProduct.ext hl_eq ha_eq
+  -- Cardinality.
+  have hSD_card : Nat.card (CyclicGroup 8 ⋊[c2OnC8Pow3] CyclicGroup 2) = 16 := by
+    rw [SemidirectProduct.card, card_cyclicGroup, card_cyclicGroup]
+  have hf_bij : Function.Bijective f_fun := by
+    apply hf_inj.bijective_of_nat_card_le
+    rw [hSD_card, h_sixteen]
+  exact ⟨(MulEquiv.ofBijective F hf_bij).symm⟩
 
 include h_sixteen in
 /-- Sub-theorem (leaf case): when `|G| = 16`, `|Z(G)| = 2`, and `G` contains
