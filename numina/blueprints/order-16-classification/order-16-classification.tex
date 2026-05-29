@@ -611,11 +611,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{theorem}[Center of order 2]
     \label{thm:center-two}
-    \uses{thm:case-quaternion-sixteen,thm:case-semidihedral,
-          thm:case-dihedral-eight,lem:quotient-by-center-card,
-          lem:cyclic-center-quotient-abelian,
-          lem:two-abelian-subgroups-force-center-four,
-          lem:order-eight-classification}
+    \lean{OrderSixteen.center_order_two}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \uses{thm:case-quaternion-sixteen, thm:case-semidihedral, thm:case-dihedral-eight, lem:quotient-by-center-card, lem:cyclic-center-quotient-abelian, lem:two-abelian-subgroups-force-center-four, lem:order-eight-classification}
     Suppose $G$ is a group of order $16$ with $|Z(G)| = 2$. Then $G$ is
     isomorphic to one of $D_8$, $C_8 \rtimes_{x \mapsto x^3} C_2$
     (semidihedral), or $Q_{16}$ (generalized quaternion of order $16$).
@@ -662,7 +660,10 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Two abelian order-$8$ subgroups force $|Z(G)| \ge 4$]
     \label{lem:two-abelian-subgroups-force-center-four}
+    \lean{OrderSixteen.Prelim.two_abelian_subgroups_force_center_four}
+    \leanfile{M2rGroup7/SixteenCase.lean}
     \uses{lem:subgroup-product-card}
+    \leanok
     Let $G$ be a group of order $16$. If $G$ has two distinct subgroups
     $H_1, H_2$ of order $8$ that are both abelian, then $|Z(G)| \ge 4$.
 \end{lemma}
@@ -749,7 +750,10 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{theorem}[Case $Q_{16}$ (both $G_2, G_3 \cong Q_8$)]
     \label{thm:case-quaternion-sixteen}
-    \uses{lem:one-Gi-cyclic-order-eight,lem:subgroup-product-card}
+    \lean{OrderSixteen.center_two_quaternion}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \uses{lem:one-Gi-cyclic-order-eight, lem:subgroup-product-card}
+    \leanok
     Suppose $|G| = 16$, $|Z(G)| = 2$, $G/Z(G) \cong D_4$, $G_1 \cong C_8$
     and $G_2 \cong G_3 \cong Q_8$. Then
     $G \cong Q_{16}$ (the generalized quaternion of order $16$).
@@ -770,7 +774,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{theorem}[Case semidihedral (one $D_4$, one $Q_8$)]
     \label{thm:case-semidihedral}
-    \uses{lem:one-Gi-cyclic-order-eight,lem:subgroup-product-card}
+    \lean{OrderSixteen.center_two_semidihedral}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \uses{lem:one-Gi-cyclic-order-eight, lem:subgroup-product-card}
     With the same setup, if $G_2 \cong D_4$ and $G_3 \cong Q_8$, then
     $G \cong C_8 \rtimes_{x \mapsto x^3} C_2$ (the semidihedral group
     $SD_{16}$, index 8 in \texttt{retrieve 16}).
@@ -788,7 +794,10 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{theorem}[Case $D_8$ (both $G_2, G_3 \cong D_4$)]
     \label{thm:case-dihedral-eight}
-    \uses{lem:one-Gi-cyclic-order-eight,lem:subgroup-product-card}
+    \lean{OrderSixteen.center_two_dihedral}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \uses{lem:one-Gi-cyclic-order-eight, lem:subgroup-product-card}
+    \leanok
     With the same setup, if $G_2 \cong G_3 \cong D_4$, then $G \cong D_8$
     (the dihedral group of order $16$).
 \end{theorem}

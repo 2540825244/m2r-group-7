@@ -93,6 +93,21 @@ theorem order_four_quotient_not_cyclic {G : Type*} [Group G] [Finite G]
     rw [hcenter_top, Nat.card_congr (Subgroup.topEquiv).toEquiv, h_sixteen]
   omega
 
+/-- If $|G| = 16$ and $|Z(G)| = 2$, then $G/Z(G)$ is not cyclic. Otherwise, $G$
+would be abelian, forcing $Z(G) = G$ and $|Z(G)| = 16$, contradicting
+$|Z(G)| = 2$. -/
+theorem order_eight_quotient_not_cyclic {G : Type*} [Group G] [Finite G]
+    (h_sixteen : Nat.card G = 16) (h_center : Nat.card (Subgroup.center G) = 2) :
+    ¬ IsCyclic (G ⧸ Subgroup.center G) := by
+  intro hcyc
+  have h_comm : ∀ a b : G, a * b = b * a :=
+    cyclic_center_quotient_abelian G hcyc
+  have hcenter_top : Subgroup.center G = ⊤ :=
+    (abelian_iff_center_top G).mp h_comm
+  have h16 : Nat.card (Subgroup.center G) = 16 := by
+    rw [hcenter_top, Nat.card_congr (Subgroup.topEquiv).toEquiv, h_sixteen]
+  omega
+
 open scoped Pointwise in
 /-- For finite subgroups $H$ and $K$ of a group $G$, the classical formula
 $|H| \cdot |K| = |H \cap K| \cdot |HK|$. -/
@@ -422,6 +437,103 @@ theorem internal_direct_product {G : Type*} [Group G] [Finite G]
   have h_bij : Function.Bijective φ :=
     h_inj.bijective_of_nat_card_le (le_of_eq h_card_HK.symm)
   exact ⟨(MulEquiv.ofBijective φ h_bij).symm⟩
+
+open scoped Pointwise in
+/-- Two distinct abelian order-$8$ subgroups of a group of order $16$ force the
+center to have order at least $4$. Blueprint label `lem:two-abelian-subgroups-force-center-four`. -/
+theorem two_abelian_subgroups_force_center_four {G : Type*} [Group G] [Finite G]
+    (h_sixteen : Nat.card G = 16) (H₁ H₂ : Subgroup G)
+    (h₁_card : Nat.card H₁ = 8) (h₂_card : Nat.card H₂ = 8)
+    (h_distinct : H₁ ≠ H₂)
+    (h₁_abelian : ∀ a b : H₁, a * b = b * a)
+    (h₂_abelian : ∀ a b : H₂, a * b = b * a) :
+    4 ≤ Nat.card (Subgroup.center G) := by
+  -- Step 1: |H₁ ⊓ H₂| = 4.
+  -- 1a: |H₁ ⊓ H₂| ≤ 8 (since H₁ ⊓ H₂ ≤ H₁).
+  have h_card_H₁_eq : Nat.card ((H₁ : Set G)) = 8 := h₁_card
+  have h_card_H₂_eq : Nat.card ((H₂ : Set G)) = 8 := h₂_card
+  -- subgroup_product_card gives the key cardinality identity.
+  have h_prod := subgroup_product_card H₁ H₂
+  rw [h_card_H₁_eq, h_card_H₂_eq] at h_prod
+  -- |HK| ≤ |G| = 16.
+  have h_HK_le_card : Nat.card ((H₁ : Set G) * (H₂ : Set G)) ≤ 16 := by
+    rw [← h_sixteen]
+    rw [Nat.card_coe_set_eq]
+    exact Set.ncard_le_card _
+  -- |H₁ ⊓ H₂| ≤ |H₁| = 8 since (H₁ ⊓ H₂) ≤ H₁.
+  haveI : Finite H₁ := Nat.finite_of_card_ne_zero (by rw [h₁_card]; norm_num)
+  haveI : Finite H₂ := Nat.finite_of_card_ne_zero (by rw [h₂_card]; norm_num)
+  have h_inter_le_H₁ : Nat.card (H₁ ⊓ H₂ : Subgroup G) ≤ 8 := by
+    rw [← h₁_card]
+    exact Subgroup.card_le_of_le (inf_le_left)
+  -- From h_prod (64 = inter * HK) and h_HK_le_card (HK ≤ 16): inter ≥ 4.
+  set a := Nat.card (H₁ ⊓ H₂ : Subgroup G) with ha_def
+  set b := Nat.card ((H₁ : Set G) * (H₂ : Set G)) with hb_def
+  have hab : 8 * 8 = a * b := h_prod
+  have h_a_pos : 0 < a := Nat.card_pos
+  have h_a_ge_4 : 4 ≤ a := by
+    -- a * b = 64, b ≤ 16, so a ≥ 4.
+    by_contra h_lt
+    -- a ≤ 3, so a * b ≤ 3 * 16 = 48 < 64.
+    have h_a_le : a ≤ 3 := by omega
+    have : a * b ≤ 3 * 16 := Nat.mul_le_mul h_a_le h_HK_le_card
+    omega
+  -- |H₁ ⊓ H₂| ≠ 8 because H₁ ≠ H₂.
+  have h_a_ne_8 : a ≠ 8 := by
+    intro h_eq
+    apply h_distinct
+    -- If a = 8 = |H₁|, then H₁ ⊓ H₂ = H₁ since (H₁ ⊓ H₂) ≤ H₁ and same card.
+    have h_inter_eq_H₁ : H₁ ⊓ H₂ = H₁ := by
+      apply Subgroup.eq_of_le_of_card_ge (inf_le_left)
+      rw [← ha_def, h_eq, h₁_card]
+    -- Then H₁ ≤ H₂.
+    have h₁_le_h₂ : H₁ ≤ H₂ := h_inter_eq_H₁ ▸ inf_le_right
+    -- And by card equality, H₁ = H₂.
+    exact Subgroup.eq_of_le_of_card_ge h₁_le_h₂ (by rw [h₁_card, h₂_card])
+  -- So a = 4.
+  have h_a_eq_4 : a = 4 := by
+    have h_a_dvd : a ∣ 64 := ⟨b, hab⟩
+    interval_cases a
+    all_goals first | rfl | omega
+  -- And then b = 16.
+  have h_b_eq_16 : b = 16 := by
+    have : 8 * 8 = 4 * b := h_a_eq_4 ▸ hab
+    omega
+  -- Step 2: Show (H₁ : Set G) * (H₂ : Set G) = Set.univ.
+  have h_HK_univ : (H₁ : Set G) * (H₂ : Set G) = Set.univ := by
+    rw [Set.eq_univ_iff_ncard]
+    rw [← Nat.card_coe_set_eq, ← hb_def, h_b_eq_16, h_sixteen]
+  -- Step 3: Show H₁ ⊓ H₂ ≤ Subgroup.center G.
+  have h_inter_in_center : (H₁ ⊓ H₂ : Subgroup G) ≤ Subgroup.center G := by
+    intro x hx
+    obtain ⟨hx₁, hx₂⟩ := Subgroup.mem_inf.mp hx
+    rw [Subgroup.mem_center_iff]
+    intro g
+    -- g ∈ G = H₁ * H₂, so g = h₁ * h₂ with h₁ ∈ H₁, h₂ ∈ H₂.
+    have hg_mem : g ∈ (H₁ : Set G) * (H₂ : Set G) := by
+      rw [h_HK_univ]; trivial
+    rw [Set.mem_mul] at hg_mem
+    obtain ⟨h₁, hh₁, h₂, hh₂, rfl⟩ := hg_mem
+    -- x commutes with h₁ (both in H₁ abelian).
+    have hxh₁ : x * h₁ = h₁ * x := by
+      have h := h₁_abelian ⟨x, hx₁⟩ ⟨h₁, hh₁⟩
+      exact congrArg Subtype.val h
+    -- x commutes with h₂ (both in H₂ abelian).
+    have hxh₂ : x * h₂ = h₂ * x := by
+      have h := h₂_abelian ⟨x, hx₂⟩ ⟨h₂, hh₂⟩
+      exact congrArg Subtype.val h
+    -- Now compute: h₁ * h₂ * x = h₁ * (h₂ * x) = h₁ * (x * h₂) = (h₁ * x) * h₂
+    --            = (x * h₁) * h₂ = x * (h₁ * h₂).
+    calc h₁ * h₂ * x = h₁ * (h₂ * x) := mul_assoc _ _ _
+      _ = h₁ * (x * h₂) := by rw [hxh₂]
+      _ = (h₁ * x) * h₂ := (mul_assoc _ _ _).symm
+      _ = (x * h₁) * h₂ := by rw [hxh₁]
+      _ = x * (h₁ * h₂) := mul_assoc _ _ _
+  -- Step 4: |H₁ ⊓ H₂| ≤ |Z(G)|.
+  have : 4 ≤ Nat.card (Subgroup.center G) := by
+    rw [← h_a_eq_4, ha_def]
+    exact Subgroup.card_le_of_le h_inter_in_center
+  exact this
 
 end OrderSixteen.Prelim
 
@@ -808,11 +920,396 @@ theorem center_order_four (h : Nat.card (Subgroup.center G) = 4)
     · -- C4 ⋊ C4 case → disjunct 2.
       exact Or.inr (Or.inl hc4)
 
+include h_sixteen in
+/-- Sub-theorem (leaf case): when `|G| = 16`, `|Z(G)| = 2`, and `G` contains
+a witness pair `(x, y)` with `orderOf x = 8`, `orderOf y = 2`,
+`y ∉ ⟨x⟩`, and the dihedral relation `y * x * y = x⁻¹`, then `G ≅ DihedralGroup 8`.
+Blueprint label `thm:case-dihedral-eight`. -/
+theorem center_two_dihedral
+    (x : G) (hx_order : orderOf x = 8)
+    (y : G) (hy_order : orderOf y = 2)
+    (hy_notin : y ∉ Subgroup.zpowers x)
+    (h_rel : y * x * y = x⁻¹) :
+    Nonempty (G ≃* DihedralGroup 8) := by
+  -- y has order 2, so y² = 1 and y = y⁻¹.
+  have hy_sq : y * y = 1 := by
+    have := pow_orderOf_eq_one y
+    rw [hy_order, sq] at this; exact this
+  have hy_inv : y⁻¹ = y :=
+    (eq_inv_of_mul_eq_one_left hy_sq).symm
+  -- Powers of x are well-defined mod 8.
+  have hx_pow_eq : ∀ a b : ℕ, a ≡ b [MOD 8] → x ^ a = x ^ b := by
+    intro a b hab
+    rw [pow_eq_pow_iff_modEq, hx_order]; exact hab
+  -- x^(ZMod 8 value) is consistent with ZMod addition.
+  have hx_val_add : ∀ i j : ZMod 8, x ^ (i + j).val = x ^ i.val * x ^ j.val := by
+    intro i j
+    rw [← pow_add]
+    apply hx_pow_eq
+    rw [Nat.ModEq, ZMod.val_add]
+    omega
+  -- y * x^k * y = x⁻¹^k (using hy_inv and conj_pow).
+  have hyxky : ∀ k : ℕ, y * x ^ k * y = x⁻¹ ^ k := by
+    intro k
+    have h_conj : (y * x * y⁻¹) ^ k = y * x ^ k * y⁻¹ := conj_pow
+    have h_yxy : y * x * y⁻¹ = x⁻¹ := by rw [hy_inv]; exact h_rel
+    rw [h_yxy, hy_inv] at h_conj
+    exact h_conj.symm
+  -- Key fact: for any k1, k2 : ZMod 8,
+  -- ((-(k1 : ZMod 8)).val + k2.val) ≡ (k2 - k1).val [MOD 8].
+  have h_neg_add_val : ∀ k1 k2 : ZMod 8,
+      ((-k1).val + k2.val) ≡ (k2 - k1).val [MOD 8] := by
+    intro k1 k2
+    have hcast : ((((-k1).val + k2.val) : ℕ) : ZMod 8)
+        = (((k2 - k1).val : ℕ) : ZMod 8) := by
+      push_cast
+      rw [ZMod.natCast_zmod_val, ZMod.natCast_zmod_val, ZMod.natCast_zmod_val]
+      ring
+    exact (ZMod.natCast_eq_natCast_iff _ _ _).mp hcast
+  -- Express x⁻¹ ^ k as x ^ ((-k : ZMod 8).val) for k : ℕ.
+  have hx_inv_pow : ∀ k : ℕ, x⁻¹ ^ k = x ^ ((-(k : ZMod 8)).val) := by
+    intro k
+    rw [inv_pow]
+    symm
+    apply eq_inv_of_mul_eq_one_left
+    rw [← pow_add]
+    rw [show (1 : G) = x ^ 0 from (pow_zero x).symm]
+    apply hx_pow_eq
+    have hsum_cast : (((-(k : ZMod 8)).val + k : ℕ) : ZMod 8) = 0 := by
+      push_cast
+      rw [ZMod.natCast_zmod_val]
+      ring
+    have h := (ZMod.natCast_eq_zero_iff _ _).mp hsum_cast
+    unfold Nat.ModEq
+    omega
+  -- Key helper: x^k * y = y * x ^ ((-(k : ZMod 8)).val).
+  have hxy_swap : ∀ k : ℕ, x ^ k * y = y * x ^ ((-(k : ZMod 8)).val) := by
+    intro k
+    have h1 : y * x ^ k * y = x⁻¹ ^ k := hyxky k
+    have h2 : y * (y * x ^ k * y) = y * x⁻¹ ^ k := by rw [h1]
+    have h3 : y * (y * x ^ k * y) = x ^ k * y := by
+      rw [show y * (y * x ^ k * y) = (y * y) * x ^ k * y from by group, hy_sq, one_mul]
+    rw [h3, hx_inv_pow] at h2
+    exact h2
+  -- Define the forward map DihedralGroup 8 → G.
+  let f_fun : DihedralGroup 8 → G := fun d => match d with
+    | DihedralGroup.r i => x ^ i.val
+    | DihedralGroup.sr i => y * x ^ i.val
+  have hf_one : f_fun 1 = 1 := by
+    change x ^ (0 : ZMod 8).val = 1
+    simp
+  have hf_mul : ∀ a b : DihedralGroup 8, f_fun (a * b) = f_fun a * f_fun b := by
+    rintro (i | i) (j | j)
+    · change x ^ (i + j).val = x ^ i.val * x ^ j.val
+      exact hx_val_add i j
+    · change y * x ^ (j - i).val = x ^ i.val * (y * x ^ j.val)
+      have step1 : x ^ i.val * (y * x ^ j.val) = (x ^ i.val * y) * x ^ j.val := by
+        rw [mul_assoc]
+      rw [step1, hxy_swap i.val, mul_assoc, ← pow_add]
+      congr 1
+      apply hx_pow_eq
+      have hcong : (-(i.val : ZMod 8)) = -i := by rw [ZMod.natCast_zmod_val]
+      rw [hcong]
+      exact (h_neg_add_val i j).symm
+    · change y * x ^ (i + j).val = y * x ^ i.val * x ^ j.val
+      rw [hx_val_add i j, mul_assoc]
+    · change x ^ (j - i).val = (y * x ^ i.val) * (y * x ^ j.val)
+      have step1 : (y * x ^ i.val) * (y * x ^ j.val) = y * ((x ^ i.val * y) * x ^ j.val) := by
+        rw [mul_assoc, mul_assoc]
+      rw [step1, hxy_swap i.val]
+      have step2 : y * ((y * x ^ ((-(i.val : ZMod 8)).val)) * x ^ j.val)
+          = (y * y) * (x ^ ((-(i.val : ZMod 8)).val) * x ^ j.val) := by
+        simp only [← mul_assoc]
+      rw [step2, hy_sq, one_mul, ← pow_add]
+      apply hx_pow_eq
+      have hcong : (-(i.val : ZMod 8)) = -i := by rw [ZMod.natCast_zmod_val]
+      rw [hcong]
+      exact (h_neg_add_val i j).symm
+  let F : DihedralGroup 8 →* G :=
+    { toFun := f_fun
+      map_one' := hf_one
+      map_mul' := hf_mul }
+  have hf_inj : Function.Injective f_fun := by
+    rintro (i | i) (j | j) h
+    · change x ^ i.val = x ^ j.val at h
+      have hmod : i.val ≡ j.val [MOD 8] := by
+        have hpow := (pow_eq_pow_iff_modEq).mp h
+        rw [hx_order] at hpow; exact hpow
+      have hi : ((i.val : ℕ) : ZMod 8) = i := ZMod.natCast_zmod_val i
+      have hj : ((j.val : ℕ) : ZMod 8) = j := ZMod.natCast_zmod_val j
+      have heq : ((i.val : ℕ) : ZMod 8) = ((j.val : ℕ) : ZMod 8) :=
+        (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+      rw [hi, hj] at heq
+      rw [heq]
+    · exfalso
+      change x ^ i.val = y * x ^ j.val at h
+      have hy_eq : y = x ^ i.val * (x ^ j.val)⁻¹ := by
+        have : x ^ i.val * (x ^ j.val)⁻¹ = y * x ^ j.val * (x ^ j.val)⁻¹ := by rw [h]
+        rw [mul_inv_cancel_right] at this
+        exact this.symm
+      apply hy_notin
+      rw [hy_eq]
+      exact Subgroup.mul_mem _ (Subgroup.npow_mem_zpowers x i.val)
+        (Subgroup.inv_mem _ (Subgroup.npow_mem_zpowers x j.val))
+    · exfalso
+      change y * x ^ i.val = x ^ j.val at h
+      have hy_eq : y = x ^ j.val * (x ^ i.val)⁻¹ := by
+        have : x ^ j.val * (x ^ i.val)⁻¹ = (y * x ^ i.val) * (x ^ i.val)⁻¹ := by rw [h]
+        rw [mul_inv_cancel_right] at this
+        exact this.symm
+      apply hy_notin
+      rw [hy_eq]
+      exact Subgroup.mul_mem _ (Subgroup.npow_mem_zpowers x j.val)
+        (Subgroup.inv_mem _ (Subgroup.npow_mem_zpowers x i.val))
+    · change y * x ^ i.val = y * x ^ j.val at h
+      have h' : x ^ i.val = x ^ j.val := mul_left_cancel h
+      have hmod : i.val ≡ j.val [MOD 8] := by
+        have hpow := (pow_eq_pow_iff_modEq).mp h'
+        rw [hx_order] at hpow; exact hpow
+      have hi : ((i.val : ℕ) : ZMod 8) = i := ZMod.natCast_zmod_val i
+      have hj : ((j.val : ℕ) : ZMod 8) = j := ZMod.natCast_zmod_val j
+      have heq : ((i.val : ℕ) : ZMod 8) = ((j.val : ℕ) : ZMod 8) :=
+        (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+      rw [hi, hj] at heq
+      rw [heq]
+  have hD_card : Nat.card (DihedralGroup 8) = 16 := by
+    rw [DihedralGroup.nat_card]
+  have hf_bij : Function.Bijective f_fun := by
+    apply hf_inj.bijective_of_nat_card_le
+    rw [hD_card, h_sixteen]
+  exact ⟨(MulEquiv.ofBijective F hf_bij).symm⟩
+
+include h_sixteen in
+/-- Sub-theorem (leaf case): when `|G| = 16`, `|Z(G)| = 2`, and `G` contains
+a witness pair `(x, y)` with `orderOf x = 8`, `orderOf y = 2`,
+`y ∉ ⟨x⟩`, and the semidihedral relation `y * x * y = x^3`, then `G` is
+isomorphic to the semidihedral group of order 16.
+Blueprint label `thm:case-semidihedral`. -/
+theorem center_two_semidihedral
+    (x : G) (hx_order : orderOf x = 8)
+    (y : G) (hy_order : orderOf y = 2)
+    (hy_notin : y ∉ Subgroup.zpowers x)
+    (h_rel : y * x * y = x ^ 3) :
+    Nonempty (G ≃* CyclicGroup 8 ⋊[c2OnC8Pow3] CyclicGroup 2) := by
+  sorry
+
+include h_sixteen in
+/-- Sub-theorem (leaf case): when `|G| = 16`, `|Z(G)| = 2`, and `G` contains
+a witness pair `(x, y)` with `orderOf x = 8`, `y^2 = x^4`, `y ∉ ⟨x⟩`, and the
+quaternion relation `y * x * y⁻¹ = x⁻¹`, then `G ≅ QuaternionGroup 4`
+(the generalized quaternion group of order 16). Blueprint label
+`thm:case-quaternion-sixteen`. -/
+theorem center_two_quaternion
+    (x : G) (hx_order : orderOf x = 8)
+    (y : G) (hy_sq : y ^ 2 = x ^ 4)
+    (hy_notin : y ∉ Subgroup.zpowers x)
+    (h_rel : y * x * y⁻¹ = x⁻¹) :
+    Nonempty (G ≃* QuaternionGroup 4) := by
+  -- y² = x⁴, used to convert the xa-xa case.
+  have hy_sq' : y * y = x ^ 4 := by rw [← sq]; exact hy_sq
+  -- Powers of x are well-defined mod 8.
+  have hx_pow_eq : ∀ a b : ℕ, a ≡ b [MOD 8] → x ^ a = x ^ b := by
+    intro a b hab
+    rw [pow_eq_pow_iff_modEq, hx_order]; exact hab
+  -- x^(ZMod 8 value) is consistent with ZMod addition.
+  have hx_val_add : ∀ i j : ZMod 8, x ^ (i + j).val = x ^ i.val * x ^ j.val := by
+    intro i j
+    rw [← pow_add]
+    apply hx_pow_eq
+    rw [Nat.ModEq, ZMod.val_add]
+    omega
+  -- y * x^k * y⁻¹ = x⁻¹^k (via conj_pow on the relation y * x * y⁻¹ = x⁻¹).
+  have hyxky : ∀ k : ℕ, y * x ^ k * y⁻¹ = x⁻¹ ^ k := by
+    intro k
+    have h_conj : (y * x * y⁻¹) ^ k = y * x ^ k * y⁻¹ := conj_pow
+    rw [h_rel] at h_conj
+    exact h_conj.symm
+  -- Key fact: for any k1, k2 : ZMod 8,
+  -- ((-k1).val + k2.val) ≡ (k2 - k1).val [MOD 8].
+  have h_neg_add_val : ∀ k1 k2 : ZMod 8,
+      ((-k1).val + k2.val) ≡ (k2 - k1).val [MOD 8] := by
+    intro k1 k2
+    have hcast : ((((-k1).val + k2.val) : ℕ) : ZMod 8)
+        = (((k2 - k1).val : ℕ) : ZMod 8) := by
+      push_cast
+      rw [ZMod.natCast_zmod_val, ZMod.natCast_zmod_val, ZMod.natCast_zmod_val]
+      ring
+    exact (ZMod.natCast_eq_natCast_iff _ _ _).mp hcast
+  -- Express x⁻¹ ^ k as x ^ ((-k : ZMod 8).val) for k : ℕ.
+  have hx_inv_pow : ∀ k : ℕ, x⁻¹ ^ k = x ^ ((-(k : ZMod 8)).val) := by
+    intro k
+    rw [inv_pow]
+    symm
+    apply eq_inv_of_mul_eq_one_left
+    rw [← pow_add]
+    rw [show (1 : G) = x ^ 0 from (pow_zero x).symm]
+    apply hx_pow_eq
+    have hsum_cast : (((-(k : ZMod 8)).val + k : ℕ) : ZMod 8) = 0 := by
+      push_cast
+      rw [ZMod.natCast_zmod_val]
+      ring
+    have h := (ZMod.natCast_eq_zero_iff _ _).mp hsum_cast
+    unfold Nat.ModEq
+    omega
+  -- Key helper: x^k * y = y * x ^ ((-(k : ZMod 8)).val).
+  -- Multiply hyxky on the right by y: y * x^k = x⁻¹^k * y.
+  -- Then multiply on the left by y⁻¹ flipped: x^k * y = y * x⁻¹^k from rearrangement.
+  -- Actually simpler: from hyxky, y * x^k = x⁻¹^k * y, so x^k * y = y * x^... after
+  -- conjugating both sides by y appropriately. Let me derive it directly.
+  have hxy_swap : ∀ k : ℕ, x ^ k * y = y * x ^ ((-(k : ZMod 8)).val) := by
+    -- From y * x^k * y⁻¹ = x⁻¹^k, get y * x^k = x⁻¹^k * y (for all k).
+    have h1 : ∀ k : ℕ, y * x ^ k = x⁻¹ ^ k * y := by
+      intro k
+      have hk := hyxky k
+      have h2 : (y * x ^ k * y⁻¹) * y = x⁻¹ ^ k * y := by rw [hk]
+      rw [inv_mul_cancel_right] at h2
+      exact h2
+    intro k
+    -- We want: x^k * y = y * x^((-k).val).
+    -- From h1 applied to (-k).val: y * x^((-k).val) = x⁻¹^((-k).val) * y.
+    -- And x⁻¹^((-k).val) = x^k (mod 8).
+    have h3 : y * x ^ ((-(k : ZMod 8)).val) = x⁻¹ ^ ((-(k : ZMod 8)).val) * y :=
+      h1 ((-(k : ZMod 8)).val)
+    have hx_inv_pow_neg : x⁻¹ ^ ((-(k : ZMod 8)).val) = x ^ k := by
+      rw [hx_inv_pow]
+      apply hx_pow_eq
+      have hcast : (((-((-(k : ZMod 8)).val : ZMod 8)).val : ℕ) : ZMod 8) = ((k : ℕ) : ZMod 8) := by
+        rw [ZMod.natCast_zmod_val, ZMod.natCast_zmod_val]
+        ring
+      exact (ZMod.natCast_eq_natCast_iff _ _ _).mp hcast
+    rw [hx_inv_pow_neg] at h3
+    exact h3.symm
+  -- Define the forward map QuaternionGroup 4 → G.
+  let f_fun : QuaternionGroup 4 → G := fun d => match d with
+    | QuaternionGroup.a i => x ^ i.val
+    | QuaternionGroup.xa i => y * x ^ i.val
+  have hf_one : f_fun 1 = 1 := by
+    change x ^ (0 : ZMod 8).val = 1
+    simp
+  have hf_mul : ∀ a b : QuaternionGroup 4, f_fun (a * b) = f_fun a * f_fun b := by
+    rintro (i | i) (j | j)
+    · change x ^ (i + j).val = x ^ i.val * x ^ j.val
+      exact hx_val_add i j
+    · change y * x ^ (j - i).val = x ^ i.val * (y * x ^ j.val)
+      have step1 : x ^ i.val * (y * x ^ j.val) = (x ^ i.val * y) * x ^ j.val := by
+        rw [mul_assoc]
+      rw [step1, hxy_swap i.val, mul_assoc, ← pow_add]
+      congr 1
+      apply hx_pow_eq
+      have hcong : (-(i.val : ZMod 8)) = -i := by rw [ZMod.natCast_zmod_val]
+      rw [hcong]
+      exact (h_neg_add_val i j).symm
+    · change y * x ^ (i + j).val = y * x ^ i.val * x ^ j.val
+      rw [hx_val_add i j, mul_assoc]
+    · -- xa i * xa j = a (↑n + j - i) with n = 4 (QuaternionGroup 4).
+      -- Goal: x ^ (↑4 + j - i).val = (y * x ^ i.val) * (y * x ^ j.val)
+      change x ^ (((4 : ℕ) : ZMod 8) + j - i).val
+        = (y * x ^ i.val) * (y * x ^ j.val)
+      have step1 : (y * x ^ i.val) * (y * x ^ j.val)
+          = y * ((x ^ i.val * y) * x ^ j.val) := by
+        rw [mul_assoc, mul_assoc]
+      rw [step1, hxy_swap i.val]
+      -- Now: y * ((y * x^((-i).val)) * x^j.val)
+      -- = (y * y) * (x^((-i).val) * x^j.val)
+      -- = x^4 * x^((-i).val + j.val)
+      -- = x^(4 + (-i).val + j.val)
+      have step2 : y * ((y * x ^ ((-(i.val : ZMod 8)).val)) * x ^ j.val)
+          = (y * y) * (x ^ ((-(i.val : ZMod 8)).val) * x ^ j.val) := by
+        simp only [← mul_assoc]
+      rw [step2, hy_sq', ← pow_add, ← pow_add]
+      -- Goal: x ^ (((4 : ℕ) : ZMod 8) + j - i).val
+      --     = x ^ (4 + ((-(i.val : ZMod 8)).val + j.val))
+      apply hx_pow_eq
+      -- We need (((4 : ℕ) : ZMod 8) + j - i).val ≡ 4 + (-i).val + j.val [MOD 8].
+      have hcong_i : (-(i.val : ZMod 8)) = -i := by rw [ZMod.natCast_zmod_val]
+      have hneg_add : ((-(i.val : ZMod 8)).val + j.val) ≡ (j - i).val [MOD 8] := by
+        rw [hcong_i]
+        exact h_neg_add_val i j
+      -- Now reduce: (((4:ℕ):ZMod 8) + j - i).val ≡ 4 + ((-i).val + j.val) mod 8
+      -- Step a: 4 + ((-i).val + j.val) ≡ 4 + (j - i).val mod 8
+      -- Step b: (((4:ℕ):ZMod 8) + j - i).val ≡ 4 + (j - i).val mod 8
+      have h_step_a : 4 + ((-(i.val : ZMod 8)).val + j.val) ≡ 4 + (j - i).val [MOD 8] := by
+        have := hneg_add
+        unfold Nat.ModEq at this ⊢
+        omega
+      have h_step_b : (((4 : ℕ) : ZMod 8) + j - i).val ≡ 4 + (j - i).val [MOD 8] := by
+        -- ((4:ℕ):ZMod 8) + j - i = ((4:ℕ):ZMod 8) + (j - i)
+        have hrewrite : ((4 : ℕ) : ZMod 8) + j - i = ((4 : ℕ) : ZMod 8) + (j - i) := by
+          ring
+        rw [hrewrite]
+        -- Now we need ((↑4 + (j - i)) : ZMod 8).val ≡ 4 + (j - i).val [MOD 8]
+        have hval_add := ZMod.val_add (((4 : ℕ) : ZMod 8)) (j - i)
+        have hval_4 : (((4 : ℕ) : ZMod 8) : ZMod 8).val = 4 := by decide
+        rw [hval_4] at hval_add
+        unfold Nat.ModEq
+        omega
+      -- Combine using symmetry/transitivity.
+      exact h_step_b.trans h_step_a.symm
+  let F : QuaternionGroup 4 →* G :=
+    { toFun := f_fun
+      map_one' := hf_one
+      map_mul' := hf_mul }
+  have hf_inj : Function.Injective f_fun := by
+    rintro (i | i) (j | j) h
+    · change x ^ i.val = x ^ j.val at h
+      have hmod : i.val ≡ j.val [MOD 8] := by
+        have hpow := (pow_eq_pow_iff_modEq).mp h
+        rw [hx_order] at hpow; exact hpow
+      have hi : ((i.val : ℕ) : ZMod 8) = i := ZMod.natCast_zmod_val i
+      have hj : ((j.val : ℕ) : ZMod 8) = j := ZMod.natCast_zmod_val j
+      have heq : ((i.val : ℕ) : ZMod 8) = ((j.val : ℕ) : ZMod 8) :=
+        (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+      rw [hi, hj] at heq
+      rw [heq]
+    · exfalso
+      change x ^ i.val = y * x ^ j.val at h
+      have hy_eq : y = x ^ i.val * (x ^ j.val)⁻¹ := by
+        have : x ^ i.val * (x ^ j.val)⁻¹ = y * x ^ j.val * (x ^ j.val)⁻¹ := by rw [h]
+        rw [mul_inv_cancel_right] at this
+        exact this.symm
+      apply hy_notin
+      rw [hy_eq]
+      exact Subgroup.mul_mem _ (Subgroup.npow_mem_zpowers x i.val)
+        (Subgroup.inv_mem _ (Subgroup.npow_mem_zpowers x j.val))
+    · exfalso
+      change y * x ^ i.val = x ^ j.val at h
+      have hy_eq : y = x ^ j.val * (x ^ i.val)⁻¹ := by
+        have : x ^ j.val * (x ^ i.val)⁻¹ = (y * x ^ i.val) * (x ^ i.val)⁻¹ := by rw [h]
+        rw [mul_inv_cancel_right] at this
+        exact this.symm
+      apply hy_notin
+      rw [hy_eq]
+      exact Subgroup.mul_mem _ (Subgroup.npow_mem_zpowers x j.val)
+        (Subgroup.inv_mem _ (Subgroup.npow_mem_zpowers x i.val))
+    · change y * x ^ i.val = y * x ^ j.val at h
+      have h' : x ^ i.val = x ^ j.val := mul_left_cancel h
+      have hmod : i.val ≡ j.val [MOD 8] := by
+        have hpow := (pow_eq_pow_iff_modEq).mp h'
+        rw [hx_order] at hpow; exact hpow
+      have hi : ((i.val : ℕ) : ZMod 8) = i := ZMod.natCast_zmod_val i
+      have hj : ((j.val : ℕ) : ZMod 8) = j := ZMod.natCast_zmod_val j
+      have heq : ((i.val : ℕ) : ZMod 8) = ((j.val : ℕ) : ZMod 8) :=
+        (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmod
+      rw [hi, hj] at heq
+      rw [heq]
+  have hQ_card : Nat.card (QuaternionGroup 4) = 16 := by
+    rw [Nat.card_eq_fintype_card, QuaternionGroup.card]
+  have hf_bij : Function.Bijective f_fun := by
+    apply hf_inj.bijective_of_nat_card_le
+    rw [hQ_card, h_sixteen]
+  exact ⟨(MulEquiv.ofBijective F hf_bij).symm⟩
+
 theorem center_order_two (h : Nat.card (Subgroup.center G) = 2)
   : Nonempty (G ≃* DihedralGroup 8) ∨
     Nonempty (G ≃* CyclicGroup 8 ⋊[c2OnC8Pow3] CyclicGroup 2) ∨
     Nonempty (G ≃* QuaternionGroup 4)
   := by
+  -- Pending: reduction G/Z(G) ≅ D_4 (via order-8 classification of G/Z(G) and
+  -- ruling out C_8, C_4 × C_2, Q_8, and C_2^3), three order-8 subgroup
+  -- correspondence setup, then dispatch to one of the leaf sub-theorems
+  -- `center_two_dihedral` / `center_two_semidihedral` / `center_two_quaternion`
+  -- by extracting the corresponding witness pair (x, y). See run milestones.md
+  -- for the full breakdown.
   sorry
 
 end OrderSixteen
