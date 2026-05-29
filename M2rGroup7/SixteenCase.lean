@@ -410,6 +410,30 @@ theorem center_order_eight (h : Nat.card (Subgroup.center G) = 8)
     rw [hcenter_top, Nat.card_congr (Subgroup.topEquiv).toEquiv, h_sixteen]
   omega
 
+include h_sixteen in
+/-- Sub-theorem: when `|Z(G)| = 4` and `Z(G)` is cyclic (so `Z(G) ≅ C_4`),
+`G` is isomorphic to the modular group `M_16` or to the Pauli group. -/
+theorem center_four_cyclic (h : Nat.card (Subgroup.center G) = 4)
+    (hcyc : IsCyclic (Subgroup.center G))
+  : Nonempty (G ≃* (CyclicGroup 4 × CyclicGroup 2) ⋊[c2OnK8Psi6] CyclicGroup 2) ∨
+    Nonempty (G ≃* CyclicGroup 8 ⋊[c2OnC8Pow5] CyclicGroup 2)
+  := by
+  sorry
+
+include h_sixteen in
+/-- Sub-theorem: when `|Z(G)| = 4` and `Z(G)` is not cyclic
+(so `Z(G) ≅ C_2 × C_2`), `G` is isomorphic to one of `D_4 × C_2`,
+`(C_2 × C_2) ⋊ C_4`, `Q_8 × C_2`, or `C_4 ⋊ C_4`. -/
+theorem center_four_klein (h : Nat.card (Subgroup.center G) = 4)
+    (hncyc : ¬ IsCyclic (Subgroup.center G))
+  : Nonempty (G ≃* CyclicGroup 2 × DihedralGroup 4) ∨
+    Nonempty (G ≃* (CyclicGroup 2 × CyclicGroup 2) ⋊[c4OnC2sqSwap] CyclicGroup 4) ∨
+    Nonempty (G ≃* CyclicGroup 2 × QuaternionGroup 2) ∨
+    Nonempty (G ≃* CyclicGroup 4 ⋊[c4OnC4Inv] CyclicGroup 4)
+  := by
+  sorry
+
+include h_sixteen in
 theorem center_order_four (h : Nat.card (Subgroup.center G) = 4)
   : Nonempty (G ≃* (CyclicGroup 2 × CyclicGroup 2) ⋊[c4OnC2sqSwap] CyclicGroup 4) ∨
     Nonempty (G ≃* CyclicGroup 4 ⋊[c4OnC4Inv] CyclicGroup 4) ∨
@@ -418,7 +442,26 @@ theorem center_order_four (h : Nat.card (Subgroup.center G) = 4)
     Nonempty (G ≃* CyclicGroup 2 × QuaternionGroup 2) ∨
     Nonempty (G ≃* (CyclicGroup 4 × CyclicGroup 2) ⋊[c2OnK8Psi6] CyclicGroup 2)
   := by
-  sorry
+  -- Split on whether Z(G) is cyclic. Z(G) is finite, so this is decidable
+  -- classically; we use classical choice.
+  by_cases hcyc : IsCyclic (Subgroup.center G)
+  · -- Z(G) cyclic ⇒ Z(G) ≅ C_4 ⇒ G is M_16 or Pauli.
+    obtain (hpauli | hmod) := center_four_cyclic (h_sixteen := h_sixteen) G h hcyc
+    · -- Pauli case → disjunct 6.
+      exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hpauli))))
+    · -- Modular case → disjunct 3.
+      exact Or.inr (Or.inr (Or.inl hmod))
+  · -- Z(G) not cyclic ⇒ Z(G) ≅ C_2 × C_2 ⇒ G is D4×C2, K4⋊C4, Q8×C2 or C4⋊C4.
+    obtain (hd4 | hk4 | hq8 | hc4) :=
+      center_four_klein (h_sixteen := h_sixteen) G h hcyc
+    · -- D4 × C2 case → disjunct 4.
+      exact Or.inr (Or.inr (Or.inr (Or.inl hd4)))
+    · -- K4 ⋊ C4 case → disjunct 1.
+      exact Or.inl hk4
+    · -- Q8 × C2 case → disjunct 5.
+      exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl hq8))))
+    · -- C4 ⋊ C4 case → disjunct 2.
+      exact Or.inr (Or.inl hc4)
 
 theorem center_order_two (h : Nat.card (Subgroup.center G) = 2)
   : Nonempty (G ≃* DihedralGroup 8) ∨
@@ -461,7 +504,8 @@ theorem sixteen_classification {G : Type*} [Group G] (h_sixteen : Nat.card G = 1
     · exact ⟨9, by decide, hiso⟩
   · -- k = 2: |Z(G)| = 4
     norm_num at hk_eq
-    obtain (hiso | hiso | hiso | hiso | hiso | hiso) := OrderSixteen.center_order_four G hk_eq
+    obtain (hiso | hiso | hiso | hiso | hiso | hiso) :=
+      OrderSixteen.center_order_four (h_sixteen := h_sixteen) G hk_eq
     · exact ⟨3, by decide, hiso⟩
     · exact ⟨4, by decide, hiso⟩
     · exact ⟨6, by decide, hiso⟩
