@@ -33,18 +33,19 @@ open scoped commutatorElement
 
 lemma AddSubgroup.closure_singleton_int_one_eq_top : closure ({1} : Set ℤ) = ⊤ := by
   ext
-  simp [mem_closure_singleton]
+  simp only [Int.addSubgroupClosure_one, mem_top]
 
 variable (n : ℕ) (G : Type*) [Group G]
 
 lemma isMulCommutative_of_commGroup {M : Type*} [CommGroup M] : IsMulCommutative M :=
   ⟨⟨fun a b => mul_comm a b⟩⟩
 
-lemma isMulCommutative_iff {M : Type*} [Mul M] : IsMulCommutative M ↔ ∀ a b : M, a * b = b * a := by
+lemma isMulCommutative_iff {M : Type*} [Mul M] :
+    IsMulCommutative M ↔ ∀ a b : M, a * b = b * a := by
   grind [IsMulCommutative, Std.Commutative]
 
-lemma isMulCommutative_of_mulEquiv {M N : Type*} [Group M] [Group N] (e : M ≃* N) (h : IsMulCommutative N)
-: IsMulCommutative M := by
+lemma isMulCommutative_of_mulEquiv {M N : Type*} [Group M] [Group N]
+    (e : M ≃* N) (h : IsMulCommutative N) : IsMulCommutative M := by
   exact ⟨⟨fun x y => e.injective (by rw [e.map_mul, e.map_mul]; exact h.is_comm.comm (e x) (e y))⟩⟩
 
 theorem center_eq_top_iff : Subgroup.center G = ⊤ ↔ IsMulCommutative G := by
@@ -60,7 +61,7 @@ theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
   rw [h_g_card, h_c_card]
 
 theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
-  (h_na : ¬IsMulCommutative G) (h : Nat.card G = p^3) :
+  (h_na : ¬IsMulCommutative G) (h : Nat.card G = p ^ 3) :
   (p = 2 ∧ ((Nonempty (MulEquiv G (DihedralGroup 4))) ∨
              (Nonempty (MulEquiv G (QuaternionGroup 2))))) ∨
   (p ≠ 2 ∧ ((Nonempty (MulEquiv G (UT3 p))) ∨
@@ -144,8 +145,7 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
 
     contrapose! h_na
     rw [isMulCommutative_iff]
-    intro a
-    intro b
+    intro a b
     specialize h_comm a b
     exact h_comm
 
@@ -190,7 +190,8 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
 
   have h_quotient_z_abelian : IsMulCommutative (G ⧸ Z) := by
     obtain ⟨e⟩ := h_g_quot_z_is_Cp_x_Cp
-    have h_Cp_Cp_comm : CommGroup (CyclicGroup p × CyclicGroup p) := by unfold CyclicGroup; infer_instance
+    have h_Cp_Cp_comm : CommGroup (CyclicGroup p × CyclicGroup p)
+        := by unfold CyclicGroup; infer_instance
     apply isMulCommutative_of_commGroup at h_Cp_Cp_comm
     sorry
 
@@ -246,13 +247,13 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
   obtain ⟨b, hb⟩ := QuotientGroup.mk_surjective bZ
 
   have hgen1_ne : gen1 ≠ 1 := by
-    simp [gen1]
+    simp only [ne_eq, Prod.mk_eq_one, and_true, gen1]
     intro h
     have : (1 : ZMod p) = 0 := Multiplicative.ofAdd.injective h
     exact absurd this one_ne_zero
 
   have hgen2_ne : gen2 ≠ 1 := by
-    simp [gen2]
+    simp only [ne_eq, Prod.mk_eq_one, true_and, gen2]
     intro h
     have : (1 : ZMod p) = 0 := Multiplicative.ofAdd.injective h
     exact absurd this one_ne_zero
@@ -288,7 +289,7 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
     obtain ⟨m, hm⟩ := hgen_cp a
     obtain ⟨n, hn⟩ := hgen_cp b
     refine ⟨m, n, ?_⟩
-    simp [gen1, gen2, Prod.ext_iff]
+    simp only [Prod.pow_mk, one_zpow, Prod.mk_mul_mk, mul_one, one_mul, Prod.ext_iff, gen1, gen2]
     constructor
     · exact hm.symm
     · exact hn.symm
@@ -298,7 +299,7 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
     obtain ⟨m, n, hmn⟩ := hprod_gen (x q)
     refine ⟨m, n, ?_⟩
     have := congr_arg x.symm hmn
-    simp [MulEquiv.map_mul, aZ, bZ] at this ⊢
+    simp only [MulEquiv.symm_apply_apply, MulEquiv.map_mul, map_zpow, aZ, bZ] at this ⊢
     exact this
 
   -- Claim 5: Z, a, b generate G
@@ -307,12 +308,14 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
     intro g
     obtain ⟨m, n, hmn⟩ := hquot_gen (QuotientGroup.mk' Z g)
     refine ⟨m, n, ?_⟩
-    simp [aZ, bZ] at hmn
+    simp only [QuotientGroup.mk'_apply, aZ, bZ] at hmn
     change ↑g = aZ ^ m * bZ ^ n at hmn
     rw [← ha, ← hb] at hmn
     rw [← QuotientGroup.mk_zpow, ← QuotientGroup.mk_zpow, ← QuotientGroup.mk_mul] at hmn
     rw [QuotientGroup.eq] at hmn
-    exact ⟨(a ^ m * b ^ n)⁻¹ * g, by rw [← Subgroup.inv_mem_iff]; convert hmn using 1; group, by group⟩
+    exact ⟨(a ^ m * b ^ n)⁻¹ * g,
+      by rw [← Subgroup.inv_mem_iff]; convert hmn using 1; group,
+      by group⟩
 
   -- Claim 6: a, b do not commute
 
@@ -321,20 +324,20 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
     have h_b_cent : b ∈ Subgroup.centralizer {a} := by
       rw [Subgroup.mem_centralizer_iff]
       intro g hg
-      simp at hg
+      simp only [Set.mem_singleton_iff] at hg
       rw [hg]
       exact h_comm
     have h_Z_cent : Z ≤ Subgroup.centralizer {a} := by
       intro z hz
       rw [Subgroup.mem_centralizer_iff]
       intro g hg
-      simp at hg
+      simp only [Set.mem_singleton_iff] at hg
       rw [hg]
       exact (Subgroup.mem_center_iff.mp hz) a
     have h_a_cent : a ∈ Subgroup.centralizer {a} := by
       rw [Subgroup.mem_centralizer_iff]
       intro g hg
-      simp at hg
+      simp only [Set.mem_singleton_iff] at hg
       rw [hg]
     have hcent_top : Subgroup.centralizer {a} = ⊤ := by
       rw [eq_top_iff]
@@ -354,7 +357,7 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
       exact (hg a rfl).symm
     have h_aZ_eq_one: aZ = 1 := by
       rw [← ha]
-      show (↑a : G ⧸ Z) = ↑(1 : G)
+      change (↑a : G ⧸ Z) = ↑(1 : G)
       rw [QuotientGroup.eq]
       simp [ha_in_Z]
     exact absurd h_aZ_eq_one haZ_ne
@@ -374,13 +377,13 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
   have hab_generates_Z : ∀ z ∈ Z, z ∈ Subgroup.zpowers ⁅a, b⁆ := by
     intro z hz
     have hmem := @mem_zpowers_of_prime_card (↥Z) _ p _ h_z_card_eq_p ⟨⁅a, b⁆, hab_in_Z⟩ ⟨z, hz⟩ ?_
-    obtain ⟨k, hk⟩ := Subgroup.mem_zpowers_iff.mp hmem
-    exact Subgroup.mem_zpowers_iff.mpr ⟨k, congr_arg Subtype.val hk⟩
-    intro h
-    apply hab_comm_ne
-    have := congr_arg Subtype.val h
-    simp at this
-    exact this
+    · obtain ⟨k, hk⟩ := Subgroup.mem_zpowers_iff.mp hmem
+      exact Subgroup.mem_zpowers_iff.mpr ⟨k, congr_arg Subtype.val hk⟩
+    · intro h
+      apply hab_comm_ne
+      have := congr_arg Subtype.val h
+      simp only [OneMemClass.coe_one] at this
+      exact this
 
   -- Claim 8: a, b have order either p or p^2
 
@@ -427,7 +430,7 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
     intro h
     apply hbZ_ne
     rw [← hb]
-    show (↑b : G ⧸ Z) = ↑(1 : G)
+    change (↑b : G ⧸ Z) = ↑(1 : G)
     rw [QuotientGroup.eq]
     simp [orderOf_eq_one_iff.mp h]
 
