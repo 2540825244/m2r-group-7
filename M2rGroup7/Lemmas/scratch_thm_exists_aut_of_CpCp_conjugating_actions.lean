@@ -359,6 +359,32 @@ lemma exists_aut_of_CpCp_conjugating_actions
   -- We work in the additive picture: H ≃+ ZMod p × ZMod p (as additive groups),
   -- then equip with the ZMod p-module structure.
   -- We'll build a LinearEquiv on Additive H and convert.
+  -- Every element of H has order dividing p (since H is a product of CyclicGroup p).
+  have h_pow_p : ∀ h : H, h ^ p = 1 := by
+    intro h
+    obtain ⟨a, b⟩ := h
+    have h_card_cp : Nat.card (CyclicGroup p) = p := card_cyclicGroup p
+    have h_one : ∀ z : CyclicGroup p, z ^ p = 1 := fun z => by
+      have h := pow_card_eq_one' (G := CyclicGroup p) (x := z)
+      rwa [h_card_cp] at h
+    have hap : a ^ p = 1 := h_one a
+    have hbp : b ^ p = 1 := h_one b
+    show (a ^ p, b ^ p) = (1, 1)
+    rw [hap, hbp]
+  -- Additive H is a ZMod p-module
+  have h_nsmul_p : ∀ x : Additive H, (p : ℕ) • x = 0 := by
+    intro x
+    have : Additive.ofMul (Additive.toMul x ^ p) = (p : ℕ) • x := ofMul_pow p (Additive.toMul x)
+    rw [← this]
+    show Additive.ofMul _ = Additive.ofMul 1
+    rw [h_pow_p]
+  letI inst_mod : Module (ZMod p) (Additive H) := AddCommGroup.zmodModule h_nsmul_p
+  -- Build LinearMaps from Fin 2 → ZMod p to Additive H using Basis.constr.
+  let b_std : Module.Basis (Fin 2) (ZMod p) (Fin 2 → ZMod p) := Pi.basisFun (ZMod p) (Fin 2)
+  let vec₁ : Fin 2 → Additive H := ![Additive.ofMul x₁, Additive.ofMul y₁]
+  let vec₂ : Fin 2 → Additive H := ![Additive.ofMul x₂, Additive.ofMul y₂]
+  let φ₁ : (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H := b_std.constr (ZMod p) vec₁
+  let φ₂ : (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H := b_std.constr (ZMod p) vec₂
   sorry
 
 /-- Direct product of cyclic groups of coprime orders is cyclic of product order. -/
