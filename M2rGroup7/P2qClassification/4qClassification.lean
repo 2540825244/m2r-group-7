@@ -27,6 +27,20 @@ noncomputable def canonicalC4OnCqAction
     (canonicalAction 2 q 1 2 (by omega) (by omega) Nat.one_pos 1
       (one_le_min_two_factorization_two h_q_gt_3))
 
+/-- The canonical nontrivial action `C_2 × C_2 →* Aut(C_q)` for q > 3 prime.
+    This is `canonicalAction 2 q 1 1 _ _ _ 1 _` (image of order `2^1 = 2`), bridged
+    from `CyclicGroup (q^1)` to `CyclicGroup q`, precomposed with projection to the
+    first factor. Used as the canonical reference action for the
+    `C_q ⋊ (C_2 × C_2)` case (`Dih_q × C_2`). -/
+noncomputable def canonicalC2C2OnCqAction
+    {q : ℕ} [hq : Fact q.Prime] (h_q_gt_3 : q > 3) :
+    CyclicGroup 2 × CyclicGroup 2 →* MulAut (CyclicGroup q) :=
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  (((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
+      (canonicalAction 2 q 1 1 (by omega) (by omega) Nat.one_pos 1
+        (by have := one_le_min_two_factorization_two h_q_gt_3; omega))).comp
+    (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))
+
 /-- The canonical semidirect product `C_{q^1} ⋊_{canonicalAction 1} C_{2^2}` is isomorphic
     to `C_q ⋊_{canonicalC4OnCqAction} C_4`.
 
