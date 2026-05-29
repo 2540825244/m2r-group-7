@@ -504,7 +504,34 @@ lemma exists_aut_of_CpCp_conjugating_actions
   rw [map_mul, map_zpow, map_zpow, h_β_x₂, h_β_y₂, map_mul, map_zpow, map_zpow,
       hfx₁, hfy₁, one_zpow, mul_one]
 
-/-- Direct product of cyclic groups of coprime orders is cyclic of product order. -/
+/-- For any homomorphism `f : C_2 × C_2 →* MulAut (CyclicGroup q)` (q prime), the image
+    has cardinality dividing 2. This holds because `C_2 × C_2` has exponent 2, so the image
+    has exponent dividing 2; the image is also a subgroup of the cyclic `MulAut(C_q)`, hence
+    cyclic; a cyclic group of exponent dividing 2 has order dividing 2. -/
+lemma range_card_dvd_two_of_C2C2_hom {q : ℕ} [hq : Fact q.Prime]
+    (f : CyclicGroup 2 × CyclicGroup 2 →* MulAut (CyclicGroup q)) :
+    Nat.card f.range ∣ 2 := by
+  haveI : IsCyclic (MulAut (CyclicGroup q)) := isCyclic_mulAut_cyclicGroup_prime
+  haveI : IsCyclic (f.range : Subgroup _) := Subgroup.isCyclic _
+  -- Every element of f.range has order dividing 2, since (a, b)^2 = 1 in C_2 × C_2.
+  have h_sq : ∀ y : f.range, y ^ 2 = 1 := by
+    rintro ⟨y, hy⟩
+    obtain ⟨x, hx⟩ := MonoidHom.mem_range.mp hy
+    have hx2 : x ^ 2 = 1 := by
+      obtain ⟨a, b⟩ := x
+      have h_two : ∀ z : CyclicGroup 2, z ^ 2 = 1 := fun z => by
+        have h := pow_card_eq_one' (G := CyclicGroup 2) (x := z)
+        rwa [card_cyclicGroup] at h
+      change (a ^ 2, b ^ 2) = (1, 1)
+      rw [h_two a, h_two b]
+    apply Subtype.ext
+    show y ^ 2 = 1
+    rw [← hx, ← map_pow, hx2, map_one]
+  obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := (f.range : Subgroup _))
+  have h_ord_g : orderOf g ∣ 2 := orderOf_dvd_of_pow_eq_one (h_sq g)
+  have h_card_eq : Nat.card (f.range : Subgroup _) = orderOf g :=
+    (orderOf_eq_card_of_forall_mem_zpowers hg).symm
+  rw [h_card_eq]; exact h_ord_g
 noncomputable def CyclicGroup.prodMulEquiv {m n : ℕ} [NeZero m] [NeZero n]
     (hcop : Nat.Coprime m n) :
     CyclicGroup m × CyclicGroup n ≃* CyclicGroup (m * n) := by
