@@ -34,6 +34,20 @@ lemma factorization_two_of_prime_three_mod_four {q : ℕ} [hq : Fact q.Prime]
     omega
   omega
 
+/-- For q prime, q ≡ 1 (mod 4): 2 ≤ (q - 1).factorization 2. -/
+lemma two_le_factorization_two_of_prime_one_mod_four {q : ℕ} [hq : Fact q.Prime]
+    (h : q ≡ 1 [MOD 4]) : 2 ≤ (q - 1).factorization 2 := by
+  have h_qm1_ne : q - 1 ≠ 0 := by have := hq.out.one_lt; omega
+  rw [← Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two h_qm1_ne]
+  have hmod : q % 4 = 1 := h
+  have h4 : (4 : ℕ) ∣ q - 1 := by omega
+  simpa [show (2:ℕ) ^ 2 = 4 by norm_num] using h4
+
+/-- For q prime, q ≡ 1 (mod 4): 2 ≤ min 2 ((q - 1).factorization 2). -/
+lemma two_le_min_two_factorization_two_of_one_mod_four {q : ℕ} [hq : Fact q.Prime]
+    (h : q ≡ 1 [MOD 4]) : 2 ≤ min 2 ((q - 1).factorization 2) :=
+  Nat.le_min.mpr ⟨le_refl _, two_le_factorization_two_of_prime_one_mod_four h⟩
+
 /-- For q prime, q ≡ 3 (mod 4): gcd(4, q - 1) = 2. -/
 lemma gcd_four_of_prime_three_mod_four {q : ℕ} [hq : Fact q.Prime]
     (h : q ≡ 3 [MOD 4]) : Nat.gcd 4 (q - 1) = 2 := by
