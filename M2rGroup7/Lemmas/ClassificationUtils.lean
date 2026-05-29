@@ -156,7 +156,156 @@ lemma exists_generators_of_CpCp_action
     ∃ x y : CyclicGroup p × CyclicGroup p,
       Subgroup.zpowers x ⊔ Subgroup.zpowers y = ⊤ ∧
       f x = σ ∧ f y = 1 := by
-  sorry
+  -- Set up: |CyclicGroup p| = p
+  haveI : NeZero p := ⟨hp.out.pos.ne'⟩
+  have h_card_cp : Nat.card (CyclicGroup p) = p := card_cyclicGroup p
+  -- Get a generator g of CyclicGroup p
+  obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := CyclicGroup p)
+  have hg_order : orderOf g = p := by
+    rw [orderOf_eq_card_of_forall_mem_zpowers hg, h_card_cp]
+  -- f.range = Subgroup.zpowers σ (both have order p; σ ∈ f.range)
+  have hσ_zpow_card : Nat.card (Subgroup.zpowers σ) = p := by
+    rw [Nat.card_zpowers, hσ_order]
+  have h_range_eq : f.range = Subgroup.zpowers σ := by
+    have h_le : Subgroup.zpowers σ ≤ f.range := Subgroup.zpowers_le.mpr hσ_mem
+    haveI : Finite f.range := by
+      apply Nat.finite_of_card_ne_zero
+      rw [hf_range]; exact hp.out.pos.ne'
+    refine (Subgroup.eq_of_le_of_card_ge h_le ?_).symm
+    rw [hσ_zpow_card, hf_range]
+  -- Define x₀ := (g, 1), y₀ := (1, g)
+  set x₀ : CyclicGroup p × CyclicGroup p := (g, 1) with hx₀_def
+  set y₀ : CyclicGroup p × CyclicGroup p := (1, g) with hy₀_def
+  -- Orders of x₀ and y₀
+  have hx₀_order : orderOf x₀ = p := by
+    change orderOf (g, (1 : CyclicGroup p)) = p
+    rw [Prod.orderOf, orderOf_one, hg_order, Nat.lcm_one_right]
+  have hy₀_order : orderOf y₀ = p := by
+    change orderOf ((1 : CyclicGroup p), g) = p
+    rw [Prod.orderOf, orderOf_one, hg_order, Nat.lcm_one_left]
+  -- x₀, y₀ generate everything
+  have h_gen_top : Subgroup.zpowers x₀ ⊔ Subgroup.zpowers y₀ = ⊤ := by
+    rw [eq_top_iff]
+    rintro ⟨a, b⟩ -
+    obtain ⟨i, hi⟩ := Subgroup.mem_zpowers_iff.mp (hg a)
+    obtain ⟨j, hj⟩ := Subgroup.mem_zpowers_iff.mp (hg b)
+    have hab : (a, b) = x₀^i * y₀^j := by
+      simp only [hx₀_def, hy₀_def, Prod.pow_def, Prod.mk_mul_mk,
+        one_zpow, one_mul, mul_one]
+      exact Prod.mk.injEq .. |>.mpr ⟨hi.symm, hj.symm⟩
+    rw [hab]
+    exact mul_mem
+      (Subgroup.mem_sup_left (Subgroup.zpow_mem _ (Subgroup.mem_zpowers x₀) i))
+      (Subgroup.mem_sup_right (Subgroup.zpow_mem _ (Subgroup.mem_zpowers y₀) j))
+  -- f x₀ and f y₀ are powers of σ
+  have hfx₀_mem : f x₀ ∈ Subgroup.zpowers σ :=
+    h_range_eq ▸ MonoidHom.mem_range.mpr ⟨x₀, rfl⟩
+  have hfy₀_mem : f y₀ ∈ Subgroup.zpowers σ :=
+    h_range_eq ▸ MonoidHom.mem_range.mpr ⟨y₀, rfl⟩
+  -- Helper: if τ ∈ ⟨σ⟩ and τ ≠ 1, then ∃ m, τ^m = σ
+  have helper : ∀ τ : MulAut (CyclicGroup q), τ ∈ Subgroup.zpowers σ → τ ≠ 1 →
+      ∃ m : ℤ, τ ^ m = σ := by
+    intro τ hτ_mem hτ_ne
+    haveI hp_prime : Nat.Prime p := hp.out
+    have h_τ_order_dvd : orderOf τ ∣ p := by
+      have h1 : orderOf (⟨τ, hτ_mem⟩ : Subgroup.zpowers σ) ∣ Nat.card (Subgroup.zpowers σ) :=
+        orderOf_dvd_natCard _
+      rwa [Subgroup.orderOf_mk, hσ_zpow_card] at h1
+    have h_τ_order : orderOf τ = p := by
+      rcases (Nat.dvd_prime hp_prime).mp h_τ_order_dvd with h1 | hp'
+      · exact absurd (orderOf_eq_one_iff.mp h1) hτ_ne
+      · exact hp'
+    have h_τ_zpow_eq : Subgroup.zpowers τ = Subgroup.zpowers σ := by
+      refine Subgroup.eq_of_le_of_card_ge (Subgroup.zpowers_le.mpr hτ_mem) ?_
+      rw [Nat.card_zpowers, Nat.card_zpowers, h_τ_order, hσ_order]
+    have hσ_in_τ : σ ∈ Subgroup.zpowers τ := h_τ_zpow_eq ▸ Subgroup.mem_zpowers σ
+    exact Subgroup.mem_zpowers_iff.mp hσ_in_τ
+  -- Helper: case 1 — if w₀ has order p, f w₀ ≠ 1, f w₀ ∈ ⟨σ⟩, then
+  -- we can find x with f x = σ and ⟨x⟩ = ⟨w₀⟩.
+  have case1 : ∀ w₀ : CyclicGroup p × CyclicGroup p, orderOf w₀ = p →
+      f w₀ ≠ 1 → f w₀ ∈ Subgroup.zpowers σ →
+      ∃ m : ℤ, f (w₀^m) = σ ∧ Subgroup.zpowers (w₀^m) = Subgroup.zpowers w₀ := by
+    intro w₀ hw₀_order hfw₀_ne hfw₀_mem
+    obtain ⟨m, hm⟩ := helper (f w₀) hfw₀_mem hfw₀_ne
+    refine ⟨m, ?_, ?_⟩
+    · rw [map_zpow]; exact hm
+    · have hwm_order : orderOf (w₀^m) = p := by
+        have h_f_ord : orderOf (f (w₀^m)) = p := by rw [map_zpow, hm]; exact hσ_order
+        have h_f_dvd : orderOf (f (w₀^m)) ∣ orderOf (w₀^m) := orderOf_map_dvd f (w₀^m)
+        rw [h_f_ord] at h_f_dvd
+        have h_div : orderOf (w₀^m) ∣ p := by
+          apply orderOf_dvd_of_pow_eq_one
+          have h_w₀p : w₀ ^ (p : ℤ) = 1 := by
+            have h1 : w₀ ^ orderOf w₀ = 1 := pow_orderOf_eq_one w₀
+            have h2 : w₀ ^ ((orderOf w₀ : ℕ) : ℤ) = 1 := by rw [zpow_natCast]; exact h1
+            rw [hw₀_order] at h2; exact h2
+          calc ((w₀ ^ m) ^ p : CyclicGroup p × CyclicGroup p)
+              = w₀ ^ (m * (p : ℤ)) := by rw [← zpow_natCast (w₀ ^ m) p, ← zpow_mul]
+            _ = w₀ ^ ((p : ℤ) * m) := by rw [mul_comm]
+            _ = (w₀ ^ (p : ℤ)) ^ m := by rw [zpow_mul]
+            _ = 1 := by rw [h_w₀p, one_zpow]
+        exact Nat.dvd_antisymm h_div h_f_dvd
+      refine Subgroup.eq_of_le_of_card_ge ?_ ?_
+      · exact Subgroup.zpowers_le.mpr (Subgroup.zpow_mem _ (Subgroup.mem_zpowers w₀) m)
+      · rw [Nat.card_zpowers, Nat.card_zpowers, hwm_order, hw₀_order]
+  -- Now case split on whether f x₀ = 1
+  by_cases hfx₀_one : f x₀ = 1
+  · -- f x₀ = 1, so f y₀ ≠ 1
+    have hfy₀_ne : f y₀ ≠ 1 := by
+      intro h_one
+      have h_triv : ∀ z : CyclicGroup p × CyclicGroup p, f z = 1 := by
+        intro z
+        have hz : z ∈ Subgroup.zpowers x₀ ⊔ Subgroup.zpowers y₀ :=
+          h_gen_top ▸ Subgroup.mem_top z
+        rw [Subgroup.mem_sup] at hz
+        obtain ⟨u, hu_mem, v, hv_mem, huv⟩ := hz
+        obtain ⟨i, hi⟩ := Subgroup.mem_zpowers_iff.mp hu_mem
+        obtain ⟨j, hj⟩ := Subgroup.mem_zpowers_iff.mp hv_mem
+        rw [← huv, ← hi, ← hj, map_mul, map_zpow, map_zpow,
+          hfx₀_one, h_one, one_zpow, one_zpow, one_mul]
+      have h_range_bot : f.range = ⊥ := by
+        rw [Subgroup.eq_bot_iff_forall]
+        rintro x ⟨z, rfl⟩
+        exact h_triv z
+      have h_card_one : Nat.card f.range = 1 := by
+        rw [h_range_bot]
+        exact Nat.card_eq_one_iff_unique.mpr ⟨inferInstance, inferInstance⟩
+      rw [hf_range] at h_card_one
+      exact hp.out.one_lt.ne' h_card_one
+    obtain ⟨m, hfym_eq, h_zpow_eq⟩ := case1 y₀ hy₀_order hfy₀_ne hfy₀_mem
+    refine ⟨y₀^m, x₀, ?_, hfym_eq, hfx₀_one⟩
+    rw [h_zpow_eq, sup_comm]
+    exact h_gen_top
+  · -- f x₀ ≠ 1
+    obtain ⟨m, hfxm_eq, h_zpow_x_eq⟩ := case1 x₀ hx₀_order hfx₀_one hfx₀_mem
+    obtain ⟨n, hn⟩ := Subgroup.mem_zpowers_iff.mp hfy₀_mem
+    let x := x₀^m
+    let y := y₀ * x^(-n)
+    have hfx_eq : f x = σ := hfxm_eq
+    have hfy_eq : f y = 1 := by
+      change f (y₀ * x^(-n)) = 1
+      rw [map_mul, map_zpow, hfx_eq, ← hn]
+      group
+    refine ⟨x, y, ?_, hfx_eq, hfy_eq⟩
+    rw [eq_top_iff]
+    intro z _
+    have hz_top : z ∈ Subgroup.zpowers x₀ ⊔ Subgroup.zpowers y₀ :=
+      h_gen_top ▸ Subgroup.mem_top z
+    have h_x₀_mem : x₀ ∈ Subgroup.zpowers x ⊔ Subgroup.zpowers y := by
+      change x₀ ∈ Subgroup.zpowers (x₀^m) ⊔ Subgroup.zpowers y
+      rw [h_zpow_x_eq]
+      exact Subgroup.mem_sup_left (Subgroup.mem_zpowers x₀)
+    have h_y₀_mem : y₀ ∈ Subgroup.zpowers x ⊔ Subgroup.zpowers y := by
+      have h_y₀_eq : y₀ = y * x^n := by
+        change y₀ = y₀ * x^(-n) * x^n
+        rw [mul_assoc, ← zpow_add, neg_add_cancel, zpow_zero, mul_one]
+      rw [h_y₀_eq]
+      exact mul_mem (Subgroup.mem_sup_right (Subgroup.mem_zpowers y))
+        (Subgroup.mem_sup_left (Subgroup.zpow_mem _ (Subgroup.mem_zpowers x) n))
+    have h_sup_le : Subgroup.zpowers x₀ ⊔ Subgroup.zpowers y₀ ≤
+        Subgroup.zpowers x ⊔ Subgroup.zpowers y :=
+      sup_le (Subgroup.zpowers_le.mpr h_x₀_mem) (Subgroup.zpowers_le.mpr h_y₀_mem)
+    exact h_sup_le hz_top
 
 /-- Given two nontrivial homomorphisms f_1, f_2 : C_p × C_p →* Aut(C_q) whose images
     both have order p (and p ∣ q − 1), there exists an automorphism
