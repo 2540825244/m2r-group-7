@@ -308,6 +308,57 @@ lemma exists_aut_of_CpCp_conjugating_actions
     (hf2_range : Nat.card f_2.range = p) :
     ∃ β : MulAut (CyclicGroup p × CyclicGroup p),
       ∀ x : CyclicGroup p × CyclicGroup p, f_2 x = f_1 (β x) := by
+  -- Notation
+  set H := CyclicGroup p × CyclicGroup p with hH_def
+  haveI : NeZero p := ⟨hp.out.pos.ne'⟩
+  haveI : Finite (CyclicGroup p) := by
+    apply Nat.finite_of_card_ne_zero
+    rw [card_cyclicGroup]; exact hp.out.pos.ne'
+  -- Step 1: f_1.range = f_2.range
+  -- Both ranges have order p inside the cyclic group MulAut (CyclicGroup q),
+  -- which has order q-1. We need q-1 > 0 for the uniqueness lemma.
+  have h_q_minus_1_pos : 0 < q - 1 := by
+    have := hq.out.two_le
+    omega
+  have h_aut_card : Nat.card (MulAut (CyclicGroup q)) = q - 1 :=
+    card_mulAut_cyclicGroup_prime
+  have h_range_eq : f_1.range = f_2.range :=
+    cyclic_subgroup_of_cyclic_group_is_unique h_q_minus_1_pos h_aut_card
+      f_1.range f_2.range hf1_range hf2_range
+  -- Step 2: pick σ ∈ f_1.range with orderOf σ = p.
+  -- Since |f_1.range| = p prime, any non-identity element has order p.
+  have h_range_nontrivial : f_1.range ≠ ⊥ := by
+    intro h_bot
+    have h_card_one : Nat.card f_1.range = 1 := by
+      rw [h_bot, Subgroup.card_bot]
+    rw [hf1_range] at h_card_one
+    exact hp.out.one_lt.ne' h_card_one
+  obtain ⟨σ', hσ'_mem, hσ'_ne⟩ : ∃ σ' ∈ f_1.range, σ' ≠ 1 := by
+    by_contra h_all
+    push_neg at h_all
+    exact h_range_nontrivial ((Subgroup.eq_bot_iff_forall _).mpr h_all)
+  set σ : MulAut (CyclicGroup q) := σ' with hσ_def
+  have hσ_mem₁ : σ ∈ f_1.range := hσ'_mem
+  have hσ_mem₂ : σ ∈ f_2.range := h_range_eq ▸ hσ_mem₁
+  -- σ has order p (it lives in cyclic subgroup of order p)
+  have hσ_order : orderOf σ = p := by
+    have h_ord_dvd : orderOf σ ∣ p := by
+      have h_sub_ord : orderOf (⟨σ, hσ_mem₁⟩ : f_1.range) ∣ Nat.card f_1.range :=
+        orderOf_dvd_natCard _
+      rw [hf1_range] at h_sub_ord
+      rwa [Subgroup.orderOf_mk] at h_sub_ord
+    rcases (Nat.dvd_prime hp.out).mp h_ord_dvd with h1 | hp'
+    · exact absurd (orderOf_eq_one_iff.mp h1) hσ'_ne
+    · exact hp'
+  -- Step 3: apply exists_generators_of_CpCp_action to f_1 and f_2.
+  obtain ⟨x₁, y₁, h_gen₁, hfx₁, hfy₁⟩ :=
+    exists_generators_of_CpCp_action f_1 hf1_range σ hσ_mem₁ hσ_order
+  obtain ⟨x₂, y₂, h_gen₂, hfx₂, hfy₂⟩ :=
+    exists_generators_of_CpCp_action f_2 hf2_range σ hσ_mem₂ hσ_order
+  -- Step 4: Build β : H ≃* H with β x₂ = x₁ and β y₂ = y₁.
+  -- We work in the additive picture: H ≃+ ZMod p × ZMod p (as additive groups),
+  -- then equip with the ZMod p-module structure.
+  -- We'll build a LinearEquiv on Additive H and convert.
   sorry
 
 /-- Direct product of cyclic groups of coprime orders is cyclic of product order. -/
