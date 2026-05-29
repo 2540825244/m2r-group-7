@@ -131,7 +131,8 @@ theorem center_order_sixteen (h : Nat.card (Subgroup.center G) = 16)
     CommGroup.equiv_prod_multiplicative_zmod_of_finite G
   -- Step 5: Cardinality of each factor is `n i`, and the product is 16.
   haveI : Fintype ι := instFin
-  haveI : ∀ i, NeZero (n i) := fun i => ⟨Nat.ne_of_gt (Nat.lt_of_lt_of_le Nat.zero_lt_one (hn_gt i).le)⟩
+  haveI : ∀ i, NeZero (n i) :=
+    fun i => ⟨Nat.ne_of_gt (Nat.lt_of_lt_of_le Nat.zero_lt_one (hn_gt i).le)⟩
   have hn_card : ∀ i, Nat.card (Multiplicative (ZMod (n i))) = n i := by
     intro i
     rw [Nat.card_congr (Multiplicative.toAdd)]
@@ -147,7 +148,7 @@ theorem center_order_sixteen (h : Nat.card (Subgroup.center G) = 16)
   -- Step 6: |ι| ≤ 4, since 2^|ι| ≤ ∏ n i = 16.
   have hcard_le : Fintype.card ι ≤ 4 := by
     by_contra hlt
-    push_neg at hlt
+    push Not at hlt
     have h2pow : 2 ^ Fintype.card ι ≤ ∏ i, n i := by
       have hconst : ∏ _i ∈ (Finset.univ : Finset ι), (2 : ℕ) = 2 ^ Fintype.card ι := by
         rw [Finset.prod_const]
@@ -385,15 +386,29 @@ theorem center_order_sixteen (h : Nat.card (Subgroup.center G) = 16)
     exact φ'.trans (split.trans
       ((cast0.prodCongr (cast1.prodCongr (cast2.prodCongr cast3)))))
 
+include h_sixteen in
 theorem center_order_eight (h : Nat.card (Subgroup.center G) = 8)
   : False
   := by
-  haveI : CommGroup G := {
-    h_group with
-      mul_comm := sorry
-  }
-  have : Subgroup.center G = ⊤ := sorry
-  sorry
+  -- Step 1: |G/Z(G)| = 2 (from |Z(G)| = 8 and |G| = 16).
+  have hQ : Nat.card (G ⧸ Subgroup.center G) = 2 := by
+    have hmul := OrderSixteen.Prelim.quotient_by_center_card G
+    rw [h, h_sixteen] at hmul
+    omega
+  -- Step 2: G/Z(G) is cyclic since 2 is prime.
+  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  haveI hcyc : IsCyclic (G ⧸ Subgroup.center G) :=
+    OrderSixteen.Prelim.cyclic_of_prime_card hQ
+  -- Step 3: G is commutative.
+  have h_comm : ∀ a b : G, a * b = b * a :=
+    OrderSixteen.Prelim.cyclic_center_quotient_abelian G hcyc
+  -- Step 4: Z(G) = ⊤.
+  have hcenter_top : Subgroup.center G = ⊤ :=
+    (OrderSixteen.Prelim.abelian_iff_center_top G).mp h_comm
+  -- Step 5: derive a contradiction from |Z(G)| = 8 and Z(G) = ⊤.
+  have h16 : Nat.card (Subgroup.center G) = 16 := by
+    rw [hcenter_top, Nat.card_congr (Subgroup.topEquiv).toEquiv, h_sixteen]
+  omega
 
 theorem center_order_four (h : Nat.card (Subgroup.center G) = 4)
   : Nonempty (G ≃* (CyclicGroup 2 × CyclicGroup 2) ⋊[c4OnC2sqSwap] CyclicGroup 4) ∨
@@ -455,7 +470,7 @@ theorem sixteen_classification {G : Type*} [Group G] (h_sixteen : Nat.card G = 1
     · exact ⟨13, by decide, hiso⟩
   · -- k = 3: |Z(G)| = 8, impossible (center_order_eight returns False)
     norm_num at hk_eq
-    exact (OrderSixteen.center_order_eight G hk_eq).elim
+    exact (OrderSixteen.center_order_eight (h_sixteen := h_sixteen) G hk_eq).elim
   · -- k = 4: |Z(G)| = 16, G is abelian
     norm_num at hk_eq
     obtain (hiso | hiso | hiso | hiso | hiso) :=

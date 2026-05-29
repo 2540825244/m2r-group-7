@@ -196,8 +196,10 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{theorem}[Center of order 8 is impossible]
     \label{thm:center-eight}
-    \uses{lem:cyclic-center-quotient-abelian,lem:abelian-iff-center-top,
-          lem:quotient-by-center-card}
+    \lean{OrderSixteen.center_order_eight}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \uses{lem:cyclic-center-quotient-abelian, lem:abelian-iff-center-top, lem:quotient-by-center-card}
+    \leanok
     There is no group $G$ of order $16$ with $|Z(G)| = 8$.
 \end{theorem}
 \begin{proof}
