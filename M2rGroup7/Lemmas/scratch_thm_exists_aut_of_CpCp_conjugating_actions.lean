@@ -378,7 +378,7 @@ lemma exists_aut_of_CpCp_conjugating_actions
     rw [← this]
     show Additive.ofMul _ = Additive.ofMul 1
     rw [h_pow_p]
-  letI inst_mod : Module (ZMod p) (Additive H) := AddCommGroup.zmodModule h_nsmul_p
+  haveI inst_mod : Module (ZMod p) (Additive H) := AddCommGroup.zmodModule h_nsmul_p
   -- Build LinearMaps from Fin 2 → ZMod p to Additive H using Basis.constr.
   let b_std : Module.Basis (Fin 2) (ZMod p) (Fin 2 → ZMod p) := Pi.basisFun (ZMod p) (Fin 2)
   -- Helper: for any x, y : H with the generation property, the LinearMap
@@ -386,10 +386,28 @@ lemma exists_aut_of_CpCp_conjugating_actions
   -- Helper to extract surjectivity from the LinearMap. The proof goes:
   -- given h : Additive H, h = x^a * y^b for some a, b ∈ ℤ, so the
   -- preimage is ![a mod p, b mod p].
+  -- Both spaces are 2-dimensional over ZMod p.
+  haveI : Fintype H := instFintypeProd _ _
+  haveI : Fintype (Additive H) := Additive.fintype
+  haveI : Fintype (ZMod p) := ZMod.fintype p
+  -- finrank (Additive H) = 2 (since cardinality = p^2).
+  have h_card_addH : Fintype.card (Additive H) = p ^ 2 := by
+    rw [Fintype.card_additive (α := H)]
+    show Fintype.card (CyclicGroup p × CyclicGroup p) = p ^ 2
+    rw [Fintype.card_prod]
+    have hcp : Fintype.card (CyclicGroup p) = p := by
+      rw [← Nat.card_eq_fintype_card, card_cyclicGroup]
+    rw [hcp]; ring
+  have h_card_zmod : Fintype.card (ZMod p) = p := ZMod.card p
+  have h_finrank_addH : Module.finrank (ZMod p) (Additive H) = 2 := by
+    have h := Module.card_eq_pow_finrank (K := ZMod p) (V := Additive H)
+    rw [h_card_addH, h_card_zmod] at h
+    have hp2 : 2 ≤ p := hp.out.two_le
+    exact (Nat.pow_right_injective hp2 h).symm
   have h_surj_linmap : ∀ (x y : H), Subgroup.zpowers x ⊔ Subgroup.zpowers y = ⊤ →
       LinearMap.range
         (b_std.constr (ZMod p) ![Additive.ofMul x, Additive.ofMul y] :
-          (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H) = (⊤ : Submodule (ZMod p) (Additive H)) := by
+          (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H) = ⊤ := by
     intro x y h_gen
     rw [eq_top_iff]
     intro h _
