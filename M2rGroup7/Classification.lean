@@ -72,6 +72,7 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
 
   have h_z_order_divides_p_3 := by
     apply Subgroup.card_subgroup_dvd_card Z
+
   rw [h] at h_z_order_divides_p_3
   rw [dvd_prime_pow hn.out.prime] at h_z_order_divides_p_3
   obtain ⟨i, h'⟩ := h_z_order_divides_p_3
@@ -483,7 +484,7 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
     rw [show (1 : G ⧸ Z) = ↑(1 : G) from by simp] at hmk
     rw [QuotientGroup.eq] at hmk
     simpa using hmk
-  
+
   by_cases hp2 : p = 2
   · left
     constructor
