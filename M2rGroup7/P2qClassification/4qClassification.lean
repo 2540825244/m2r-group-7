@@ -370,7 +370,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
             fun x => ⟨(x, 1), rfl⟩
           show Nat.card ((e_aut.toMonoidHom.comp f_inner).comp
               (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))).range = 2
-          rw [MonoidHom.range_comp, Subgroup.map_top_of_surjective _ h_fst_surj]
+          rw [MonoidHom.range_comp]
           simpa using h_card_congr
         have h_canon_ne : canonicalC2C2OnCqAction (q := q) h_ge_3 ≠ 1 := by
           intro hc
@@ -384,5 +384,5 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
             h_canon_ne hφ'_ne h_canon_range h_range_card
         have : Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2)
                                  (canonicalC2C2OnCqAction h_ge_3)) :=
-          ⟨h_iso_g_q_k.trans (h_sdp_congr.trans e_canon_to_phi'.symm)⟩
+          ⟨h_iso_g_q_k.symm.trans (h_sdp_congr.trans e_canon_to_phi'.symm)⟩
         tauto
