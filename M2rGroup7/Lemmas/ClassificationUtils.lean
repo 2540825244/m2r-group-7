@@ -308,7 +308,200 @@ lemma exists_aut_of_CpCp_conjugating_actions
     (hf2_range : Nat.card f_2.range = p) :
     ∃ β : MulAut (CyclicGroup p × CyclicGroup p),
       ∀ x : CyclicGroup p × CyclicGroup p, f_2 x = f_1 (β x) := by
-  sorry
+  -- Notation
+  set H := CyclicGroup p × CyclicGroup p with hH_def
+  haveI : NeZero p := ⟨hp.out.pos.ne'⟩
+  haveI : Finite (CyclicGroup p) := by
+    apply Nat.finite_of_card_ne_zero
+    rw [card_cyclicGroup]; exact hp.out.pos.ne'
+  -- Step 1: f_1.range = f_2.range
+  have h_q_minus_1_pos : 0 < q - 1 := by
+    have := hq.out.two_le
+    omega
+  have h_aut_card : Nat.card (MulAut (CyclicGroup q)) = q - 1 :=
+    card_mulAut_cyclicGroup_prime
+  have h_range_eq : f_1.range = f_2.range :=
+    cyclic_subgroup_of_cyclic_group_is_unique h_q_minus_1_pos h_aut_card
+      f_1.range f_2.range hf1_range hf2_range
+  -- Step 2: pick σ ∈ f_1.range with orderOf σ = p.
+  have h_range_nontrivial : f_1.range ≠ ⊥ := by
+    intro h_bot
+    have h_card_one : Nat.card f_1.range = 1 := by
+      rw [h_bot, Subgroup.card_bot]
+    rw [hf1_range] at h_card_one
+    exact hp.out.one_lt.ne' h_card_one
+  obtain ⟨σ', hσ'_mem, hσ'_ne⟩ : ∃ σ' ∈ f_1.range, σ' ≠ 1 := by
+    by_contra h_all
+    push_neg at h_all
+    exact h_range_nontrivial ((Subgroup.eq_bot_iff_forall _).mpr h_all)
+  set σ : MulAut (CyclicGroup q) := σ' with hσ_def
+  have hσ_mem₁ : σ ∈ f_1.range := hσ'_mem
+  have hσ_mem₂ : σ ∈ f_2.range := h_range_eq ▸ hσ_mem₁
+  have hσ_order : orderOf σ = p := by
+    have h_ord_dvd : orderOf σ ∣ p := by
+      have h_sub_ord : orderOf (⟨σ, hσ_mem₁⟩ : f_1.range) ∣ Nat.card f_1.range :=
+        orderOf_dvd_natCard _
+      rw [hf1_range] at h_sub_ord
+      rwa [Subgroup.orderOf_mk] at h_sub_ord
+    rcases (Nat.dvd_prime hp.out).mp h_ord_dvd with h1 | hp'
+    · exact absurd (orderOf_eq_one_iff.mp h1) hσ'_ne
+    · exact hp'
+  -- Step 3: apply exists_generators_of_CpCp_action to f_1 and f_2.
+  obtain ⟨x₁, y₁, h_gen₁, hfx₁, hfy₁⟩ :=
+    exists_generators_of_CpCp_action f_1 hf1_range σ hσ_mem₁ hσ_order
+  obtain ⟨x₂, y₂, h_gen₂, hfx₂, hfy₂⟩ :=
+    exists_generators_of_CpCp_action f_2 hf2_range σ hσ_mem₂ hσ_order
+  -- Step 4: Build β : H ≃* H with β x₂ = x₁ and β y₂ = y₁ via linear algebra.
+  have h_pow_p : ∀ h : H, h ^ p = 1 := by
+    intro h
+    obtain ⟨a, b⟩ := h
+    have h_card_cp : Nat.card (CyclicGroup p) = p := card_cyclicGroup p
+    have h_one : ∀ z : CyclicGroup p, z ^ p = 1 := fun z => by
+      have h := pow_card_eq_one' (G := CyclicGroup p) (x := z)
+      rwa [h_card_cp] at h
+    have hap : a ^ p = 1 := h_one a
+    have hbp : b ^ p = 1 := h_one b
+    change (a ^ p, b ^ p) = (1, 1)
+    rw [hap, hbp]
+  -- Additive H is a ZMod p-module
+  have h_nsmul_p : ∀ x : Additive H, (p : ℕ) • x = 0 := by
+    intro x
+    have : Additive.ofMul (Additive.toMul x ^ p) = (p : ℕ) • x := ofMul_pow p (Additive.toMul x)
+    rw [← this]
+    change Additive.ofMul _ = Additive.ofMul 1
+    rw [h_pow_p]
+  haveI inst_mod : Module (ZMod p) (Additive H) := AddCommGroup.zmodModule h_nsmul_p
+  let b_std : Module.Basis (Fin 2) (ZMod p) (Fin 2 → ZMod p) := Pi.basisFun (ZMod p) (Fin 2)
+  haveI : Fintype H := instFintypeProd _ _
+  haveI : Fintype (ZMod p) := ZMod.fintype p
+  haveI : Fintype (Additive H) := Additive.fintype
+  have h_card_addH : Nat.card (Additive H) = p ^ 2 := by
+    rw [show Nat.card (Additive H) = Nat.card H from Nat.card_congr Additive.toMul]
+    change Nat.card (CyclicGroup p × CyclicGroup p) = p ^ 2
+    rw [Nat.card_prod, card_cyclicGroup]; ring
+  have h_card_zmod : Nat.card (ZMod p) = p := by
+    rw [Nat.card_eq_fintype_card, ZMod.card]
+  have h_finrank_addH : Module.finrank (ZMod p) (Additive H) = 2 := by
+    have h := Module.card_eq_pow_finrank (K := ZMod p) (V := Additive H)
+    rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card,
+        h_card_addH, h_card_zmod] at h
+    have hp2 : 2 ≤ p := hp.out.two_le
+    exact (Nat.pow_right_injective hp2 h).symm
+  have h_surj_linmap : ∀ (x y : H), Subgroup.zpowers x ⊔ Subgroup.zpowers y = ⊤ →
+      LinearMap.range
+        (b_std.constr (ZMod p) ![Additive.ofMul x, Additive.ofMul y] :
+          (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H) = ⊤ := by
+    intro x y h_gen
+    rw [eq_top_iff]
+    intro h _
+    have h_mem : Additive.toMul h ∈ Subgroup.zpowers x ⊔ Subgroup.zpowers y :=
+      h_gen ▸ Subgroup.mem_top _
+    rw [Subgroup.mem_sup] at h_mem
+    obtain ⟨u, hu_mem, v, hv_mem, huv⟩ := h_mem
+    obtain ⟨a, ha⟩ := Subgroup.mem_zpowers_iff.mp hu_mem
+    obtain ⟨b, hb⟩ := Subgroup.mem_zpowers_iff.mp hv_mem
+    have h_mul : Additive.toMul h = x ^ a * y ^ b := by rw [← huv, ← ha, ← hb]
+    have h_add : h = (a : ℤ) • Additive.ofMul x + (b : ℤ) • Additive.ofMul y := by
+      have hzpow_x : Additive.ofMul (x ^ a) = (a : ℤ) • Additive.ofMul x := ofMul_zpow a x
+      have hzpow_y : Additive.ofMul (y ^ b) = (b : ℤ) • Additive.ofMul y := ofMul_zpow b y
+      have h_id : Additive.ofMul (Additive.toMul h) = h := rfl
+      rw [← h_id, h_mul, ofMul_mul, hzpow_x, hzpow_y]
+    refine ⟨![(a : ZMod p), (b : ZMod p)], ?_⟩
+    have h_vec_decomp :
+        (![(a : ZMod p), (b : ZMod p)] : Fin 2 → ZMod p) =
+        (a : ZMod p) • (b_std 0 : Fin 2 → ZMod p) +
+          (b : ZMod p) • (b_std 1 : Fin 2 → ZMod p) := by
+      ext i
+      fin_cases i <;> simp [b_std, Pi.basisFun_apply, Pi.single]
+    rw [h_vec_decomp, map_add, LinearMap.map_smul, LinearMap.map_smul,
+        Module.Basis.constr_basis, Module.Basis.constr_basis]
+    change (a : ZMod p) • Additive.ofMul x + (b : ZMod p) • Additive.ofMul y = h
+    rw [Int.cast_smul_eq_zsmul, Int.cast_smul_eq_zsmul, ← h_add]
+  have h_surj₁ : LinearMap.range
+      (b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁] :
+        (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H) = ⊤ := h_surj_linmap x₁ y₁ h_gen₁
+  have h_surj₂ : LinearMap.range
+      (b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂] :
+        (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H) = ⊤ := h_surj_linmap x₂ y₂ h_gen₂
+  have h_finrank_pi : Module.finrank (ZMod p) (Fin 2 → ZMod p) = 2 := by
+    rw [Module.finrank_pi]; rfl
+  have h_finrank_eq : Module.finrank (ZMod p) (Fin 2 → ZMod p) =
+      Module.finrank (ZMod p) (Additive H) := by
+    rw [h_finrank_pi, h_finrank_addH]
+  haveI h_findim_pi : FiniteDimensional (ZMod p) (Fin 2 → ZMod p) := inferInstance
+  haveI h_findim_addH : FiniteDimensional (ZMod p) (Additive H) :=
+    Module.finite_of_finrank_eq_succ h_finrank_addH
+  have h_inj₁ : Function.Injective
+      (b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁] :
+        (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H) := by
+    rw [LinearMap.injective_iff_surjective_of_finrank_eq_finrank h_finrank_eq,
+        ← LinearMap.range_eq_top]
+    exact h_surj₁
+  have h_inj₂ : Function.Injective
+      (b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂] :
+        (Fin 2 → ZMod p) →ₗ[ZMod p] Additive H) := by
+    rw [LinearMap.injective_iff_surjective_of_finrank_eq_finrank h_finrank_eq,
+        ← LinearMap.range_eq_top]
+    exact h_surj₂
+  let φ₁ : (Fin 2 → ZMod p) ≃ₗ[ZMod p] Additive H :=
+    LinearEquiv.ofBijective
+      (b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁])
+      ⟨h_inj₁, LinearMap.range_eq_top.mp h_surj₁⟩
+  let φ₂ : (Fin 2 → ZMod p) ≃ₗ[ZMod p] Additive H :=
+    LinearEquiv.ofBijective
+      (b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂])
+      ⟨h_inj₂, LinearMap.range_eq_top.mp h_surj₂⟩
+  let β_lin : Additive H ≃ₗ[ZMod p] Additive H := φ₂.symm.trans φ₁
+  let β_add : Additive H ≃+ Additive H := β_lin.toAddEquiv
+  let β : MulAut H := AddAutAdditive (G := H) β_add
+  have h_e₀ : (b_std 0 : Fin 2 → ZMod p) = ![1, 0] := by
+    ext i; fin_cases i <;> simp [b_std, Pi.basisFun_apply, Pi.single]
+  have h_e₁ : (b_std 1 : Fin 2 → ZMod p) = ![0, 1] := by
+    ext i; fin_cases i <;> simp [b_std, Pi.basisFun_apply, Pi.single]
+  have h_φ₂_e₀ : φ₂ (b_std 0) = Additive.ofMul x₂ := by
+    change b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂] (b_std 0) = _
+    rw [Module.Basis.constr_basis]; rfl
+  have h_φ₂_e₁ : φ₂ (b_std 1) = Additive.ofMul y₂ := by
+    change b_std.constr (ZMod p) ![Additive.ofMul x₂, Additive.ofMul y₂] (b_std 1) = _
+    rw [Module.Basis.constr_basis]; rfl
+  have h_φ₁_e₀ : φ₁ (b_std 0) = Additive.ofMul x₁ := by
+    change b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁] (b_std 0) = _
+    rw [Module.Basis.constr_basis]; rfl
+  have h_φ₁_e₁ : φ₁ (b_std 1) = Additive.ofMul y₁ := by
+    change b_std.constr (ZMod p) ![Additive.ofMul x₁, Additive.ofMul y₁] (b_std 1) = _
+    rw [Module.Basis.constr_basis]; rfl
+  have h_φ₂_inv_x₂ : φ₂.symm (Additive.ofMul x₂) = b_std 0 := by
+    rw [← h_φ₂_e₀]; exact φ₂.symm_apply_apply (b_std 0)
+  have h_φ₂_inv_y₂ : φ₂.symm (Additive.ofMul y₂) = b_std 1 := by
+    rw [← h_φ₂_e₁]; exact φ₂.symm_apply_apply (b_std 1)
+  have h_β_x₂ : β x₂ = x₁ := by
+    change β.toMonoidHom x₂ = x₁
+    have h_β_lin_x₂ : β_lin (Additive.ofMul x₂) = Additive.ofMul x₁ := by
+      change φ₁ (φ₂.symm (Additive.ofMul x₂)) = Additive.ofMul x₁
+      rw [h_φ₂_inv_x₂, h_φ₁_e₀]
+    have h_β_add_x₂ : β_add (Additive.ofMul x₂) = Additive.ofMul x₁ := h_β_lin_x₂
+    change Additive.toMul (β_add (Additive.ofMul x₂)) = x₁
+    rw [h_β_add_x₂]; rfl
+  have h_β_y₂ : β y₂ = y₁ := by
+    change β.toMonoidHom y₂ = y₁
+    have h_β_lin_y₂ : β_lin (Additive.ofMul y₂) = Additive.ofMul y₁ := by
+      change φ₁ (φ₂.symm (Additive.ofMul y₂)) = Additive.ofMul y₁
+      rw [h_φ₂_inv_y₂, h_φ₁_e₁]
+    have h_β_add_y₂ : β_add (Additive.ofMul y₂) = Additive.ofMul y₁ := h_β_lin_y₂
+    change Additive.toMul (β_add (Additive.ofMul y₂)) = y₁
+    rw [h_β_add_y₂]; rfl
+  refine ⟨β, fun z => ?_⟩
+  have hz_top : z ∈ Subgroup.zpowers x₂ ⊔ Subgroup.zpowers y₂ :=
+    h_gen₂ ▸ Subgroup.mem_top z
+  rw [Subgroup.mem_sup] at hz_top
+  obtain ⟨u, hu_mem, v, hv_mem, huv⟩ := hz_top
+  obtain ⟨a, ha⟩ := Subgroup.mem_zpowers_iff.mp hu_mem
+  obtain ⟨b, hb⟩ := Subgroup.mem_zpowers_iff.mp hv_mem
+  have hz_eq : z = x₂ ^ a * y₂ ^ b := by rw [← huv, ha, hb]
+  rw [hz_eq]
+  rw [map_mul, map_zpow, map_zpow, hfx₂, hfy₂, one_zpow, mul_one]
+  rw [map_mul, map_zpow, map_zpow, h_β_x₂, h_β_y₂, map_mul, map_zpow, map_zpow,
+      hfx₁, hfy₁, one_zpow, mul_one]
 
 /-- Direct product of cyclic groups of coprime orders is cyclic of product order. -/
 noncomputable def CyclicGroup.prodMulEquiv {m n : ℕ} [NeZero m] [NeZero n]
