@@ -63,6 +63,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Center of a $p$-group is nontrivial]
     \label{lem:pgroup-center-nontrivial}
+    \lean{OrderSixteen.Prelim.pgroup_center_nontrivial}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     Let $G$ be a finite $p$-group with $p$ prime and $|G| > 1$. Then the
     center $Z(G)$ is a nontrivial subgroup.
 \end{lemma}
@@ -74,6 +77,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Order of $Z(G)$ divides $|G|$]
     \label{thm:center-divides-card}
+    \lean{OrderSixteen.Prelim.center_divides_card}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     For any finite group $G$, $|Z(G)|$ divides $|G|$.
 \end{lemma}
 \begin{proof}
@@ -83,6 +89,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Divisors of $2^4$ are powers of $2$]
     \label{lem:two-power-divisors}
+    \lean{OrderSixteen.Prelim.two_power_divisors}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     If $d \mid 16$, then $d \in \{1,2,4,8,16\}$.
 \end{lemma}
 \begin{proof}
@@ -92,6 +101,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[$G$ is a $2$-group from $|G| = 16$]
     \label{lem:pgroup-of-card-sixteen}
+    \lean{OrderSixteen.Prelim.pgroup_of_card_sixteen}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     If $|G| = 16$ then $G$ is a $2$-group.
 \end{lemma}
 \begin{proof}
@@ -100,6 +112,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Cyclic quotient by the center implies abelian]
     \label{lem:cyclic-center-quotient-abelian}
+    \lean{OrderSixteen.Prelim.cyclic_center_quotient_abelian}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     If $G/Z(G)$ is cyclic, then $G$ is abelian.
 \end{lemma}
 \begin{proof}
@@ -110,6 +125,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Abelian iff $Z(G) = G$]
     \label{lem:abelian-iff-center-top}
+    \lean{OrderSixteen.Prelim.abelian_iff_center_top}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     A group $G$ is abelian if and only if $Z(G) = G$.
 \end{lemma}
 \begin{proof}
@@ -123,7 +141,10 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{theorem}[Center of order 16]
     \label{thm:center-sixteen}
-    \uses{lem:abelian-iff-center-top,thm:abelian-order-sixteen}
+    \lean{OrderSixteen.center_order_sixteen}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \uses{lem:abelian-iff-center-top, thm:abelian-order-sixteen}
+    \leanok
     Suppose $G$ is a group of order $16$ with $|Z(G)| = 16$. Then $G$ is
     isomorphic to one of $C_{16}$, $C_8 \times C_2$, $C_4 \times C_4$,
     $C_4 \times C_2 \times C_2$, or $C_2 \times C_2 \times C_2 \times C_2$.
@@ -159,6 +180,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Fundamental theorem of finite abelian groups]
     \label{lem:fundamental-finite-abelian}
+    \lean{OrderSixteen.Prelim.fundamental_finite_abelian}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     Every finite abelian group is isomorphic to a direct sum of finite cyclic
     groups whose orders are prime powers.
 \end{lemma}
@@ -189,6 +213,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Order of $G/Z(G)$]
     \label{lem:quotient-by-center-card}
+    \lean{OrderSixteen.Prelim.quotient_by_center_card}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     If $G$ is a finite group then $|G/Z(G)| \cdot |Z(G)| = |G|$, and in
     particular $|G/Z(G)| = |G|/|Z(G)|$ when $|Z(G)| \mid |G|$.
 \end{lemma}
@@ -201,6 +228,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Group of prime cardinality is cyclic]
     \label{lem:cyclic-of-prime-card}
+    \lean{OrderSixteen.Prelim.cyclic_of_prime_card}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     If $|G| = p$ with $p$ prime, then $G$ is cyclic.
 \end{lemma}
 \begin{proof}
@@ -310,6 +340,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Exponent-$2$ groups are commutative]
     \label{lem:order2-implies-abelian}
+    \lean{OrderSixteen.Prelim.order2_implies_abelian}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     If every element of $G$ satisfies $x^2 = 1$, then $G$ is abelian.
 \end{lemma}
 \begin{proof}
