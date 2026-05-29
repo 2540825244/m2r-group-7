@@ -350,35 +350,26 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G] (h_ge_3
         have h_canon_range :
             Nat.card (canonicalC2C2OnCqAction (q := q) h_ge_3).range = 2 := by
           haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-          have h_inner_range :
-              Nat.card (canonicalAction 2 q 1 1 (by omega) (by omega) Nat.one_pos 1
-                (by have := one_le_min_two_factorization_two h_ge_3; omega)).range = 2 := by
+          set f_inner := canonicalAction 2 q 1 1 (by omega) (by omega) Nat.one_pos 1
+            (by have := one_le_min_two_factorization_two h_ge_3; omega) with hf_inner
+          have h_inner_range : Nat.card f_inner.range = 2 := by
             simpa using canonicalAction_range_card 2 q 1 1 1 (by omega) (by omega) Nat.one_pos
               (by have := one_le_min_two_factorization_two h_ge_3; omega)
-          -- Both the post-composition with `MulAut.congr` (an isomorphism) and the
-          -- precomposition with `MonoidHom.fst` (surjective) preserve the range cardinality.
+          -- Post-composition with the MulEquiv `(MulAut.congr _).symm` preserves the range cardinality.
+          set e_aut := (MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm with he_aut
+          have h_card_congr :
+              Nat.card (e_aut.toMonoidHom.comp f_inner).range = 2 := by
+            rw [MonoidHom.range_comp]
+            rw [Nat.card_congr
+              (Subgroup.equivMapOfInjective f_inner.range e_aut.toMonoidHom
+                e_aut.injective).symm.toEquiv]
+            exact h_inner_range
+          -- Precomposition with the surjective `MonoidHom.fst` also preserves the range.
           have h_fst_surj :
               Function.Surjective (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2)) :=
             fun x => ⟨(x, 1), rfl⟩
-          have h_congr_eq :=
-            MonoidHom.range_eq_map
-              (((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
-                (canonicalAction 2 q 1 1 (by omega) (by omega) Nat.one_pos 1
-                  (by have := one_le_min_two_factorization_two h_ge_3; omega)))
-          have h_card_congr :
-              Nat.card (((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm.toMonoidHom).comp
-                (canonicalAction 2 q 1 1 (by omega) (by omega) Nat.one_pos 1
-                  (by have := one_le_min_two_factorization_two h_ge_3; omega))).range = 2 := by
-            rw [MonoidHom.range_comp]
-            rw [Subgroup.map_equiv_eq_comap_symm]
-            rw [← MulEquiv.toMonoidHom_eq_coe]
-            haveI : Finite (canonicalAction 2 q 1 1 (by omega) (by omega) Nat.one_pos 1
-                (by have := one_le_min_two_factorization_two h_ge_3; omega)).range :=
-              Nat.finite_of_card_ne_zero (by rw [h_inner_range]; decide)
-            rw [Nat.card_congr
-              (((MulAut.congr (_cyclicGroup_pow_one_equiv (q := q))).symm).subgroupMap _).toEquiv]
-            simpa using h_inner_range
-          unfold canonicalC2C2OnCqAction
+          show Nat.card ((e_aut.toMonoidHom.comp f_inner).comp
+              (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))).range = 2
           rw [MonoidHom.range_comp, Subgroup.map_top_of_surjective _ h_fst_surj]
           simpa using h_card_congr
         have h_canon_ne : canonicalC2C2OnCqAction (q := q) h_ge_3 ≠ 1 := by
