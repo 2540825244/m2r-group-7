@@ -78,6 +78,351 @@ theorem quotient_by_center_card (G : Type*) [Group G] [Finite G] :
   rw [← Subgroup.index_eq_card]
   exact Subgroup.index_mul_card (Subgroup.center G)
 
+/-- If $|G| = 16$ and $|Z(G)| = 4$, then $G/Z(G)$ is not cyclic. Otherwise, $G$
+would be abelian, forcing $Z(G) = G$ and $|Z(G)| = 16$, contradicting
+$|Z(G)| = 4$. -/
+theorem order_four_quotient_not_cyclic {G : Type*} [Group G] [Finite G]
+    (h_sixteen : Nat.card G = 16) (h_center : Nat.card (Subgroup.center G) = 4) :
+    ¬ IsCyclic (G ⧸ Subgroup.center G) := by
+  intro hcyc
+  have h_comm : ∀ a b : G, a * b = b * a :=
+    cyclic_center_quotient_abelian G hcyc
+  have hcenter_top : Subgroup.center G = ⊤ :=
+    (abelian_iff_center_top G).mp h_comm
+  have h16 : Nat.card (Subgroup.center G) = 16 := by
+    rw [hcenter_top, Nat.card_congr (Subgroup.topEquiv).toEquiv, h_sixteen]
+  omega
+
+open scoped Pointwise in
+/-- For finite subgroups $H$ and $K$ of a group $G$, the classical formula
+$|H| \cdot |K| = |H \cap K| \cdot |HK|$. -/
+theorem subgroup_product_card {G : Type*} [Group G] (H K : Subgroup G)
+    [Finite H] [Finite K] :
+    Nat.card (H : Set G) * Nat.card (K : Set G) =
+      Nat.card (H ⊓ K : Subgroup G) * Nat.card ((H : Set G) * (K : Set G)) := by
+  let f : H → G ⧸ K := fun h => QuotientGroup.mk h.val
+  have hrange : Set.range f = QuotientGroup.mk '' (H : Set G) := by
+    ext x
+    constructor
+    · rintro ⟨y, rfl⟩; exact ⟨y.val, y.2, rfl⟩
+    · rintro ⟨y, hy, rfl⟩; exact ⟨⟨y, hy⟩, rfl⟩
+  have hequiv : Nat.card (Quotient (Setoid.ker f)) =
+      Nat.card (QuotientGroup.mk '' (H : Set G) : Set (G ⧸ K)) := by
+    rw [← hrange]
+    exact Nat.card_congr (Setoid.quotientKerEquivRange f)
+  have hsetoid : Nat.card (Quotient (Setoid.ker f)) = Nat.card (H ⧸ K.subgroupOf H) := by
+    refine Nat.card_congr (Quotient.congrRight ?_)
+    intro a b
+    simp only [Setoid.ker_def, f, QuotientGroup.eq]
+    rw [QuotientGroup.leftRel_apply]
+    rfl
+  have hHK : Nat.card ((H : Set G) * (K : Set G)) =
+      Nat.card K * Nat.card (QuotientGroup.mk '' (H : Set G) : Set (G ⧸ K)) :=
+    Subgroup.card_mul_eq_card_subgroup_mul_card_quotient K (H : Set G)
+  have hH : Nat.card H = Nat.card (H ⧸ K.subgroupOf H) * Nat.card (K.subgroupOf H) :=
+    Subgroup.card_eq_card_quotient_mul_card_subgroup _
+  have hinter : Nat.card (K.subgroupOf H) = Nat.card (H ⊓ K : Subgroup G) := by
+    have h1 : ((H ⊓ K).subgroupOf H) = K.subgroupOf H := by
+      rw [show H ⊓ K = K ⊓ H from inf_comm _ _]
+      exact Subgroup.inf_subgroupOf_right K H
+    have h2 : Nat.card ((H ⊓ K).subgroupOf H) = Nat.card (H ⊓ K : Subgroup G) :=
+      Nat.card_congr (Subgroup.subgroupOfEquivOfLe (inf_le_left : (H ⊓ K) ≤ H)).toEquiv
+    rw [← h1, h2]
+  have hHsubtype : Nat.card (H : Set G) = Nat.card H := rfl
+  have hKsubtype : Nat.card (K : Set G) = Nat.card K := rfl
+  rw [hHsubtype, hKsubtype, hHK, ← hequiv, hsetoid]
+  rw [hH, hinter]
+  ring
+
+/-- If $G/Z(G)$ is abelian, then the commutator $[g,h] = ghg^{-1}h^{-1}$ lies in
+$Z(G)$ for all $g, h \in G$. -/
+theorem commutator_in_center_when_quotient_abelian {G : Type*} [Group G]
+    (h_abelian : ∀ a b : G ⧸ Subgroup.center G, a * b = b * a) (g h : G) :
+    g * h * g⁻¹ * h⁻¹ ∈ Subgroup.center G := by
+  rw [← QuotientGroup.eq_one_iff]
+  have heq : ((g * h * g⁻¹ * h⁻¹ : G) : G ⧸ Subgroup.center G) =
+      (g : G ⧸ Subgroup.center G) * h * g⁻¹ * h⁻¹ := by
+    simp
+  rw [heq, h_abelian g h]
+  simp [mul_assoc]
+
+/-- If `|G| = 16`, `|Z(G)| = 4`, and `H ≤ G` is a subgroup of order 8
+containing `Z(G)`, then `H` is abelian. -/
+theorem gi_abelian_when_center_four {G : Type*} [Group G] [Finite G]
+    (h_sixteen : Nat.card G = 16) (h_center : Nat.card (Subgroup.center G) = 4)
+    (H : Subgroup G) (hH_card : Nat.card H = 8)
+    (hH_contains : Subgroup.center G ≤ H) :
+    ∀ a b : H, a * b = b * a := by
+  -- View Z(G) as a subgroup of H.
+  set Zin : Subgroup H := (Subgroup.center G).subgroupOf H with hZin
+  -- Step 1: Zin ≤ Z(H).
+  have hZin_le_center : Zin ≤ Subgroup.center H := by
+    intro z hz
+    rw [Subgroup.mem_center_iff]
+    intro h
+    -- z.val ∈ Z(G), so it commutes with every element of G, in particular h.val.
+    have hzG : (z : G) ∈ Subgroup.center G := hz
+    have hcomm : (h : G) * (z : G) = (z : G) * (h : G) :=
+      Subgroup.mem_center_iff.mp hzG (h : G)
+    apply Subtype.ext
+    change (h * z : H).val = (z * h : H).val
+    push_cast
+    exact hcomm
+  -- Step 2: Nat.card Zin = 4.
+  have hZin_card : Nat.card Zin = 4 := by
+    have hequiv : Zin ≃* (Subgroup.center G) :=
+      Subgroup.subgroupOfEquivOfLe hH_contains
+    rw [Nat.card_congr hequiv.toEquiv, h_center]
+  -- Step 3: Nat.card (H ⧸ Zin) = 2.
+  have hQ_card : Nat.card (H ⧸ Zin) = 2 := by
+    have h1 : Nat.card H = Nat.card (H ⧸ Zin) * Nat.card Zin :=
+      Subgroup.card_eq_card_quotient_mul_card_subgroup Zin
+    rw [hH_card, hZin_card] at h1
+    omega
+  -- Step 4: H ⧸ Zin is cyclic (order 2 prime).
+  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  haveI hcyc : IsCyclic (H ⧸ Zin) := cyclic_of_prime_card hQ_card
+  -- Step 5: Apply commutative_of_cyclic_center_quotient.
+  exact commutative_of_cyclic_center_quotient (QuotientGroup.mk' Zin)
+    (by rw [QuotientGroup.ker_mk']; exact hZin_le_center)
+
+/-- If `a^2 ∈ Z(G)` and the commutator `[a,b] = a*b*a⁻¹*b⁻¹ ∈ Z(G)`, then
+`[a,b]^2 = 1`. -/
+theorem commutator_sq_eq_one_when_sq_central {G : Type*} [Group G] (a b : G)
+    (h_sq_central : a ^ 2 ∈ Subgroup.center G)
+    (h_comm_central : a * b * a⁻¹ * b⁻¹ ∈ Subgroup.center G) :
+    (a * b * a⁻¹ * b⁻¹) ^ 2 = 1 := by
+  -- Abbreviate the commutator. We use a local let-like definition that does NOT
+  -- unfold under `rw`.
+  let z : G := a * b * a⁻¹ * b⁻¹
+  have hz_def : z = a * b * a⁻¹ * b⁻¹ := rfl
+  -- Rewrite the goal in terms of z.
+  change z ^ 2 = 1
+  -- Extract centrality as "commutes with every element" statements.
+  have hz : ∀ g : G, z * g = g * z := fun g =>
+    (Subgroup.mem_center_iff.mp h_comm_central g).symm
+  have ha2 : ∀ g : G, a ^ 2 * g = g * a ^ 2 := fun g =>
+    (Subgroup.mem_center_iff.mp h_sq_central g).symm
+  -- From the definition of z: a * b = z * (b * a).
+  have hab : a * b = z * (b * a) := by
+    rw [hz_def]; group
+  -- Way 1: using a^2 central, a^2 * b = b * a^2.
+  have way1 : a ^ 2 * b = b * a ^ 2 := ha2 b
+  -- Way 2: expand using hab twice plus z central to get a^2 * b = z^2 * (b * a^2).
+  have way2 : a ^ 2 * b = z ^ 2 * (b * a ^ 2) := by
+    have e1 : a ^ 2 * b = a * (a * b) := by rw [sq, mul_assoc]
+    have e2 : a * (a * b) = a * (z * (b * a)) := by rw [hab]
+    have e3 : a * (z * (b * a)) = (a * z) * (b * a) := (mul_assoc a z (b * a)).symm
+    have e4 : (a * z) * (b * a) = (z * a) * (b * a) := by rw [hz a]
+    have e5 : (z * a) * (b * a) = z * (a * (b * a)) := mul_assoc z a (b * a)
+    have e6 : a * (b * a) = (a * b) * a := (mul_assoc _ _ _).symm
+    have e7 : z * (a * (b * a)) = z * ((a * b) * a) := by rw [e6]
+    have e8 : z * ((a * b) * a) = z * ((z * (b * a)) * a) := by rw [hab]
+    have e9 : z * ((z * (b * a)) * a) = z * (z * ((b * a) * a)) := by
+      rw [mul_assoc z (b * a) a]
+    have e10 : z * (z * ((b * a) * a)) = (z * z) * ((b * a) * a) := by
+      rw [← mul_assoc]
+    have e11 : (z * z) * ((b * a) * a) = z ^ 2 * (b * a ^ 2) := by
+      rw [← sq, mul_assoc, ← sq]
+    calc a ^ 2 * b
+        = a * (a * b) := e1
+      _ = a * (z * (b * a)) := e2
+      _ = (a * z) * (b * a) := e3
+      _ = (z * a) * (b * a) := e4
+      _ = z * (a * (b * a)) := e5
+      _ = z * ((a * b) * a) := e7
+      _ = z * ((z * (b * a)) * a) := e8
+      _ = z * (z * ((b * a) * a)) := e9
+      _ = (z * z) * ((b * a) * a) := e10
+      _ = z ^ 2 * (b * a ^ 2) := e11
+  -- Combine way1 and way2: b * a^2 = z^2 * (b * a^2).
+  have hcomb : b * a ^ 2 = z ^ 2 * (b * a ^ 2) := way1.symm.trans way2
+  -- Therefore z^2 = 1 by cancellation.
+  have hcancel : z ^ 2 * (b * a ^ 2) = 1 * (b * a ^ 2) := by
+    rw [one_mul]; exact hcomb.symm
+  exact mul_right_cancel hcancel
+
+/-- When $|Z(G)| = 4$ and $|G| = 16$ and $g^2 \in Z(G)$, the commutator
+$[g, h] = ghg^{-1}h^{-1}$ has order at most $2$, i.e. $(ghg^{-1}h^{-1})^2 = 1$.
+Blueprint label `lem:commutator-has-order-two`. -/
+theorem commutator_has_order_two {G : Type*} [Group G] [Finite G]
+    (h_sixteen : Nat.card G = 16) (h_center : Nat.card (Subgroup.center G) = 4)
+    (g h : G) (h_g_sq : g ^ 2 ∈ Subgroup.center G) :
+    (g * h * g⁻¹ * h⁻¹) ^ 2 = 1 := by
+  -- Step 1: |G/Z(G)| = 4.
+  have hQ_card : Nat.card (G ⧸ Subgroup.center G) = 4 := by
+    have h1 : Nat.card (G ⧸ Subgroup.center G) * Nat.card (Subgroup.center G) =
+        Nat.card G := quotient_by_center_card G
+    rw [h_sixteen, h_center] at h1
+    omega
+  -- Step 2: G/Z(G) is abelian, since it has cardinality 4 = 2^2 and 2 is prime.
+  haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  have hQ_card_sq : Nat.card (G ⧸ Subgroup.center G) = 2 ^ 2 := by
+    rw [hQ_card]; norm_num
+  letI hQ_comm : CommGroup (G ⧸ Subgroup.center G) :=
+    IsPGroup.commGroupOfCardEqPrimeSq hQ_card_sq
+  have h_abelian : ∀ a b : G ⧸ Subgroup.center G, a * b = b * a :=
+    fun a b => hQ_comm.mul_comm a b
+  -- Step 3: The commutator [g,h] lies in Z(G).
+  have h_comm_central : g * h * g⁻¹ * h⁻¹ ∈ Subgroup.center G :=
+    commutator_in_center_when_quotient_abelian h_abelian g h
+  -- Step 4: Apply the existing lemma.
+  exact commutator_sq_eq_one_when_sq_central g h h_g_sq h_comm_central
+
+/-- Triple-product lemma in $C_2 \times C_2$: three non-identity elements multiply to $e$
+iff they are pairwise distinct. Blueprint label `lem:abc-eq-e-in-klein`. -/
+theorem abc_eq_e_in_klein {K : Type*} [Group K] [IsKleinFour K]
+    (a b c : K) (ha : a ≠ 1) (hb : b ≠ 1) (hc : c ≠ 1) :
+    a * b * c = 1 ↔ a ≠ b ∧ b ≠ c ∧ a ≠ c := by
+  classical
+  -- Every element squares to 1.
+  have hsq : ∀ x : K, x * x = 1 := fun x => by
+    have := Monoid.pow_exponent_eq_one (G := K) x
+    rw [IsKleinFour.exponent_two, pow_two] at this
+    exact this
+  -- So every element is its own inverse.
+  have hinv : ∀ x : K, x⁻¹ = x := fun x =>
+    (eq_inv_of_mul_eq_one_left (hsq x)).symm
+  -- The group is commutative.
+  have hcomm : ∀ x y : K, x * y = y * x :=
+    fun x y => IsKleinFour.isMulCommutative.is_comm.comm x y
+  constructor
+  · intro habc
+    refine ⟨?_, ?_, ?_⟩
+    · intro hab
+      rw [hab] at habc
+      rw [show b * b * c = c from by rw [hsq b, one_mul]] at habc
+      exact hc habc
+    · intro hbc
+      rw [hbc] at habc
+      rw [show a * c * c = a from by rw [mul_assoc, hsq c, mul_one]] at habc
+      exact ha habc
+    · intro hac
+      rw [hac] at habc
+      rw [show c * b * c = b from by
+        rw [hcomm c b, mul_assoc, hsq c, mul_one]] at habc
+      exact hb habc
+  · intro ⟨hab, hbc, hac⟩
+    have hca : c ≠ a := fun h => hac h.symm
+    have hcb : c ≠ b := fun h => hbc h.symm
+    have hab_ne_one : a * b ≠ 1 := fun h => by
+      have hbinv : a = b⁻¹ := eq_inv_of_mul_eq_one_left h
+      rw [hinv b] at hbinv
+      exact hab hbinv
+    have hab_ne_a : a * b ≠ a := fun h => by
+      have hb_eq : b = 1 := by
+        have heq : a * b = a * 1 := by rw [h, mul_one]
+        exact mul_left_cancel heq
+      exact hb hb_eq
+    have hab_ne_b : a * b ≠ b := fun h => by
+      have ha_eq : a = 1 := by
+        have heq : a * b = 1 * b := by rw [h, one_mul]
+        exact mul_right_cancel heq
+      exact ha ha_eq
+    -- Show c = a * b. Use that K has exactly 4 elements: {1, a, b, a*b}.
+    have c_eq_ab : c = a * b := by
+      have h_card : Nat.card K = 4 := IsKleinFour.card_four
+      haveI : Finite K := IsKleinFour.instFinite
+      haveI : Fintype K := Fintype.ofFinite K
+      have h_fcard : Fintype.card K = 4 := by
+        rw [← Nat.card_eq_fintype_card]; exact h_card
+      -- Build the finset explicitly as Finset.insert.
+      let S : Finset K :=
+        insert 1 (insert a (insert b ({a * b} : Finset K)))
+      have hb_notin : b ∉ ({a * b} : Finset K) := by
+        simp only [Finset.mem_singleton]
+        exact fun h => hab_ne_b h.symm
+      have ha_notin : a ∉ (insert b ({a * b} : Finset K)) := by
+        simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
+        exact ⟨hab, fun h => hab_ne_a h.symm⟩
+      have h1_notin : (1 : K) ∉ (insert a (insert b ({a * b} : Finset K))) := by
+        simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
+        exact ⟨Ne.symm ha, Ne.symm hb, Ne.symm hab_ne_one⟩
+      have hS_card : S.card = 4 := by
+        change (insert 1 (insert a (insert b ({a * b} : Finset K)))).card = 4
+        rw [Finset.card_insert_of_notMem h1_notin,
+            Finset.card_insert_of_notMem ha_notin,
+            Finset.card_insert_of_notMem hb_notin,
+            Finset.card_singleton]
+      have hS_univ : S = Finset.univ := by
+        apply Finset.eq_univ_of_card
+        rw [hS_card, h_fcard]
+      have hc_mem : c ∈ S := by rw [hS_univ]; exact Finset.mem_univ c
+      change c ∈ insert (1 : K) (insert a (insert b ({a * b} : Finset K))) at hc_mem
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hc_mem
+      rcases hc_mem with h1 | h2 | h3 | h4
+      · exact absurd h1 hc
+      · exact absurd h2 hca
+      · exact absurd h3 hcb
+      · exact h4
+    -- Now compute: a * b * c = a * b * (a * b) = 1.
+    rw [c_eq_ab]
+    exact hsq (a * b)
+
+/-- Internal direct product: if $H, K \le G$ with $K \le Z(G)$, $H \cap K = \{e\}$,
+and $|H| \cdot |K| = |G|$, then $G \cong H \times K$.
+Blueprint label `lem:internal-direct-product`. -/
+theorem internal_direct_product {G : Type*} [Group G] [Finite G]
+    (H K : Subgroup G) (hK_center : K ≤ Subgroup.center G)
+    (h_disjoint : H ⊓ K = ⊥)
+    (h_card : Nat.card H * Nat.card K = Nat.card G) :
+    Nonempty (G ≃* (H × K)) := by
+  -- Build φ : H × K →* G with φ (h, k) = h.val * k.val.
+  let φ : H × K →* G := MonoidHom.mk' (fun p => p.1.val * p.2.val) (by
+    rintro ⟨h₁, k₁⟩ ⟨h₂, k₂⟩
+    -- Need: (h₁*h₂).val * (k₁*k₂).val = (h₁.val * k₁.val) * (h₂.val * k₂.val)
+    -- Use centrality of k₁: k₁ * h₂ = h₂ * k₁.
+    have hcomm : (k₁ : G) * (h₂ : G) = (h₂ : G) * (k₁ : G) :=
+      ((Subgroup.mem_center_iff.mp (hK_center k₁.prop)) (h₂ : G)).symm
+    change ((h₁ * h₂ : H) : G) * ((k₁ * k₂ : K) : G) =
+      ((h₁ : G) * (k₁ : G)) * ((h₂ : G) * (k₂ : G))
+    push_cast
+    rw [mul_assoc, mul_assoc, ← mul_assoc (k₁ : G), hcomm,
+        mul_assoc (h₂ : G), ← mul_assoc])
+  -- Injectivity: if h₁*k₁ = h₂*k₂, then h₂⁻¹*h₁ = k₂*k₁⁻¹ ∈ H ∩ K = ⊥.
+  have h_inj : Function.Injective φ := by
+    rintro ⟨h₁, k₁⟩ ⟨h₂, k₂⟩ heq
+    change (h₁ : G) * (k₁ : G) = (h₂ : G) * (k₂ : G) at heq
+    -- Then h₂⁻¹ * h₁ = k₂ * k₁⁻¹.
+    have hkey : (h₂ : G)⁻¹ * (h₁ : G) = (k₂ : G) * (k₁ : G)⁻¹ := by
+      have hstep : (h₂ : G)⁻¹ * ((h₁ : G) * (k₁ : G)) =
+          (h₂ : G)⁻¹ * ((h₂ : G) * (k₂ : G)) := by rw [heq]
+      rw [← mul_assoc, ← mul_assoc, inv_mul_cancel, one_mul] at hstep
+      -- hstep : h₂⁻¹ * h₁ * k₁ = k₂
+      have := congrArg (· * (k₁ : G)⁻¹) hstep
+      simp only at this
+      rw [mul_assoc, mul_inv_cancel, mul_one] at this
+      exact this
+    -- This element lies in H (as h₂⁻¹ * h₁) and in K (as k₂ * k₁⁻¹).
+    set x : G := (h₂ : G)⁻¹ * (h₁ : G) with hx_def
+    have hxH : x ∈ H := H.mul_mem (H.inv_mem h₂.prop) h₁.prop
+    have hxK : x ∈ K := by
+      rw [hkey]
+      exact K.mul_mem k₂.prop (K.inv_mem k₁.prop)
+    have hxInter : x ∈ H ⊓ K := Subgroup.mem_inf.mpr ⟨hxH, hxK⟩
+    rw [h_disjoint] at hxInter
+    have hx_eq_one : x = 1 := hxInter
+    -- From x = 1, we get h₁ = h₂.
+    have hh : (h₁ : G) = (h₂ : G) := by
+      have h1 : (h₂ : G)⁻¹ * (h₁ : G) = 1 := hx_eq_one
+      have h2 := congrArg ((h₂ : G) * ·) h1
+      simp only at h2
+      rw [← mul_assoc, mul_inv_cancel, one_mul, mul_one] at h2
+      exact h2
+    have hk : (k₁ : G) = (k₂ : G) := by
+      rw [hh] at heq
+      exact mul_left_cancel heq
+    have hh' : h₁ = h₂ := Subtype.ext hh
+    have hk' : k₁ = k₂ := Subtype.ext hk
+    rw [hh', hk']
+  -- Cardinality of H × K equals G.
+  have h_card_HK : Nat.card (H × K) = Nat.card G := by
+    rw [Nat.card_prod]; exact h_card
+  -- Injectivity + same finite card ⇒ bijectivity.
+  have h_bij : Function.Bijective φ :=
+    h_inj.bijective_of_nat_card_le (le_of_eq h_card_HK.symm)
+  exact ⟨(MulEquiv.ofBijective φ h_bij).symm⟩
+
 end OrderSixteen.Prelim
 
 namespace OrderSixteen

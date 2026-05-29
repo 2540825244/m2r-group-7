@@ -296,7 +296,10 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[$G/Z(G)$ of order $4$ is non-cyclic]
     \label{lem:order-four-quotient-not-cyclic}
-    \uses{lem:cyclic-center-quotient-abelian,lem:abelian-iff-center-top}
+    \lean{OrderSixteen.Prelim.order_four_quotient_not_cyclic}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \uses{lem:cyclic-center-quotient-abelian, lem:abelian-iff-center-top}
+    \leanok
     If $|G| = 16$ and $|Z(G)| = 4$, then $G/Z(G)$ is not cyclic; in particular
     $G/Z(G) \cong C_2 \times C_2$.
 \end{lemma}
@@ -311,6 +314,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Each $G_i$ is abelian when $|Z(G)| = 4$]
     \label{lem:gi-abelian-when-center-four}
+    \lean{OrderSixteen.Prelim.gi_abelian_when_center_four}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     Let $G$ be a group of order $16$ with $|Z(G)| = 4$ and let $H \le G$ be a
     subgroup of order $8$ containing $Z(G)$. Then $H$ is abelian.
 \end{lemma}
@@ -401,6 +407,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Klein-four triple-product lemma]
     \label{lem:abc-eq-e-in-klein}
+    \lean{OrderSixteen.Prelim.abc_eq_e_in_klein}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     Let $a, b, c$ be nonidentity elements of $C_2 \times C_2$. Then
     $abc = e$ iff $a, b, c$ are pairwise distinct.
 \end{lemma}
@@ -456,6 +465,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Order of a product of subgroups]
     \label{lem:subgroup-product-card}
+    \lean{OrderSixteen.Prelim.subgroup_product_card}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     For finite subgroups $H, K \le G$, $|HK| \cdot |H \cap K| = |H| \cdot
     |K|$.
 \end{lemma}
@@ -467,6 +479,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Internal direct product]
     \label{lem:internal-direct-product}
+    \lean{OrderSixteen.Prelim.internal_direct_product}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     If $H, K \le G$ with $K \le Z(G)$ (so $K$ is normal and $hk = kh$ for all
     $h \in H, k \in K$), $H \cap K = \{e\}$ and $|HK| = |G|$, then
     $G \cong H \times K$.
@@ -480,6 +495,9 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Commutators lie in the center]
     \label{lem:commutator-in-center-when-quotient-abelian}
+    \lean{OrderSixteen.Prelim.commutator_in_center_when_quotient_abelian}
+    \leanfile{M2rGroup7/SixteenCase.lean}
+    \leanok
     If $G/Z(G)$ is abelian, then for any $g, h \in G$, $g h g^{-1} h^{-1} \in
     Z(G)$.
 \end{lemma}
@@ -524,7 +542,10 @@ The proof works case-by-case on the order of the center $Z(G)$.
 
 \begin{lemma}[Commutator has order at most $2$ when $|Z(G)| = 4$]
     \label{lem:commutator-has-order-two}
+    \lean{OrderSixteen.Prelim.commutator_has_order_two}
+    \leanfile{M2rGroup7/SixteenCase.lean}
     \uses{lem:commutator-in-center-when-quotient-abelian}
+    \leanok
     Suppose $G$ is a group of order $16$, $|Z(G)| = 4$, and let $g_i \in G_i$,
     $g_j \in G_j$ for distinct $i, j$ as above. Then the commutator
     $z' = g_j g_i g_j^{-1} g_i^{-1}$ satisfies $(z')^2 = e$.
