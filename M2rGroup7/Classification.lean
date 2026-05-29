@@ -442,7 +442,6 @@ macro "classify_prime_sq" p:num h:term : tactic => `(tactic|(
 /-- A group of order at most `maximumOrder` is isomorphic to some group obtained by `retrieve`. -/
 theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
   ∃ i : Nat, ∃ hv : ValidIndex n i,
-  haveI : ValidIndex n i := hv
   Nonempty (MulEquiv G (retrieve n i))
  :=
   match n with
