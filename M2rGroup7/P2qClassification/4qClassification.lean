@@ -639,39 +639,29 @@ theorem classification_12 [Group G] (h : Nat.card G = 12) :
   haveI : Finite G := by
     apply Nat.finite_of_card_ne_zero
     rw [h]; norm_num
-
   have h12 : Nat.card G = 2 ^ 2 * 3 := by rw [h]; norm_num
-
   let n_2 := Nat.card (Sylow 2 G)
   let n_3 := Nat.card (Sylow 3 G)
-
   have n_2_or_n_3_one : n_2 = 1 ∨ n_3 = 1 :=
     p2q_group_has_normal_sylow_subgroup G (by norm_num) h12
-
   rcases n_2_or_n_3_one with h_n2_1 | h_n3_1
   · -- Case A: n_2 = 1, Sylow 2-subgroup is normal
     let P : Sylow 2 G := default
     haveI : Subsingleton (Sylow 2 G) :=
       (Nat.card_eq_one_iff_unique.mp h_n2_1).1
-
     have h_card_form : Nat.card G = 2 ^ 2 * 3 ^ 1 := by rw [h]; norm_num
     have h_p_p2 : Nat.card ↥(P : Subgroup G) = 4 :=
       sylow_card_eq (by norm_num) h_card_form P
-
     have h_p_idx_q : ∀ P : Sylow 2 G, (↑P : Subgroup G).index = 3 := by
       intro P
       simpa using sylow_index_eq (by norm_num) h_card_form P
-
     obtain ⟨K, hK⟩ := Subgroup.exists_right_complement'_of_coprime (N := (↑P : Subgroup G)) (by
       rw [h_p_p2, h_p_idx_q]
       decide)
-
     have h_iso_g_p_k := SemidirectProduct.mulEquivSubgroup hK
-
     let φ : ↥K →* MulAut ↥(↑P : Subgroup G) :=
         (↑P : Subgroup G).normalizerMonoidHom.comp
           (Subgroup.inclusion (by simp [Subgroup.normalizer_eq_top]))
-
     have hK_card : Nat.card ↥K = 3 := by
       have h1 : Nat.card G = Nat.card ↥(↑P : Subgroup G) * Nat.card ↥K := by
         have heq := Nat.card_congr h_iso_g_p_k.toEquiv
@@ -679,12 +669,9 @@ theorem classification_12 [Group G] (h : Nat.card G = 12) :
         exact heq.symm
       rw [h_p_p2, h] at h1
       omega
-
     have eK : ↥K ≃* CyclicGroup 3 :=
       Classical.choice (prime_classification (n := 3) hK_card)
-
     have h4q : Nat.Coprime 4 3 := by decide
-
     rcases (p_squared_classification (p := 2) h_p_p2) with h_c4 | h_c2_c2
     · -- Subcase A1: P ≃ C_4. Then Aut(P) ≃ C_2, and φ is trivial (gcd(3,2)=1).
       simp at h_c4
@@ -768,27 +755,21 @@ theorem classification_12 [Group G] (h : Nat.card G = 12) :
     let Q : Sylow 3 G := default
     haveI : Subsingleton (Sylow 3 G) :=
       (Nat.card_eq_one_iff_unique.mp h_n3_1).1
-
     have h_card_form : Nat.card G = 3 ^ 1 * 2 ^ 2 := by rw [h]; ring
     have h_Q_card : Nat.card ↥(Q : Subgroup G) = 3 := by
       have := sylow_card_eq (by norm_num : (3 : ℕ) ≠ 2) h_card_form Q
       simpa using this
-
     have h_Q_idx_4 : ∀ Q : Sylow 3 G, (↑Q : Subgroup G).index = 4 := by
       intro Q
       have := sylow_index_eq (by norm_num : (3 : ℕ) ≠ 2) h_card_form Q
       simpa using this
-
     obtain ⟨K, hK⟩ := Subgroup.exists_right_complement'_of_coprime (N := (↑Q : Subgroup G)) (by
       rw [h_Q_card, h_Q_idx_4]
       decide)
-
     have h_iso_g_q_k := SemidirectProduct.mulEquivSubgroup hK
-
     let φ : ↥K →* MulAut ↥(↑Q : Subgroup G) :=
         (↑Q : Subgroup G).normalizerMonoidHom.comp
           (Subgroup.inclusion (by simp [Subgroup.normalizer_eq_top]))
-
     have hK_card : Nat.card ↥K = 4 := by
       have h1 : Nat.card G = Nat.card ↥(↑Q : Subgroup G) * Nat.card ↥K := by
         have heq := Nat.card_congr h_iso_g_q_k.toEquiv
@@ -796,10 +777,8 @@ theorem classification_12 [Group G] (h : Nat.card G = 12) :
         exact heq.symm
       rw [h_Q_card, h] at h1
       omega
-
     have eQ : ↥(↑Q : Subgroup G) ≃* CyclicGroup 3 :=
       Classical.choice (prime_classification (n := 3) h_Q_card)
-
     rcases (p_squared_classification (p := 2) hK_card) with h_K_C4 | h_K_C2C2
     · -- Subcase B1: K ≃ C_4. Use classify_sdp. Here r ∈ {0, 1} only.
       simp only [Nat.reducePow] at h_K_C4
