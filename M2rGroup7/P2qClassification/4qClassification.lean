@@ -752,10 +752,10 @@ theorem classification_12 [Group G] (h : Nat.card G = 12) :
             fun h => hφ'_ne (eq_one_of_range_card_one h)
           have h_pos : 0 < Nat.card φ'.range := Nat.card_pos
           -- divisors of 3 are 1 and 3
-          interval_cases (Nat.card φ'.range)
-          · exact absurd rfl h_ne_1
-          · exact absurd h_range_dvd_3 (by decide)
-          · rfl
+          have h3_prime : Nat.Prime 3 := by norm_num
+          rcases (Nat.dvd_prime h3_prime).mp h_range_dvd_3 with h1 | h3
+          · exact absurd h1 h_ne_1
+          · exact h3
         -- Apply semidirectProduct_C3_on_C2C2_iso.
         obtain ⟨e_phi'_to_canon⟩ :=
           semidirectProduct_C3_on_C2C2_iso φ' canonicalC3OnC2C2Action
@@ -813,12 +813,11 @@ theorem classification_12 [Group G] (h : Nat.card G = 12) :
           φ
       -- For q = 3, (3-1).factorization 2 = 1, so min 2 1 = 1, hence r.val ∈ {0, 1}.
       have h_fact : ((3 - 1 : ℕ).factorization 2) = 1 := by
-        have h2 : (3 - 1 : ℕ) = 2 := rfl
-        rw [h2]; simp
+        show ((2 : ℕ).factorization 2) = 1
+        rw [Nat.Prime.factorization_self (by norm_num : Nat.Prime 2)]
       have h_r01 : r.val = 0 ∨ r.val = 1 := by
         have h := r.isLt
-        rw [h_fact] at h
-        simp at h
+        have h_min : min 2 ((3 - 1 : ℕ).factorization 2) = 1 := by rw [h_fact]; rfl
         omega
       have h4q : Nat.Coprime 4 3 := by decide
       rcases h_r01 with hr0 | hr1
@@ -831,7 +830,8 @@ theorem classification_12 [Group G] (h : Nat.card G = 12) :
             have := canonicalAction_range_card 2 3 1 2 r.val (by norm_num) (by norm_num)
               Nat.one_pos (Nat.lt_succ_iff.mp r.isLt)
             rw [this, hr0, pow_zero])
-        have h_eq : (4 : ℕ) * 3 = 12 := by norm_num
+        have h_12 : CyclicGroup (2 ^ 2 * 3) ≃* CyclicGroup 12 :=
+          mulEquivOfCyclicCardEq (by simp only [card_cyclicGroup]; norm_num)
         have : Nonempty (G ≃* CyclicGroup 12) :=
           ⟨h_iso_g_q_k.symm.trans (e.trans
             ((SemidirectProduct.mulEquivOfTrivialAction h_trivial).trans
@@ -839,8 +839,8 @@ theorem classification_12 [Group G] (h : Nat.card G = 12) :
                 ((_cyclicGroup_pow_one_equiv (q := 3)).symm.prodCongr
                     (MulEquiv.refl (CyclicGroup (2 ^ 2)))).trans
                   (MulEquiv.prodComm.trans
-                    (h_eq ▸ CyclicGroup.prodMulEquiv (m := 2 ^ 2) (n := 3)
-                      (by simpa using h4q))))))⟩
+                    ((CyclicGroup.prodMulEquiv (m := 2 ^ 2) (n := 3)
+                      (by simpa using h4q)).trans h_12)))))⟩
         tauto
       · -- r = 1: G ≃ C_3 ⋊_{canonicalC4OnCqAction} C_4.
         obtain ⟨e⟩ := hr_iso
