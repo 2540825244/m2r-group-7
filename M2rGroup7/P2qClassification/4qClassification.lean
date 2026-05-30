@@ -90,16 +90,18 @@ private noncomputable def canonicalAction_two_iso_canonicalC4OnCqAction_r2
   _canonicalAction_r_iso_C4OnCqAction (by simp only [Nat.ModEq] at h_1_mod_4; omega)
     (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4)
 
-/-- Classification of groups `G` of order `4q` for q > 3 prime. There are at most
-    five isomorphism classes:
+/-- Classification of groups `G` of order `4q` for `q ≥ 3` prime. There are at most
+    six isomorphism classes (the sixth occurring only when `q = 3`, where it gives `A_4`):
     1. The cyclic group `C_{4q}`.
     2. The abelian non-cyclic group `C_2 × C_2 × C_q`.
     3. The semidirect product `C_q ⋊ C_4` with the canonical action of image order 2.
     4. (Only when q ≡ 1 mod 4) The semidirect product `C_q ⋊ C_4` with the canonical
        action of image order 4.
-    5. The semidirect product `C_q ⋊ (C_2 × C_2)` with the canonical nontrivial action. -/
+    5. The semidirect product `C_q ⋊ (C_2 × C_2)` with the canonical nontrivial action.
+    6. (Only when q = 3) The semidirect product `(C_2 × C_2) ⋊ C_3 ≃ A_4` with the
+       canonical order-3 action on `C_2 × C_2`. -/
 theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
-    (h_ge_3 : q > 3) (h : Nat.card G = 4 * q)
+    (h_ge_3 : q ≥ 3) (h : Nat.card G = 4 * q)
     : Nonempty (G ≃* CyclicGroup (4 * q))
       ∨ Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q)
       ∨ Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
@@ -108,7 +110,10 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
             Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
                             (canonicalC4OnCqAction_r2 h_1_mod_4)))
       ∨ Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2)
-                         (canonicalC2C2OnCqAction (by omega : q ≠ 2))) := by
+                         (canonicalC2C2OnCqAction (by omega : q ≠ 2)))
+      ∨ (∃ _ : q = 3,
+            Nonempty (G ≃* SemidirectProduct (CyclicGroup 2 × CyclicGroup 2) (CyclicGroup 3)
+                            canonicalC3OnC2C2Action)) := by
 
   -- G is finite
   haveI : Finite G := by
@@ -205,22 +210,75 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
       have h_mul_aut_p_card : Nat.card (MulAut P) = 6 :=
         h_aut_dih.elim fun e => (Nat.card_congr e.toEquiv).trans h_dih_3_card
 
-      have h_phi_triv : φ = 1 :=
-        eq_one_of_coprime_card (by
-          rw [hK_card, h_mul_aut_p_card]
-          have h_cop2 : Nat.Coprime q 2 := h_q_prime.out.coprime_of_ne (by norm_num) (by omega)
-          have h_cop3 : Nat.Coprime q 3 := h_q_prime.out.coprime_of_ne (by norm_num) (by omega)
-          simpa using h_cop2.mul_right h_cop3)
+      by_cases h_q_eq_3 : q = 3
+      · -- q = 3: gcd(q, 6) ≠ 1, so φ may be non-trivial.
+        -- Split on whether φ is trivial or not. Trivial → disjunct 2; non-trivial → A_4.
+        subst h_q_eq_3
+        haveI : Fact (Nat.Prime 3) := instFactPrimeThree
+        by_cases h_phi_triv : φ = 1
+        · -- Trivial: G ≃ C_2 × C_2 × C_3.
+          have : Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 3) := by
+            refine ⟨?_⟩
+            have h_sdp_prod : P ⋊[φ] ↥K ≃* P × ↥K :=
+              SemidirectProduct.mulEquivOfTrivialAction h_phi_triv
+            exact h_iso_g_p_k.symm.trans
+              (h_sdp_prod.trans
+                ((h_c2_c2.some.prodCongr eK).trans MulEquiv.prodAssoc))
+          tauto
+        · -- Non-trivial: transport to canonicalC3OnC2C2Action, yielding A_4.
+          let eP := h_c2_c2.some
+          let φ' : CyclicGroup 3 →* MulAut (CyclicGroup 2 × CyclicGroup 2) :=
+            ((MulAut.congr eP).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom)
+          have h_sdp_congr :
+              ↥(↑P : Subgroup G) ⋊[φ] ↥K ≃*
+                SemidirectProduct (CyclicGroup 2 × CyclicGroup 2) (CyclicGroup 3) φ' :=
+            SemidirectProduct.congr' (φ₁ := φ) (fn := eP) (fg := eK)
+          have hφ'_ne : φ' ≠ 1 := by
+            intro h_eq
+            apply h_phi_triv
+            refine MonoidHom.ext fun k => ?_
+            have h1 : φ' (eK k) = 1 := by rw [h_eq]; simp
+            have h2 : φ' (eK k) = (MulAut.congr eP) (φ k) := by
+              show ((MulAut.congr eP).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom) (eK k) = _
+              simp [MulEquiv.symm_apply_apply]
+            rw [h2] at h1
+            exact (MulEquiv.map_eq_one_iff (MulAut.congr eP)).mp h1
+          have h_range_dvd_3 : Nat.card φ'.range ∣ 3 := by
+            have h := Subgroup.card_range_dvd φ'
+            rw [card_cyclicGroup] at h
+            exact h
+          have h_range_card : Nat.card φ'.range = 3 := by
+            have h_ne_1 : Nat.card φ'.range ≠ 1 :=
+              fun h => hφ'_ne (eq_one_of_range_card_one h)
+            have h_pos : 0 < Nat.card φ'.range := Nat.card_pos
+            have h3_prime : Nat.Prime 3 := by norm_num
+            rcases (Nat.dvd_prime h3_prime).mp h_range_dvd_3 with h1 | h3
+            · exact absurd h1 h_ne_1
+            · exact h3
+          obtain ⟨e_phi'_to_canon⟩ :=
+            semidirectProduct_C3_on_C2C2_iso φ' canonicalC3OnC2C2Action
+              h_range_card canonicalC3OnC2C2Action_range_card
+          have h_g_iso : Nonempty (G ≃* SemidirectProduct (CyclicGroup 2 × CyclicGroup 2)
+                                    (CyclicGroup 3) canonicalC3OnC2C2Action) :=
+            ⟨h_iso_g_p_k.symm.trans (h_sdp_congr.trans e_phi'_to_canon)⟩
+          exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨rfl, h_g_iso⟩))))
+      · -- q ≠ 3: gcd(q, 6) = 1 forces φ trivial.
+        have h_phi_triv : φ = 1 :=
+          eq_one_of_coprime_card (by
+            rw [hK_card, h_mul_aut_p_card]
+            have h_cop2 : Nat.Coprime q 2 := h_q_prime.out.coprime_of_ne (by norm_num) (by omega)
+            have h_cop3 : Nat.Coprime q 3 := h_q_prime.out.coprime_of_ne (by norm_num) h_q_eq_3
+            simpa using h_cop2.mul_right h_cop3)
 
-      have : Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q) := by
-        refine ⟨?_⟩
-        have h_sdp_prod : P ⋊[φ] ↥K ≃* P × ↥K :=
-          SemidirectProduct.mulEquivOfTrivialAction h_phi_triv
-        -- G ≃* ↥↑P ⋊[φ] ↥K ≃* ↥↑P × ↥K ≃* C_2 × C ≃* C_{4q}
-        exact h_iso_g_p_k.symm.trans
-          (h_sdp_prod.trans
-            ((h_c2_c2.some.prodCongr eK).trans MulEquiv.prodAssoc))
-      tauto
+        have : Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q) := by
+          refine ⟨?_⟩
+          have h_sdp_prod : P ⋊[φ] ↥K ≃* P × ↥K :=
+            SemidirectProduct.mulEquivOfTrivialAction h_phi_triv
+          -- G ≃* ↥↑P ⋊[φ] ↥K ≃* ↥↑P × ↥K ≃* C_2 × C ≃* C_{4q}
+          exact h_iso_g_p_k.symm.trans
+            (h_sdp_prod.trans
+              ((h_c2_c2.some.prodCongr eK).trans MulEquiv.prodAssoc))
+        tauto
   · -- case h_nq_1 : n_q = 1
     let Q : Sylow q G := default
 
