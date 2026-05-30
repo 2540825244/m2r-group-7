@@ -270,9 +270,9 @@ theorem semidirectProduct_C3_on_C2C2_iso
   exact semidirectProduct_iso_if_range_eq instFactPrimeThree
     (by rw [card_cyclicGroup, pow_one]) f_1 f_2 h_range_eq
 
+set_option maxHeartbeats 400000 in
 -- The `q = 3` case adds a non-trivial action subcase in A2 (yielding A_4),
 -- which makes whole-theorem elaboration heavier than the default heartbeat limit.
-set_option maxHeartbeats 400000 in
 /-- Classification of groups `G` of order `4q` for `q ≥ 3` prime. There are at most
     six isomorphism classes (the sixth occurring only when `q = 3`, where it gives `A_4`):
     1. The cyclic group `C_{4q}`.
