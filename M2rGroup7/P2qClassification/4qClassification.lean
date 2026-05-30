@@ -122,6 +122,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
 
   have n_2_or_n_q_one : n_2 = 1 ∨ n_q = 1 := p2q_group_has_normal_sylow_subgroup G (by aesop) h
 
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
   rcases n_2_or_n_q_one with h_n2_1 | h_nq_1
   · -- case h_np1 : n_p = 1
     let P : Sylow 2 G := default
@@ -131,13 +132,14 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
     haveI : Subsingleton (Sylow 2 G) :=
       (Nat.card_eq_one_iff_unique.mp h_n2_1).1
 
+    have h_card_form : Nat.card G = 2 ^ 2 * q ^ 1 := by aesop
     have h_p_p2 : Nat.card ↥(P : Subgroup G) = 4 := by
-      exact sylow_card_eq (by aesop) (show Nat.card G = 2 ^ 2 * q ^ 1 by aesop) P
+      exact sylow_card_eq (by aesop) h_card_form P
 
     -- Index of Sylow p-group is q
     have h_p_idx_q : ∀ P : Sylow 2 G, (↑P : Subgroup G).index = q := by
       intro P
-      simpa using sylow_index_eq (by aesop) (show Nat.card G = 2 ^ 2 * q ^ 1 by aesop) P
+      simpa using sylow_index_eq (by aesop) h_card_form P
 
     obtain ⟨K, hK⟩ := Subgroup.exists_right_complement'_of_coprime (N := (↑P : Subgroup G)) (by
       rw [h_p_p2, h_p_idx_q]
@@ -166,7 +168,8 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
       Classical.choice (prime_classification (n := q) hK_card)
 
     -- P is isomorphic to C_2 x C_2 or C_4
-    haveI : Fact (Nat.Prime 2) := by decide
+    have h4q : Nat.Coprime 4 q :=
+      ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2
     rcases (p_squared_classification (p := 2) h_p_p2) with h_c4 | h_c2_c2
     · -- case h_c4 : Nonempty (↥↑P ≃* CyclicGroup 4)
       simp at h_c4
@@ -186,8 +189,6 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
         refine ⟨?_⟩
         have h_sdp_prod : P ⋊[φ] ↥K ≃* P × ↥K :=
           SemidirectProduct.mulEquivOfTrivialAction h_phi_triv
-        have h4q : Nat.Coprime 4 q :=
-          ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2
         -- G ≃* ↥↑P ⋊[φ] ↥K ≃* ↥↑P × ↥K ≃* C₄ × Cq ≃* C_{4q}
         exact h_iso_g_p_k.symm.trans
           (h_sdp_prod.trans
@@ -215,9 +216,6 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
         refine ⟨?_⟩
         have h_sdp_prod : P ⋊[φ] ↥K ≃* P × ↥K :=
           SemidirectProduct.mulEquivOfTrivialAction h_phi_triv
-
-        have h4q : Nat.Coprime 4 q :=
-          ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2
         -- G ≃* ↥↑P ⋊[φ] ↥K ≃* ↥↑P × ↥K ≃* C_2 × C ≃* C_{4q}
         exact h_iso_g_p_k.symm.trans
           (h_sdp_prod.trans
@@ -231,16 +229,15 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
     haveI : Subsingleton (Sylow q G) :=
       (Nat.card_eq_one_iff_unique.mp h_nq_1).1
 
+    have h_card_form : Nat.card G = q ^ 1 * 2 ^ 2 := by rw [pow_one, h]; ring
     have h_Q_card : Nat.card ↥(Q : Subgroup G) = q := by
-      have := sylow_card_eq (Ne.symm (by aesop : (2 : ℕ) ≠ q))
-        (show Nat.card G = q ^ 1 * 2 ^ 2 by rw [pow_one, h]; ring) Q
+      have := sylow_card_eq (Ne.symm (by aesop : (2 : ℕ) ≠ q)) h_card_form Q
       simpa using this
 
     -- Index of Sylow q-group is 4
     have h_Q_idx_4 : ∀ Q : Sylow q G, (↑Q : Subgroup G).index = 4 := by
       intro Q
-      have := sylow_index_eq (Ne.symm (by aesop : (2 : ℕ) ≠ q))
-        (show Nat.card G = q ^ 1 * 2 ^ 2 by rw [pow_one, h]; ring) Q
+      have := sylow_index_eq (Ne.symm (by aesop : (2 : ℕ) ≠ q)) h_card_form Q
       simpa using this
 
     obtain ⟨K, hK⟩ := Subgroup.exists_right_complement'_of_coprime (N := (↑Q : Subgroup G)) (by
@@ -271,11 +268,9 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
       Classical.choice (prime_classification (n := q) h_Q_card)
 
     -- K is isomorphic to C_4 or C_2 x C_2
-    haveI : Fact (Nat.Prime 2) := by decide
     rcases (p_squared_classification (p := 2) hK_card) with h_K_C4 | h_K_C2C2
     · -- case h_K_C4 : Nonempty (↥K ≃* CyclicGroup 4)
       simp only [Nat.reducePow] at h_K_C4
-      haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
       haveI : IsCyclic ↥(↑Q : Subgroup G) := (MulEquiv.isCyclic eQ).mpr inferInstance
       haveI : IsCyclic ↥K := (MulEquiv.isCyclic h_K_C4.some).mpr inferInstance
       -- Apply classify_sdp directly to Q ⋊_φ K
@@ -403,7 +398,6 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
         -- via `semidirectProduct_CpCp_iso` (which uses α = 1 in the conjugacy condition).
         have h_canon_range :
             Nat.card (canonicalC2C2OnCqAction (q := q) h_ge_3).range = 2 := by
-          haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
           set f_inner := canonicalAction 2 q 1 1 (by omega) (by omega) Nat.one_pos 1
             (by have := one_le_min_two_factorization_two h_ge_3; omega) with hf_inner
           have h_inner_range : Nat.card f_inner.range = 2 := by
