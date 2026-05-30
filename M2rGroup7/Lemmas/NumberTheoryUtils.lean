@@ -11,13 +11,13 @@ lemma two_dvd_prime_sub_one {q : ℕ} [hq : Fact q.Prime] (h : q ≠ 2) : 2 ∣ 
   have hq_odd : Odd q := hq.out.odd_of_ne_two h
   obtain ⟨k, rfl⟩ := hq_odd; omega
 
-/-- For q prime, q > 3: 1 ≤ min 2 ((q - 1).factorization 2). -/
-lemma one_le_min_two_factorization_two {q : ℕ} [hq : Fact q.Prime] (h : q > 3) :
+/-- For q odd prime (q ≠ 2): 1 ≤ min 2 ((q - 1).factorization 2). -/
+lemma one_le_min_two_factorization_two {q : ℕ} [hq : Fact q.Prime] (h : q ≠ 2) :
     1 ≤ min 2 ((q - 1).factorization 2) := by
   have h_qm1_ne : q - 1 ≠ 0 := by have := hq.out.one_lt; omega
   refine Nat.le_min.mpr ⟨one_le_two, ?_⟩
   rw [← Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two h_qm1_ne]
-  simpa using two_dvd_prime_sub_one (by omega)
+  simpa using two_dvd_prime_sub_one h
 
 /-- For q prime, q ≡ 3 (mod 4): (q - 1).factorization 2 = 1. -/
 lemma factorization_two_of_prime_three_mod_four {q : ℕ} [hq : Fact q.Prime]
