@@ -210,14 +210,11 @@ theorem semidirectProduct_C3_on_C2C2_iso
     h_aut_dih.elim fun e => (Nat.card_congr e.toEquiv).trans h_dih_3_card
   haveI : Finite (MulAut (CyclicGroup 2 × CyclicGroup 2)) :=
     Nat.finite_of_card_ne_zero (by rw [h_aut_card]; norm_num)
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
   -- Build the two Sylow 3-subgroups for f_1.range and f_2.range.
   have h_fact_eq : ((Nat.card (MulAut (CyclicGroup 2 × CyclicGroup 2))).factorization 3) = 1 := by
-    rw [h_aut_card]
-    have h_sq : Squarefree (6 : ℕ) := by
-      rw [show (6 : ℕ) = 2 * 3 from rfl]
-      exact (Nat.squarefree_mul_iff.mpr ⟨by norm_num, Nat.prime_two.squarefree,
-        Nat.prime_three.squarefree⟩)
-    exact Nat.factorization_eq_one_of_squarefree h_sq (by norm_num) (by norm_num)
+    rw [h_aut_card, show (6 : ℕ) = 2 * 3 from rfl]
+    exact factorization_prime_mul_prime_left Nat.prime_two Nat.prime_three (by norm_num)
   let S1 : Sylow 3 (MulAut (CyclicGroup 2 × CyclicGroup 2)) :=
     Sylow.ofCard f_1.range (by rw [hf1_range, h_fact_eq, pow_one])
   let S2 : Sylow 3 (MulAut (CyclicGroup 2 × CyclicGroup 2)) :=
@@ -227,26 +224,13 @@ theorem semidirectProduct_C3_on_C2C2_iso
       Subsingleton (Sylow 3 (MulAut (CyclicGroup 2 × CyclicGroup 2))) := by
     have h_card_eq_one :
         Nat.card (Sylow 3 (MulAut (CyclicGroup 2 × CyclicGroup 2))) = 1 := by
-      have h_dvd : Nat.card (Sylow 3 (MulAut (CyclicGroup 2 × CyclicGroup 2))) ∣
-          (S1 : Subgroup (MulAut (CyclicGroup 2 × CyclicGroup 2))).index :=
-        Sylow.card_dvd_index S1
-      have h_idx : (S1 : Subgroup (MulAut (CyclicGroup 2 × CyclicGroup 2))).index = 2 := by
-        have h_mul : (S1 : Subgroup (MulAut (CyclicGroup 2 × CyclicGroup 2))).index *
-            Nat.card (S1 : Subgroup (MulAut (CyclicGroup 2 × CyclicGroup 2))) =
-            Nat.card (MulAut (CyclicGroup 2 × CyclicGroup 2)) :=
-          Subgroup.index_mul_card _
-        have h_S1_card : Nat.card (S1 : Subgroup (MulAut (CyclicGroup 2 × CyclicGroup 2))) = 3 := by
-          change Nat.card f_1.range = 3
-          exact hf1_range
-        rw [h_aut_card, h_S1_card] at h_mul
-        omega
+      have h_idx : (S1 : Subgroup (MulAut (CyclicGroup 2 × CyclicGroup 2))).index = 2 ^ 1 :=
+        sylow_index_eq (by norm_num)
+          (show Nat.card (MulAut (CyclicGroup 2 × CyclicGroup 2)) = 3 ^ 1 * 2 ^ 1 by
+            rw [h_aut_card]; norm_num) S1
+      have h_dvd := Sylow.card_dvd_index S1
+      have h_mod := card_sylow_modEq_one 3 (MulAut (CyclicGroup 2 × CyclicGroup 2))
       rw [h_idx] at h_dvd
-      have h_mod : Nat.card (Sylow 3 (MulAut (CyclicGroup 2 × CyclicGroup 2))) ≡ 1 [MOD 3] :=
-        card_sylow_modEq_one 3 _
-      have h_le : Nat.card (Sylow 3 (MulAut (CyclicGroup 2 × CyclicGroup 2))) ≤ 2 :=
-        Nat.le_of_dvd (by norm_num) h_dvd
-      have h_pos : 0 < Nat.card (Sylow 3 (MulAut (CyclicGroup 2 × CyclicGroup 2))) :=
-        Nat.card_pos
       unfold Nat.ModEq at h_mod
       omega
     exact (Nat.card_eq_one_iff_unique.mp h_card_eq_one).1

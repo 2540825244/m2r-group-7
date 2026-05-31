@@ -181,52 +181,6 @@ lemma card_mulAut_cyclicGroup_prime {q : ℕ} [hq : Fact q.Prime] :
 -- (they use semidirectProduct_iso_iff_range_eq from that file)
 
 
-
-/-!
-## DihedralGroup 3 has a unique subgroup of order 3
-
-D₃ has order 6 = 3¹·2¹. By Sylow theory the number of Sylow 3-subgroups n₃
-satisfies n₃ ∣ 2 and n₃ ≡ 1 (mod 3), forcing n₃ = 1.
--/
-
-/-- The dihedral group D₃ has exactly one Sylow 3-subgroup,
-    hence exactly one subgroup of order 3. -/
-lemma DihedralGroup3_unique_sylow3 :
-    Nat.card (Sylow 3 (DihedralGroup 3)) = 1 := by
-  haveI hp3 : Fact (Nat.Prime 3) := ⟨by decide⟩
-  haveI hp2 : Fact (Nat.Prime 2) := ⟨by decide⟩
-  haveI : Finite (DihedralGroup 3) := inferInstance
-  let P : Sylow 3 (DihedralGroup 3) := default
-  -- |D₃| = 6
-  have h_G : Nat.card (DihedralGroup 3) = 6 := by
-    rw [DihedralGroup.nat_card]
-  -- |P| = 3^(v₃(6)) = 3^1 = 3
-  have h_P : Nat.card ↥(P : Subgroup (DihedralGroup 3)) = 3 := by
-    have key := Sylow.card_eq_multiplicity P
-    rw [h_G] at key
-    have hfac : (6 : ℕ).factorization 3 = 1 := by
-      rw [show (6 : ℕ) = 3 ^ 1 * 2 ^ 1 from by norm_num,
-          Nat.factorization_mul_of_coprime (by norm_num : Nat.Coprime (3 ^ 1) (2 ^ 1)),
-          Finsupp.add_apply, Nat.factorization_pow_self hp3.out]
-      simp [hp2.out.factorization, show ¬ (3 : ℕ) = 2 from by decide]
-    rw [hfac] at key; simpa using key
-  -- index of P = 6 / 3 = 2  (by Lagrange)
-  have h_idx : (P : Subgroup (DihedralGroup 3)).index = 2 := by
-    have hmul := Subgroup.index_mul_card (P : Subgroup (DihedralGroup 3))
-    rw [h_P, h_G] at hmul; linarith
-  -- n₃ ∣ 2
-  have h_dvd : Nat.card (Sylow 3 (DihedralGroup 3)) ∣ 2 :=
-    h_idx ▸ Sylow.card_dvd_index P
-  -- n₃ ≡ 1 (mod 3)
-  have h_mod : Nat.card (Sylow 3 (DihedralGroup 3)) ≡ 1 [MOD 3] :=
-    card_sylow_modEq_one 3 (DihedralGroup 3)
-  -- n₃ ∈ {1,2} and n₃ % 3 = 1 ⟹ n₃ = 1
-  have h_pos : 0 < Nat.card (Sylow 3 (DihedralGroup 3)) := Nat.card_pos
-  have h_le  : Nat.card (Sylow 3 (DihedralGroup 3)) ≤ 2 :=
-    Nat.le_of_dvd (by norm_num) h_dvd
-  simp only [Nat.ModEq] at h_mod
-  omega
-
 /-- Cardinality of the image of a homomorphism f : G -> G' divides gcd(|G|, |G'|) -/
 theorem MonoidHom.card_range_dvd_gcd {G G' : Type*} [Group G] [Group G'] (f : G →* G') :
       Nat.card ↥f.range ∣ Nat.gcd (Nat.card G) (Nat.card G') :=
