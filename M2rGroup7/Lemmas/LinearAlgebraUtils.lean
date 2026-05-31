@@ -71,6 +71,9 @@ private lemma isConj_of_conj_matrix (hp2 : p ≠ 2) (A : GL (Fin 2) (ZMod p))
   rw [mul_assoc, hconj, ← mul_assoc,
       Matrix.nonsing_inv_mul P (isUnit_iff_ne_zero.mpr hPdet), one_mul]
 
+-- `simp [Matrix.mul_apply]` after `fin_cases` needs flexible simp since `Matrix.cons_val_zero`
+-- does not fire on the `⟨n, h⟩`-form Fin indices that `fin_cases` produces.
+set_option linter.flexible false in
 /-- Any element A of GL₂(𝔽_p) of order 2 (p an odd prime) is conjugate in GL₂(𝔽_p) to
     either diag(1, -1) or diag(-1, -1). -/
 theorem gl2_order_two_classification (hp2 : p ≠ 2) (A : GL (Fin 2) (ZMod p))
@@ -110,16 +113,16 @@ theorem gl2_order_two_classification (hp2 : p ≠ 2) (A : GL (Fin 2) (ZMod p))
     rw [Matrix.mul_fin_two] at hsq
     have h00 : a * a + b * c = 1 := by
       have := congrArg (fun N : Matrix (Fin 2) (Fin 2) (ZMod p) => N 0 0) hsq
-      simp at this; exact this
+      simp only [Matrix.one_apply, Fin.isValue] at this; exact this
     have h01 : a * b + b * d = 0 := by
       have := congrArg (fun N : Matrix (Fin 2) (Fin 2) (ZMod p) => N 0 1) hsq
-      simp at this; exact this
+      simp only [Matrix.one_apply, Fin.isValue] at this; exact this
     have h10 : c * a + d * c = 0 := by
       have := congrArg (fun N : Matrix (Fin 2) (Fin 2) (ZMod p) => N 1 0) hsq
-      simp at this; exact this
+      simp only [Matrix.one_apply, Fin.isValue] at this; exact this
     have h11 : c * b + d * d = 1 := by
       have := congrArg (fun N : Matrix (Fin 2) (Fin 2) (ZMod p) => N 1 1) hsq
-      simp at this; exact this
+      simp only [Matrix.one_apply, Fin.isValue] at this; exact this
     have hM_ne_one : M ≠ 1 := by
       intro h; apply hA_ne1; ext1; rw [Units.val_one]; exact h
     have hM_ne_negone : M ≠ -1 := by
@@ -166,7 +169,7 @@ theorem gl2_order_two_classification (hp2 : p ≠ 2) (A : GL (Fin 2) (ZMod p))
           · change M * _ = _
             rw [hM_eq, ha, hc0, hd]
             ext i j; fin_cases i <;> fin_cases j <;>
-              simp [Matrix.mul_apply, Fin.sum_univ_succ] <;> ring
+              simp [Matrix.mul_apply, Fin.sum_univ_succ]; ring
       · rcases hd_cases with hd | hd
         · apply isConj_of_conj_matrix hp2 A !![b, (-2 : ZMod p); 2, 0]
           · rw [Matrix.det_fin_two_of]
@@ -178,7 +181,7 @@ theorem gl2_order_two_classification (hp2 : p ≠ 2) (A : GL (Fin 2) (ZMod p))
           · change M * _ = _
             rw [hM_eq, ha, hc0, hd]
             ext i j; fin_cases i <;> fin_cases j <;>
-              simp [Matrix.mul_apply, Fin.sum_univ_succ] <;> ring
+              simp [Matrix.mul_apply, Fin.sum_univ_succ]; ring
         · exfalso
           have hb0 : b = 0 := by
             have h2b : b * (-2) = 0 := by rw [ha, hd] at hbad; linear_combination hbad
@@ -187,7 +190,7 @@ theorem gl2_order_two_classification (hp2 : p ≠ 2) (A : GL (Fin 2) (ZMod p))
             · exfalso; apply h_two_ne_zero; linear_combination -h
           apply hM_ne_negone
           rw [hM_eq, ha, hb0, hc0, hd]
-          ext i j; fin_cases i <;> fin_cases j <;> simp <;> ring
+          ext i j; fin_cases i <;> fin_cases j <;> simp
     · -- c ≠ 0: h10 forces a + d = 0, and we take P = !![a+1, a-1; c, c] (det = 2c ≠ 0).
       have had : a + d = 0 := by
         have hcad : c * (a + d) = 0 := by linear_combination h10
