@@ -109,9 +109,12 @@ noncomputable def GL2F2_isoS3 : GL (Fin 2) (ZMod 2) ≃* DihedralGroup 3 :=
 /-- The automorphism group of C_p × C_p is isomorphic to GL(2, 𝔽_p).
     Proof sketch:
       MulAut(C_p × C_p)
-        ≃*  AddAut(ZMod p × ZMod p)                          [strip Multiplicative: MulAutMultiplicative + MulEquiv.prodMultiplicative]
-        ≃*  (ZMod p × ZMod p) ≃ₗ[ZMod p] (ZMod p × ZMod p) [AddMonoidHom.toZModLinearMapEquiv: every additive aut of a ZMod p-module is linear]
-        ≃*  GL (Fin 2) (ZMod p)                              [Matrix.GeneralLinearGroup.toLin' with standard basis] -/
+        ≃*  AddAut(ZMod p × ZMod p)
+              [strip Multiplicative: MulAutMultiplicative + MulEquiv.prodMultiplicative]
+        ≃*  (ZMod p × ZMod p) ≃ₗ[ZMod p] (ZMod p × ZMod p)
+              [AddMonoidHom.toZModLinearMapEquiv: every additive aut of a ZMod p-module is linear]
+        ≃*  GL (Fin 2) (ZMod p)
+              [Matrix.GeneralLinearGroup.toLin' with standard basis] -/
 lemma aut_of_CpCp (p : ℕ) [hp : Fact p.Prime] :
     Nonempty (MulAut (CyclicGroup p × CyclicGroup p) ≃* GL (Fin 2) (ZMod p)) := by
   -- Step 1: strip the Multiplicative wrapper
