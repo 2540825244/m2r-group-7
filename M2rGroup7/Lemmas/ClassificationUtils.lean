@@ -39,7 +39,6 @@ lemma semidirectProduct_iso_if_range_eq
     Nonempty (SemidirectProduct H K f_1 ≃* SemidirectProduct H K f_2) := by
   -- k is a generator of K
   obtain ⟨k, hk⟩ := IsCyclic.exists_generator (α := K)
-
   have : ∃ β : (MulAut K), ∀ x : K, f_2 x = f_1 (β x) := by
     have hrange_f1 : f_1.range = Subgroup.zpowers (f_1 k) := by
       rw [MonoidHom.range_eq_map, ← (Subgroup.eq_top_iff' _).mpr hk, MonoidHom.map_zpowers]
@@ -113,12 +112,10 @@ lemma semidirectProduct_iso_if_range_eq
       refine ⟨β, fun x => ?_⟩
       have heq : f_2 = f_1.comp β.toMonoidHom :=
         monoidHom_eq_of_generator_eq hk (by
-          show f_2 k = f_1 (β k)
+          change f_2 k = f_1 (β k)
           rw [show β k = k ^ n from rfl, map_zpow, hn])
       exact congr_fun (congr_arg DFunLike.coe heq) x
-
   obtain ⟨β, hβ⟩ := this
-
   exact semidirectProduct_iso_of_conjugate_action 1 β (by simp [hβ])
 
 /-- If K is cyclic p-group and Aut(H) is also cyclic, then two homomorphisms f g : K → Aut(H) define
@@ -126,11 +123,11 @@ lemma semidirectProduct_iso_if_range_eq
 lemma semidirectProduct_iso_if_range_card_eq
     {H K : Type*} {p m : ℕ} [Group H] [Group K] [IsCyclic K] [Finite H]
     (hp : Fact p.Prime) (h_p_group : Nat.card K = p ^ m)
-    (f_1 f_2 : K →* MulAut H) (h_mul_aut_cyclic : IsCyclic (MulAut H)) (h_range_card_eq : Nat.card f_1.range = Nat.card f_2.range) :
+    (f_1 f_2 : K →* MulAut H) (h_mul_aut_cyclic : IsCyclic (MulAut H))
+    (h_range_card_eq : Nat.card f_1.range = Nat.card f_2.range) :
     Nonempty (SemidirectProduct H K f_1 ≃* SemidirectProduct H K f_2) := by
       -- 1. Prove the ambient group order is positive
       have h_pos : Nat.card (MulAut H) > 0 := Nat.card_pos
-
       -- 2. Apply the uniqueness lemma
       have h' : f_1.range = f_2.range := by
         exact cyclic_subgroup_of_cyclic_group_is_unique
@@ -140,7 +137,6 @@ lemma semidirectProduct_iso_if_range_card_eq
           f_2.range
           rfl
           h_range_card_eq.symm
-
       grind [semidirectProduct_iso_if_range_eq]
 
 /-- Given f : C_p × C_p →* Aut(C_q) with image of order p, and σ a generator of f.range
@@ -302,7 +298,7 @@ lemma exists_generators_of_CpCp_action
     β : Aut(C_p × C_p) such that f_2 = f_1 ∘ β. -/
 lemma exists_aut_of_CpCp_conjugating_actions
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (h_pdvd : p ∣ q - 1)
+    (_h_pdvd : p ∣ q - 1)
     (f_1 f_2 : CyclicGroup p × CyclicGroup p →* MulAut (CyclicGroup q))
     (hf1_range : Nat.card f_1.range = p)
     (hf2_range : Nat.card f_2.range = p) :
@@ -525,7 +521,7 @@ lemma range_card_dvd_two_of_C2C2_hom {q : ℕ} [hq : Fact q.Prime]
       change (a ^ 2, b ^ 2) = (1, 1)
       rw [h_two a, h_two b]
     apply Subtype.ext
-    show y ^ 2 = 1
+    change y ^ 2 = 1
     rw [← hx, ← map_pow, hx2, map_one]
   obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := (f.range : Subgroup _))
   have h_ord_g : orderOf g ∣ 2 := orderOf_dvd_of_pow_eq_one (h_sq g)

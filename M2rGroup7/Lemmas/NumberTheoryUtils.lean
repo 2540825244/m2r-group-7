@@ -49,7 +49,7 @@ lemma two_le_min_two_factorization_two_of_one_mod_four {q : ℕ} [hq : Fact q.Pr
   Nat.le_min.mpr ⟨le_refl _, two_le_factorization_two_of_prime_one_mod_four h⟩
 
 /-- For q prime, q ≡ 3 (mod 4): gcd(4, q - 1) = 2. -/
-lemma gcd_four_of_prime_three_mod_four {q : ℕ} [hq : Fact q.Prime]
+lemma gcd_four_of_prime_three_mod_four {q : ℕ} [Fact q.Prime]
     (h : q ≡ 3 [MOD 4]) : Nat.gcd 4 (q - 1) = 2 := by
   have hmod : q % 4 = 3 := h
   have h2_dvd_gcd : 2 ∣ Nat.gcd 4 (q - 1) :=

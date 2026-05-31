@@ -54,19 +54,20 @@ lemma cyclic_subgroup_of_cyclic_group_is_unique {n d : ℕ} [Group G] [IsCyclic 
     obtain ⟨g, hg_spec⟩ := (inferInstance : IsCyclic G).exists_generator
     have hg_order : orderOf g = n := by
         rw [orderOf_eq_card_of_forall_mem_zpowers hg_spec, h_ord]
-    have h_d_pos : 0 < d := Nat.pos_of_dvd_of_pos (by grind [Subgroup.card_subgroup_dvd_card]) h_n_pos
-    have h_nd_pos : 0 < n / d := Nat.div_pos (Nat.le_of_dvd h_n_pos (by grind [Subgroup.card_subgroup_dvd_card])) h_d_pos
+    have h_d_pos : 0 < d :=
+        Nat.pos_of_dvd_of_pos (by grind [Subgroup.card_subgroup_dvd_card]) h_n_pos
+    have h_nd_pos : 0 < n / d :=
+        Nat.div_pos (Nat.le_of_dvd h_n_pos (by grind [Subgroup.card_subgroup_dvd_card])) h_d_pos
     -- The canonical subgroup of order d is H = zpowers (g^(n/d))
     let g' := g ^ (n / d)
     have h_g'_order : orderOf g' = d := by
-        show orderOf (g ^ (n / d)) = d
+        change orderOf (g ^ (n / d)) = d
         have hdvd : d ∣ orderOf g := hg_order.symm ▸ (by grind [Subgroup.card_subgroup_dvd_card])
         have hne  : orderOf g ≠ 0  := hg_order.symm ▸ h_n_pos.ne'
         have := orderOf_pow_orderOf_div hne hdvd
         rwa [hg_order] at this
     let H := Subgroup.zpowers g'
     have h_H_card : Nat.card H = d := (Nat.card_zpowers g').trans h_g'_order
-
     -- Local helper: any subgroup of order d equals H
     have h_eq (K : Subgroup G) (hK : Nat.card K = d) : K = H := by
         -- Since G = zpowers g, every subgroup satisfies K = zpowers (g^m) for some m
@@ -81,7 +82,8 @@ lemma cyclic_subgroup_of_cyclic_group_is_unique {n d : ℕ} [Group G] [IsCyclic 
             have h_order_eq : n / Nat.gcd n m = d := by
                 have := (orderOf_pow g).symm.trans h_m_order; exact hg_order ▸ this
             have h_n_eq : n = Nat.gcd n m * d :=
-                calc n = n / Nat.gcd n m * Nat.gcd n m := (Nat.div_mul_cancel (Nat.gcd_dvd_left n m)).symm
+                calc n = n / Nat.gcd n m * Nat.gcd n m :=
+                        (Nat.div_mul_cancel (Nat.gcd_dvd_left n m)).symm
                      _ = d * Nat.gcd n m               := by rw [h_order_eq]
                      _ = Nat.gcd n m * d               := mul_comm _ _
             -- n/d = Nat.gcd n m * d / d = Nat.gcd n m (avoid rewriting n inside Nat.gcd)
@@ -97,20 +99,21 @@ lemma cyclic_subgroup_of_cyclic_group_is_unique {n d : ℕ} [Group G] [IsCyclic 
             have h_mul : n / d * Nat.gcd d j = n / d :=
                 calc n / d * Nat.gcd d j
                     = Nat.gcd (n / d * d) (n / d * j) := (Nat.gcd_mul_left _ _ _).symm
-                  _ = Nat.gcd n m                      := by rw [Nat.div_mul_cancel ((by grind [Subgroup.card_subgroup_dvd_card])), ← hj]
+                  _ = Nat.gcd n m                      := by
+                      rw [Nat.div_mul_cancel ((by grind [Subgroup.card_subgroup_dvd_card])), ← hj]
                   _ = n / d                            := h_gcd_eq
             have h_eq := mul_left_cancel₀ h_nd_pos.ne' (h_mul.trans (mul_one _).symm)
             rwa [Nat.gcd_comm] at h_eq
         -- K ≤ H: g'^j = g^m ∈ H = zpowers g'
         have hKH : K ≤ H :=
-            hKm.symm ▸ h_gm_eq.symm ▸ Subgroup.zpowers_le.mpr (H.pow_mem (Subgroup.mem_zpowers g') j)
+            hKm.symm ▸ h_gm_eq.symm ▸
+              Subgroup.zpowers_le.mpr (H.pow_mem (Subgroup.mem_zpowers g') j)
         -- H ≤ K: g' ∈ K = zpowers (g'^j) by mem_zpowers_pow_iff (gcd(j, d) = 1)
         have hHK : H ≤ K := by
             apply Subgroup.zpowers_le.mpr
             rw [hKm, h_gm_eq, mem_zpowers_pow_iff, h_g'_order]
             exact h_gcd_jd
         exact le_antisymm hKH hHK
-
     -- Use the helper to show both subgroups equal H, and apply transitivity
     have hK1 : K1 = H := h_eq K1 h1
     have hK2 : K2 = H := h_eq K2 h2
@@ -126,41 +129,34 @@ instance {p : ℕ} [h : Fact p.Prime] : NeZero (p * (p - 1)) := by
   exact ⟨Nat.mul_ne_zero (by omega) (by omega)⟩
 
 /-- Aut(C_(p^2)) is isomorphic to C_(p * (p - 1)) -/
-lemma aut_of_cyclic_p2 {p : ℕ} [h_p_prime : Fact p.Prime] : Nonempty (MulAut (CyclicGroup (p ^ 2)) ≃* CyclicGroup (p * (p - 1))) := by
+lemma aut_of_cyclic_p2 {p : ℕ} [h_p_prime : Fact p.Prime] :
+    Nonempty (MulAut (CyclicGroup (p ^ 2)) ≃* CyclicGroup (p * (p - 1))) := by
     -- Aut(C_(p^2)) ≃* (ZMod (p ^ 2))ˣ
     have h_aut_c_p2_iso_cyclic : MulAut (CyclicGroup (p ^ 2)) ≃* (ZMod (p ^ 2))ˣ := by
         have h_aut := IsCyclic.mulAutMulEquiv (CyclicGroup (p ^ 2))
         rw [card_cyclicGroup (p ^ 2)] at h_aut
         exact h_aut
-
     -- (ZMod (p ^ 2))ˣ is cyclic
     have h_units_cyclic : IsCyclic (ZMod (p ^ 2))ˣ := by
         by_cases h_p2 : p = 2
         · subst h_p2
           exact ZMod.isCyclic_units_four
         · exact ZMod.isCyclic_units_of_prime_pow p h_p_prime.out h_p2 2
-
     have h_zmod_unit_order : Nat.card ((ZMod (p ^ 2))ˣ) = (p ^ 2).totient := by
         have := _root_.ZMod.card_units_eq_totient (p ^ 2)
         rw [Nat.card_eq_fintype_card]
         exact this
-
     have h_p2_totient : (p ^ 2).totient = p * (p - 1) := by
         have := Nat.totient_prime_pow_succ h_p_prime.out 1
         grind
-
     rw [h_p2_totient] at h_zmod_unit_order
-
     have h_iso_helper : Multiplicative (ZMod (p * (p - 1))) ≃* (ZMod (p ^ 2))ˣ := by
         have h' := zmodCyclicMulEquiv h_units_cyclic
         rw [h_zmod_unit_order] at h'
         exact h'
-
     have h_iso : CyclicGroup (p * (p - 1)) ≃* (ZMod (p ^ 2))ˣ := h_iso_helper
-
     have h_aut_equiv : MulAut (CyclicGroup (p ^ 2)) ≃* CyclicGroup (p * (p - 1)) :=
         h_aut_c_p2_iso_cyclic.trans h_iso.symm
-
     exact Nonempty.intro h_aut_equiv
 
 /-- For a prime `q`, the automorphism group of `CyclicGroup q` is cyclic. -/

@@ -98,6 +98,10 @@ This yields an additional isomorphism class: `(C_2 × C_2) ⋊ C_3 ≃ A_4`. -/
 
 private instance instFactPrimeThree : Fact (Nat.Prime 3) := ⟨by norm_num⟩
 
+private lemma sq_eq_one_cyclicGroup2 (x : CyclicGroup 2) : x * x = 1 := by
+  have h := pow_card_eq_one' (G := CyclicGroup 2) (x := x)
+  rwa [card_cyclicGroup, sq] at h
+
 /-- The order-3 cyclic shift automorphism `(x, y) ↦ (x * y, x)` of
     `CyclicGroup 2 × CyclicGroup 2`. Together with its square and the identity
     this generates the unique Sylow-3 subgroup (= `A_3`) of
@@ -108,17 +112,13 @@ noncomputable def c2c2OrderThreeAut :
   invFun p := (p.2, p.1 * p.2)
   left_inv := by
     rintro ⟨x, y⟩
-    have hx2 : x * x = 1 := by
-      have h := pow_card_eq_one' (G := CyclicGroup 2) (x := x)
-      rwa [card_cyclicGroup, sq] at h
+    have hx2 : x * x = 1 := sq_eq_one_cyclicGroup2 x
     refine Prod.ext rfl ?_
     show (x * y) * x = y
     rw [mul_assoc, mul_comm y x, ← mul_assoc, hx2, one_mul]
   right_inv := by
     rintro ⟨x, y⟩
-    have hy2 : y * y = 1 := by
-      have h := pow_card_eq_one' (G := CyclicGroup 2) (x := y)
-      rwa [card_cyclicGroup, sq] at h
+    have hy2 : y * y = 1 := sq_eq_one_cyclicGroup2 y
     refine Prod.ext ?_ rfl
     show y * (x * y) = x
     rw [mul_comm y (x * y), mul_assoc, hy2, mul_one]
@@ -131,9 +131,7 @@ noncomputable def c2c2OrderThreeAut :
 /-- `c2c2OrderThreeAut` has order 3. -/
 lemma orderOf_c2c2OrderThreeAut : orderOf c2c2OrderThreeAut = 3 := by
   haveI : Fact (Nat.Prime 3) := instFactPrimeThree
-  have hsq : ∀ x : CyclicGroup 2, x * x = 1 := fun x => by
-    have h := pow_card_eq_one' (G := CyclicGroup 2) (x := x)
-    rwa [card_cyclicGroup, sq] at h
+  have hsq : ∀ x : CyclicGroup 2, x * x = 1 := sq_eq_one_cyclicGroup2
   refine orderOf_eq_prime ?_ ?_
   · have hpow : c2c2OrderThreeAut ^ 3 =
         c2c2OrderThreeAut * c2c2OrderThreeAut * c2c2OrderThreeAut := by
@@ -416,16 +414,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
               ↥(↑P : Subgroup G) ⋊[φ] ↥K ≃*
                 SemidirectProduct (CyclicGroup 2 × CyclicGroup 2) (CyclicGroup 3) φ' :=
             SemidirectProduct.congr' (φ₁ := φ) (fn := eP) (fg := eK)
-          have hφ'_ne : φ' ≠ 1 := by
-            intro h_eq
-            apply h_phi_triv
-            refine MonoidHom.ext fun k => ?_
-            have h1 : φ' (eK k) = 1 := by rw [h_eq]; simp
-            have h2 : φ' (eK k) = (MulAut.congr eP) (φ k) := by
-              show ((MulAut.congr eP).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom) (eK k) = _
-              simp [MulEquiv.symm_apply_apply]
-            rw [h2] at h1
-            exact (MulEquiv.map_eq_one_iff (MulAut.congr eP)).mp h1
+          have hφ'_ne : φ' ≠ 1 := transported_action_ne_one eP eK h_phi_triv
           have h_range_dvd_3 : Nat.card φ'.range ∣ 3 := by
             have h := Subgroup.card_range_dvd φ'
             rw [card_cyclicGroup] at h
@@ -615,16 +604,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
               SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2) φ' :=
           SemidirectProduct.congr' (φ₁ := φ) (fn := eQ) (fg := eK)
         -- φ' ≠ 1 since φ ≠ 1
-        have hφ'_ne : φ' ≠ 1 := by
-          intro h_eq
-          apply h_phi_triv
-          refine MonoidHom.ext fun k => ?_
-          have h1 : φ' (eK k) = 1 := by rw [h_eq]; simp
-          have h2 : φ' (eK k) = (MulAut.congr eQ) (φ k) := by
-            show ((MulAut.congr eQ).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom) (eK k) = _
-            simp [MulEquiv.symm_apply_apply]
-          rw [h2] at h1
-          exact (MulEquiv.map_eq_one_iff (MulAut.congr eQ)).mp h1
+        have hφ'_ne : φ' ≠ 1 := transported_action_ne_one eQ eK h_phi_triv
         -- |Im(φ')| ∣ 2: every element of φ'.range has order ≤ 2 (since C_2 × C_2
         -- has exponent 2), and φ'.range is cyclic (subgroup of cyclic Aut(C_q)).
         have h_range_dvd_2 : Nat.card φ'.range ∣ 2 := range_card_dvd_two_of_C2C2_hom φ'
