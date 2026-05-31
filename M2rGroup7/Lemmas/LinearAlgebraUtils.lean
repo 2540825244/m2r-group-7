@@ -80,7 +80,7 @@ theorem gl2_order_two_classification (hp2 : p ≠ 2) (A : GL (Fin 2) (ZMod p))
   · -- A ≠ -I: A is conjugate to diag(1,-1)
     left
     -- Strategy: since M² = I, M ≠ I, M ≠ -I, the minimal polynomial of M divides
-    -- (X-1)(X+1), which is squarefree (p odd). Hence M is semisimple. Both eigenvalues
+    -- (X-1)(X+1), which is squarefree (p odd). Both eigenvalues
     -- ±1 lie in 𝔽_p, so M is diagonalizable over 𝔽_p with eigenvalues {1, -1}.
     -- Concretely: since M ≠ -I, the matrix M + I ≠ 0, so pick a nonzero column v₊
     -- of M + I; it satisfies M * v₊ = v₊ (a 1-eigenvector, since (M-I)(M+I) = M²-I = 0).
