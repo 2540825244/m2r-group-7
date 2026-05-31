@@ -1,58 +1,102 @@
-% Blueprint: Conjugacy classes of subgroups of order q of GL
+% Blueprint: Conjugacy classes of subgroups of order q of GL_2(p)
 % Created by Numina
 
 \begin{document}
 
-### Theorem
-Let $p$ and $q$ be distinct primes with $q > 2$. The number of conjugacy classes of subgroups of order $q$ in $G = \text{GL}_2(p)$ is:
-$$s_q(\text{GL}_2(p)) = \frac{q+3}{2}\Delta^q_{p-1} + \Delta^q_{p+1}$$
+\begin{theorem}[Conjugacy classes of order-$q$ subgroups of $\operatorname{GL}_2(\mathbb{F}_p)$]\label{thm:conj-classes-order-q}
+\lean{ConjugacyClassesOrderQ.conjClasses_order_q_GL_two}
+\leanfile{M2rGroup7/ConjugacyClassesOrderQ.lean}
+Let $p$ and $q$ be distinct primes with $q > 2$. The number of conjugacy classes of subgroups of order $q$ in $G = \operatorname{GL}_2(\mathbb{F}_p)$ is
+\[
+  s_q\!\bigl(\operatorname{GL}_2(\mathbb{F}_p)\bigr)
+  \;=\;
+  \begin{cases}
+    \dfrac{q+3}{2}, & \text{if } q \mid (p-1),\\[4pt]
+    1, & \text{if } q \mid (p+1),\\[4pt]
+    0, & \text{otherwise.}
+  \end{cases}
+\]
+Equivalently, with $\mathbf{1}_{q\mid n}$ the indicator,
+\[
+  s_q\!\bigl(\operatorname{GL}_2(\mathbb{F}_p)\bigr)
+  \;=\;
+  \tfrac{q+3}{2}\,\mathbf{1}_{q\mid (p-1)} \;+\; \mathbf{1}_{q\mid (p+1)} .
+\]
+\end{theorem}
 
-### Proof
+\begin{proof}
+Set $G = \operatorname{GL}_2(\mathbb{F}_p)$ and let $V = \mathbb{F}_p^2$. Any subgroup $H \le G$ of order $q$ is cyclic since $q$ is prime, so $H = \langle M \rangle$ for some $M \in G$ of order $q$. Since $q > 2$ and $p,q$ are distinct primes, $q$ cannot divide both $p-1$ and $p+1$ (else $q \mid 2$). This gives two mutually exclusive cases.
 
-Let $G = \text{GL}_2(p)$ and let $V = \mathbb{F}_p^2$ be the 2-dimensional vector space over the finite field $\mathbb{F}_p$. Any subgroup $H \leqslant G$ of order $q$ is cyclic because $q$ is prime. Thus, $H = \langle M \rangle$ for some matrix $M \in G$ of order $q$. Since $q > 2$ is an odd prime and $p$ is a distinct prime, $q$ cannot divide both $p-1$ and $p+1$ (otherwise $q$ would divide their difference, $2$). This yields two mutually exclusive cases.
+\medskip\noindent\emph{Case 1: $q \mid (p+1)$, so $q \nmid (p-1)$.} By Lemma~\ref{lem:case-pp1}, all subgroups of order $q$ are conjugate, giving exactly $1$ class.
 
-#### Case 1: $q \mid (p+1)$ and $q \nmid (p-1)$
+\medskip\noindent\emph{Case 2: $q \mid (p-1)$, so $q \nmid (p+1)$.} By Lemma~\ref{lem:case-pm1}, the number of conjugacy classes is $\tfrac{q+3}{2}$.
 
-We first establish that any matrix $M \in G$ of order $q$ has no eigenvalues in the base field $\mathbb{F}_p$. Suppose for contradiction that $\lambda \in \mathbb{F}_p$ is an eigenvalue of $M$, so $Mv = \lambda v$ for some non-zero $v \in V$. Since $M^q = I$, we must have $v = M^q v = \lambda^q v$, which implies $\lambda^q = 1$ in $\mathbb{F}_p$. By Lagrange's Theorem, the multiplicative order of $\lambda$ in $\mathbb{F}_p^*$ must divide $|\mathbb{F}_p^*| = p-1$. Because $q \nmid (p-1)$, the order of $\lambda$ cannot be $q$. Thus, the order of $\lambda$ is $1$, meaning $\lambda = 1$. 
+\medskip\noindent\emph{Other case: $q \nmid (p-1)$ and $q \nmid (p+1)$.} By Lemma~\ref{lem:no-order-q}, there are no elements of order $q$ in $G$, hence no subgroups of order $q$ and $0$ classes.
 
-If $\lambda = 1$ is an eigenvalue, the characteristic polynomial of $M$ over $\mathbb{F}_p$ must be $f(x) = (x-1)(x-d)$ for some $d \in \mathbb{F}_p$. Since $d$ is an eigenvalue of $M$ in $\mathbb{F}_p$, the same argument forces $d^q = 1$ in $\mathbb{F}_p$. Since $q \nmid (p-1)$, we must have $d = 1$, so $f(x) = (x-1)^2$. Because $M^q - I = 0$, the minimal polynomial of $M$ must divide $x^q - 1$. Since $q$ and $p$ are distinct primes, $x^q - 1$ has no multiple roots in any extension of $\mathbb{F}_p$. Thus, the minimal polynomial of $M$ has simple roots, implying $M$ is diagonalizable over its splitting field. Since its only eigenvalue is $1$ and it is diagonalizable, we must have $M = I$. This contradicts the fact that $M$ has order $q > 2$. Thus, $M$ has no eigenvalues in $\mathbb{F}_p$.
+Combining yields the stated formula. $\blacksquare$
+\end{proof}
 
-Since $M$ has no eigenvalues in $\mathbb{F}_p$, its degree-2 characteristic polynomial $f(x) = x^2 - tx + d \in \mathbb{F}_p[x]$ has no roots in $\mathbb{F}_p$ and is therefore irreducible. We can construct a quadratic field extension $K = \mathbb{F}_p[x]/\langle f(x) \rangle \cong \mathbb{F}_{p^2}$. In this field, the element $\alpha = x + \langle f(x) \rangle$ is a root of $f(x)$. Since $M^q = I$, we have $\alpha^q = 1$. Because $q \nmid (p-1)$, $\alpha \notin \mathbb{F}_p$, meaning $\alpha$ is a primitive $q$-th root of unity. 
+\begin{lemma}\label{lem:order-divides-p2-1}
+\lean{ConjugacyClassesOrderQ.order_q_divides_p2_sub_one}
+\leanfile{M2rGroup7/ConjugacyClassesOrderQ.lean}
+\leanok
+Let $p,q$ be distinct primes. If $M \in \operatorname{GL}_2(\mathbb{F}_p)$ has order $q$, then $q \mid (p^2 - 1) = (p-1)(p+1)$.
+\end{lemma}
 
-The multiplicative group $K^*$ is cyclic of order $p^2-1$. Since $q \mid (p+1)$, we have $q \mid (p-1)(p+1) = p^2-1$. Thus, $K^*$ contains a unique cyclic subgroup of order $q$. Let $\omega \in K^*$ generate this unique subgroup. Every primitive $q$-th root of unity in $K$ must be of the form $\omega^j$ for some $1 \leqslant j < q$. 
+\begin{proof}
+The order of $\operatorname{GL}_2(\mathbb{F}_p)$ is $(p^2-1)(p^2-p) = p\,(p-1)^2(p+1)$. By Lagrange, $q \mid |G|$. Since $q \ne p$ is prime, $q \mid (p-1)^2(p+1)$, hence $q \mid (p-1)(p+1) = p^2-1$.
+\end{proof}
 
-Now, let $H_1 = \langle M_1 \rangle$ and $H_2 = \langle M_2 \rangle$ be two subgroups of order $q$ in $G$. The roots of the characteristic polynomial of $M_1$ are $\{\omega^a, \omega^{ap}\}$ for some $1 \leqslant a < q$, and the roots of the characteristic polynomial of $M_2$ are $\{\omega^b, \omega^{bp}\}$ for some $1 \leqslant b < q$. Since $q$ is prime, we can find an integer $k \in \{1, \dots, q-1\}$ such that $kb \equiv a \pmod q$. The matrix $M_2^k$ is a generator of $H_2$ and its eigenvalues are $\{(\omega^b)^k, (\omega^{bp})^k\} = \{\omega^a, \omega^{ap}\}$. Thus, $M_1$ and $M_2^k$ share the exact same irreducible characteristic polynomial $h(x) = x^2 - Tx + D$.
+\begin{lemma}\label{lem:no-order-q}
+\lean{ConjugacyClassesOrderQ.no_subgroup_of_order_q}
+\leanfile{M2rGroup7/ConjugacyClassesOrderQ.lean}
+\leanok
+Let $p,q$ be distinct primes with $q > 2$, $q \nmid (p-1)$ and $q \nmid (p+1)$. Then $\operatorname{GL}_2(\mathbb{F}_p)$ has no element of order $q$, hence no subgroup of order $q$.
+\end{lemma}
 
-For any matrix $M \in G$ with irreducible characteristic polynomial $x^2 - Tx + D$, we can choose any non-zero vector $v \in V$. Since $M$ has no eigenvalues, $Mv$ is not a multiple of $v$, so $\{v, Mv\}$ is a basis of $V$. Under this basis, because $M(Mv) = M^2 v = TMv - Dv$, the matrix representation of the linear transformation is the companion matrix:
-$$C = \begin{pmatrix} 0 & -D \\ 1 & T \end{pmatrix}$$
-Consequently, both $M_1$ and $M_2^k$ are conjugate to the same companion matrix $C$. By transitivity, they are conjugate to each other, so there exists some $P \in G$ such that $P^{-1} M_1 P = M_2^k$. This implies $P^{-1} H_1 P = H_2$, proving that any two subgroups of order $q$ are conjugate. Thus, there is exactly $1$ conjugacy class of subgroups of order $q$ when $q \mid (p+1)$.
+\begin{proof}
+By Lemma~\ref{lem:order-divides-p2-1}, an element of order $q$ would force $q \mid (p-1)(p+1)$, which contradicts the hypothesis.
+\end{proof}
 
-#### Case 2: $q \mid (p-1)$ and $q \nmid (p+1)$
+\begin{lemma}\label{lem:case-pp1}
+\lean{ConjugacyClassesOrderQ.case_q_dvd_p_plus_one}
+\leanfile{M2rGroup7/ConjugacyClassesOrderQ.lean}
+Let $p,q$ be distinct primes with $q > 2$ and $q \mid (p+1)$ (so $q \nmid (p-1)$). Then any two subgroups of $\operatorname{GL}_2(\mathbb{F}_p)$ of order $q$ are conjugate, and there exists at least one such subgroup.
+\end{lemma}
 
-We first show that any subgroup $H = \langle M \rangle$ of order $q$ must have eigenvalues in $\mathbb{F}_p$. If $M$ had no eigenvalues in $\mathbb{F}_p$, then by the proof in Case 1, its eigenvalues would lie in $\mathbb{F}_{p^2} \setminus \mathbb{F}_p$ and have order $q$. This would imply $q \mid (p^2-1)$ and $q \nmid (p-1)$, which requires $q \mid (p+1)$, contradicting our assumption that $q \nmid (p+1)$. Therefore, $M$ has eigenvalues in $\mathbb{F}_p$. 
+\begin{proof}
+We first show that any $M \in G$ of order $q$ has no eigenvalues in $\mathbb{F}_p$. If $\lambda \in \mathbb{F}_p$ is an eigenvalue, then $\lambda^q = 1$ in $\mathbb{F}_p^\times$, forcing the order of $\lambda$ to divide $q$. Since $q \nmid (p-1)$ the order is $1$, so $\lambda = 1$. Both eigenvalues of $M$ in $\overline{\mathbb{F}_p}$ would then be $1$. Since $\gcd(q,p)=1$, $x^q-1$ is separable, so $M$ is diagonalizable and equals $I$, contradicting order $q$.
 
-Since the eigenvalues of $M$ lie in $\mathbb{F}_p$, $M$ is diagonalizable over $\mathbb{F}_p$. Thus, up to conjugacy, every subgroup $H$ of order $q$ is a subgroup of the diagonal subgroup $D \cong C_{p-1} \times C_{p-1}$. Let $a \in \mathbb{F}_p^*$ be an element of order $q$. Any subgroup of order $q$ in $D$ is cyclic and generated by a diagonal matrix of the form $\text{diag}(a^i, a^j)$ where $(i, j) \not\equiv (0, 0) \pmod q$. We can classify these subgroups by a parameter $\ell \in \mathbb{F}_q \cup \{\infty\}$:
-* If $i \equiv 0 \pmod q$, we must have $j \not\equiv 0 \pmod q$. Rescaling the generator yields the subgroup $U_{\infty} = \langle \text{diag}(1, a) \rangle$.
-* If $i \not\equiv 0 \pmod q$, we can rescale the generator by raising it to the power $i^{-1} \pmod q$, which yields a unique generator of the form $\text{diag}(a, a^{\ell})$ for some $\ell \in \mathbb{F}_q$. This gives the subgroups $U_{\ell} = \langle \text{diag}(a, a^{\ell}) \rangle$.
+Thus the characteristic polynomial of $M$ is irreducible of degree $2$, and over $K = \mathbb{F}_p[x]/(f) \cong \mathbb{F}_{p^2}$ its roots are a primitive $q$-th root of unity $\omega$ and its Frobenius conjugate $\omega^p$. Since $K^\times$ is cyclic of order $p^2-1$ and $q \mid p^2-1$, the group of $q$-th roots of unity in $K$ is cyclic of order $q$, generated by $\omega$.
 
-The normalizer of $D$ in $G$ is the monomial group $I = C_2 \ltimes D$, where the non-trivial element of $C_2$ acts by swapping the diagonal entries. Under this swap, the generator of $U_{\ell}$ becomes $\text{diag}(a^{\ell}, a)$.
-* If $\ell \equiv 0$, the swap maps $U_0 = \langle \text{diag}(a, 1) \rangle$ to $\langle \text{diag}(1, a) \rangle = U_{\infty}$. Thus, $U_0$ and $U_{\infty}$ are conjugate.
-* If $\ell \not\equiv 0$, we can normalize the first entry of $\text{diag}(a^{\ell}, a)$ back to $a$ by raising it to the power $\ell^{-1} \pmod q$. This yields the generator $\text{diag}(a, a^{\ell^{-1}})$. Thus, the swap maps $U_{\ell}$ to $U_{\ell^{-1}}$.
+For any other $M' \in G$ of order $q$ with eigenvalues $\omega^b, \omega^{bp}$, choose $k$ with $kb \equiv a \pmod q$. Then $M'^k$ has eigenvalues $\omega^a, \omega^{ap}$, i.e.\ the same characteristic polynomial as $M$. Picking any $v \ne 0$, $\{v, Mv\}$ is a basis (since $M$ has no eigenline), and in this basis $M$ acts as a fixed companion matrix $C$. So $M$ and $M'^k$ are conjugate to $C$, hence to each other, and the subgroups they generate are conjugate.
 
-Therefore, two diagonal subgroups $U_{\ell}$ and $U_k$ are conjugate in $G$ if and only if $\ell$ and $k$ belong to the same orbit of the action $\ell \mapsto \ell^{-1}$ on the parameter space $\mathbb{F}_q \cup \{\infty\}$. The orbits under this action are:
-1. $\{0, \infty\}$, which forms $1$ orbit of size 2.
-2. $\{1\}$, which forms $1$ orbit of size 1 (since $1^{-1} \equiv 1$).
-3. $\{-1\}$ (or $q-1$), which forms $1$ orbit of size 1 (since $(-1)^{-1} \equiv -1$).
-4. The remaining $q-3$ elements of $\mathbb{F}_q^* \setminus \{1, -1\}$ do not equal their own inverses. Because $q > 2$ is prime, these elements pair up into exactly $\frac{q-3}{2}$ orbits of size 2.
+For existence: $\omega + \omega^p \in \mathbb{F}_p$ (it is Frobenius-fixed) and $\omega\,\omega^p = \omega^{p+1} = 1$ since $q \mid p+1$. So the polynomial $x^2 - tx + 1$ with $t = \omega + \omega^p$ is irreducible over $\mathbb{F}_p$, and its companion matrix lies in $G$ and has order $q$.
+\end{proof}
 
-The total number of orbits is:
-$$1 + 1 + 1 + \frac{q-3}{2} = 3 + \frac{q-3}{2} = \frac{q+3}{2}$$
+\begin{lemma}\label{lem:case-pm1}
+\lean{ConjugacyClassesOrderQ.case_q_dvd_p_minus_one}
+\leanfile{M2rGroup7/ConjugacyClassesOrderQ.lean}
+Let $p,q$ be distinct primes with $q > 2$ and $q \mid (p-1)$ (so $q \nmid (p+1)$). Then the number of conjugacy classes in $\operatorname{GL}_2(\mathbb{F}_p)$ of subgroups of order $q$ equals $\tfrac{q+3}{2}$.
+\end{lemma}
 
-Each orbit corresponds to exactly $1$ conjugacy class of subgroups of order $q$. Thus, there are exactly $\frac{q+3}{2}$ conjugacy classes of subgroups of order $q$ when $q \mid (p-1)$. 
+\begin{proof}
+By Lemma~\ref{lem:case-pp1}'s contrapositive: if $M$ has order $q$ and no eigenvalue in $\mathbb{F}_p$, then $q \mid p+1$, contradiction. Hence $M$ has an eigenvalue $\lambda \in \mathbb{F}_p^\times$ of order $q$, and since $\gcd(q,p)=1$ and $M^q=I$, $M$ is diagonalizable over $\mathbb{F}_p$. Up to conjugacy we may assume $H$ is contained in the diagonal torus $D \cong C_{p-1}^2$.
 
-By combining the two cases, we obtain the desired formula:
-$$s_q(\text{GL}_2(p)) = \frac{q+3}{2}\Delta^q_{p-1} + \Delta^q_{p+1}$$
+Let $a \in \mathbb{F}_p^\times$ be a fixed element of order $q$. The subgroups of order $q$ in $D$ are exactly
+\[
+  U_\ell := \langle \operatorname{diag}(a, a^\ell) \rangle, \quad \ell \in \mathbb{F}_q,
+  \qquad
+  U_\infty := \langle \operatorname{diag}(1, a) \rangle.
+\]
+The normalizer of $D$ in $G$ is the monomial group $N(D) = D \rtimes \langle \sigma \rangle$ where $\sigma$ swaps coordinates. Conjugation by $\sigma$ sends $U_\ell \mapsto U_{\ell^{-1}}$ for $\ell \in \mathbb{F}_q^\times$ and exchanges $U_0 \leftrightarrow U_\infty$.
 
-$\blacksquare$
+Moreover, by the Bruhat / double-coset description of $G$, any two diagonal subgroups of order $q$ conjugate in $G$ are already conjugate in $N(D)$. Hence the set of conjugacy classes is the set of orbits of the involution $\ell \mapsto \ell^{-1}$ on $\mathbb{F}_q \cup \{\infty\}$, where $0 \leftrightarrow \infty$.
+
+The orbits are: $\{0,\infty\}$, $\{1\}$, $\{-1\}$ (using $q>2$), and $\tfrac{q-3}{2}$ pairs $\{\ell,\ell^{-1}\}$ for $\ell \in \mathbb{F}_q^\times \setminus \{\pm 1\}$. Total
+\[
+  1 + 1 + 1 + \frac{q-3}{2} \;=\; \frac{q+3}{2}.
+\]
+\end{proof}
 
 \end{document}
