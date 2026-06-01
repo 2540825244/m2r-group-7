@@ -535,6 +535,227 @@ theorem two_abelian_subgroups_force_center_four {G : Type*} [Group G] [Finite G]
     exact Subgroup.card_le_of_le h_inter_in_center
   exact this
 
+/-- If a subgroup `H` of `G` contains `Z(G)` and `H/Z(G)` is cyclic, then `H`
+is abelian. The argument is: `Z(G) ∩ H` (i.e. `(Subgroup.center G).subgroupOf H`)
+is contained in `Z(H)` because anything central in `G` is central in `H`; then
+`H/Z(H)` is a quotient of `H/(Z(G).subgroupOf H)` hence cyclic, and
+`cyclic_center_quotient_abelian` applied to `H` gives commutativity. -/
+theorem subgroup_abelian_of_cyclic_quot_center {G : Type*} [Group G]
+    (H : Subgroup G)
+    (hcyc : IsCyclic (H ⧸ (Subgroup.center G).subgroupOf H)) :
+    ∀ a b : H, a * b = b * a := by
+  -- Step 1: Z(G).subgroupOf H ≤ Z(H).
+  have hz_le_zH : (Subgroup.center G).subgroupOf H ≤ Subgroup.center H := by
+    intro a ha
+    rw [Subgroup.mem_subgroupOf] at ha
+    rw [Subgroup.mem_center_iff]
+    intro g
+    apply Subtype.ext
+    show (g : G) * (a : G) = (a : G) * (g : G)
+    exact (Subgroup.mem_center_iff.mp ha) (g : G)
+  -- Step 2: (Z(G).subgroupOf H) is Normal in H (its elements are central in G).
+  haveI hnorm : ((Subgroup.center G).subgroupOf H).Normal := by
+    constructor
+    intro n hn h
+    rw [Subgroup.mem_subgroupOf] at hn ⊢
+    have hconj : ((h * n * h⁻¹ : H) : G) = ((n : H) : G) := by
+      show (h : G) * (n : G) * (h : G)⁻¹ = (n : G)
+      rw [(Subgroup.mem_center_iff.mp hn) (h : G), mul_assoc, mul_inv_cancel, mul_one]
+    rw [hconj]
+    exact hn
+  -- Step 3: H/(Z(G).subgroupOf H) →* H/Z(H) is surjective, so H/Z(H) is cyclic.
+  haveI : IsCyclic (H ⧸ Subgroup.center H) := by
+    have hsurj : Function.Surjective
+        (QuotientGroup.map ((Subgroup.center G).subgroupOf H) (Subgroup.center H)
+          (MonoidHom.id H) hz_le_zH) := by
+      apply QuotientGroup.map_surjective_of_surjective
+      · -- QuotientGroup.mk ∘ id is surjective.
+        intro x
+        refine Quotient.inductionOn' x ?_
+        intro a
+        exact ⟨a, rfl⟩
+    exact isCyclic_of_surjective _ hsurj
+  exact cyclic_center_quotient_abelian H ‹IsCyclic _›
+
+/-- Classification of groups of order $8$. Every group of order $8$ is
+isomorphic to one of $C_8$, $C_4 \times C_2$, $C_2 \times C_2 \times C_2$,
+$D_4$ (`DihedralGroup 4`), or $Q_8$ (`QuaternionGroup 2`).
+Blueprint label `lem:order-eight-classification`. Assumed as an external
+project-level dependency. -/
+theorem order_eight_classification {G : Type*} [Group G] (h : Nat.card G = 8) :
+    Nonempty (G ≃* CyclicGroup 8) ∨
+    Nonempty (G ≃* CyclicGroup 4 × CyclicGroup 2) ∨
+    Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ∨
+    Nonempty (G ≃* DihedralGroup 4) ∨
+    Nonempty (G ≃* QuaternionGroup 2) := by
+  sorry
+
+/-- There is no group $G$ of order $16$ with $|Z(G)| = 2$ and
+$G/Z(G) \cong C_2 \times C_2 \times C_2$.
+Blueprint label `thm:no-Z2cubed-quotient`. -/
+theorem no_Z2cubed_quotient {G : Type*} [Group G] [Finite G]
+    (h_sixteen : Nat.card G = 16) (h_center : Nat.card (Subgroup.center G) = 2) :
+    ¬ Nonempty ((G ⧸ Subgroup.center G) ≃*
+      CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) := by
+  sorry
+
+/-- With `|G| = 16`, `|Z(G)| = 2`, and `G/Z(G) ≅ D_4`, there exists an element
+`x ∈ G` of order 8. This corresponds to a generator of the cyclic-of-order-8
+preimage `G_1` of the unique cyclic order-4 subgroup of `D_4`.
+Blueprint label `lem:one-Gi-cyclic-order-eight`. -/
+theorem one_Gi_cyclic_order_eight {G : Type*} [Group G] [Finite G]
+    (h_sixteen : Nat.card G = 16) (h_center : Nat.card (Subgroup.center G) = 2)
+    (_hquot : Nonempty ((G ⧸ Subgroup.center G) ≃* DihedralGroup 4)) :
+    ∃ x : G, orderOf x = 8 := by
+  -- Step 1: extract the iso φ : G/Z(G) ≃* D_4.
+  obtain ⟨φ⟩ := _hquot
+  -- Step 2: take g₁ = φ⁻¹(r 1) ∈ G/Z(G), an element of order 4.
+  set qmap : G →* G ⧸ Subgroup.center G := QuotientGroup.mk' (Subgroup.center G)
+    with hqmap_def
+  let r1 : DihedralGroup 4 := DihedralGroup.r 1
+  let g₁ : G ⧸ Subgroup.center G := φ.symm r1
+  let M : Subgroup (G ⧸ Subgroup.center G) := Subgroup.zpowers g₁
+  -- |M| = 4 since orderOf g₁ = orderOf r1 = 4.
+  have hr1_order : orderOf r1 = 4 := by
+    change orderOf (DihedralGroup.r 1) = 4
+    rw [DihedralGroup.orderOf_r_one]
+  have hg₁_order : orderOf g₁ = 4 := by
+    change orderOf (φ.symm r1) = 4
+    rw [show (φ.symm r1 : G ⧸ Subgroup.center G) = φ.symm.toMonoidHom r1 from rfl,
+      orderOf_injective φ.symm.toMonoidHom φ.symm.injective, hr1_order]
+  have hM_card : Nat.card M = 4 := by
+    change Nat.card (Subgroup.zpowers g₁) = 4
+    rw [Nat.card_zpowers, hg₁_order]
+  have hM_cyc : IsCyclic M := by
+    change IsCyclic (Subgroup.zpowers g₁); infer_instance
+  -- Step 3: K = M.comap qmap is the preimage in G; |K| = 8.
+  let K : Subgroup G := M.comap qmap
+  have qmap_surj : Function.Surjective qmap :=
+    QuotientGroup.mk'_surjective (Subgroup.center G)
+  have hM_idx : M.index = 2 := by
+    have hi : M.index * Nat.card M = Nat.card (G ⧸ Subgroup.center G) :=
+      Subgroup.index_mul_card M
+    have hQ : Nat.card (G ⧸ Subgroup.center G) = 8 := by
+      have hmul := OrderSixteen.Prelim.quotient_by_center_card G
+      rw [h_center, h_sixteen] at hmul; omega
+    rw [hM_card, hQ] at hi; omega
+  have hK_idx : K.index = 2 := by
+    change (M.comap qmap).index = 2
+    rw [Subgroup.index_comap]
+    have hrange : qmap.range = ⊤ := MonoidHom.range_eq_top.mpr qmap_surj
+    rw [hrange, Subgroup.relIndex_top_right]; exact hM_idx
+  have hK_card : Nat.card K = 8 := by
+    have hk : K.index * Nat.card K = Nat.card G := Subgroup.index_mul_card K
+    rw [hK_idx, h_sixteen] at hk; omega
+  -- Step 4: K is abelian via subgroup_abelian_of_cyclic_quot_center.
+  -- We build the iso K / (Z.subgroupOf K) ≃* f.range = M, which is cyclic.
+  let f : K →* (G ⧸ Subgroup.center G) := qmap.comp K.subtype
+  have hf_range : f.range = M := by
+    ext y
+    simp only [MonoidHom.mem_range, MonoidHom.coe_comp, Function.comp_apply,
+      Subgroup.coe_subtype, f]
+    refine ⟨?_, ?_⟩
+    · rintro ⟨⟨x, hxK⟩, rfl⟩; exact hxK
+    · intro hyM
+      obtain ⟨x, rfl⟩ := qmap_surj y
+      exact ⟨⟨x, hyM⟩, rfl⟩
+  have hf_ker : f.ker = (Subgroup.center G).subgroupOf K := by
+    ext x
+    refine ⟨?_, ?_⟩
+    · intro hx
+      rw [MonoidHom.mem_ker] at hx
+      rw [Subgroup.mem_subgroupOf]
+      exact (QuotientGroup.eq_one_iff (x : G)).mp hx
+    · intro hx
+      rw [Subgroup.mem_subgroupOf] at hx
+      rw [MonoidHom.mem_ker]
+      exact (QuotientGroup.eq_one_iff (x : G)).mpr hx
+  haveI : IsCyclic f.range := by
+    rw [hf_range]; exact hM_cyc
+  haveI hker_normal : ((Subgroup.center G).subgroupOf K).Normal := by
+    rw [show (Subgroup.center G).subgroupOf K = f.ker from hf_ker.symm]
+    infer_instance
+  have iso_quot : K ⧸ (Subgroup.center G).subgroupOf K ≃* f.range :=
+    (QuotientGroup.quotientMulEquivOfEq hf_ker.symm).trans
+      (QuotientGroup.quotientKerEquivRange f)
+  haveI hKqcyc : IsCyclic (K ⧸ (Subgroup.center G).subgroupOf K) :=
+    isCyclic_of_surjective iso_quot.symm iso_quot.symm.surjective
+  have hK_abelian : ∀ a b : K, a * b = b * a :=
+    OrderSixteen.Prelim.subgroup_abelian_of_cyclic_quot_center K hKqcyc
+  -- Step 5: classify K. Five cases.
+  rcases OrderSixteen.Prelim.order_eight_classification hK_card with
+    hC8 | hC4C2 | hC2cube | hD4 | hQ8
+  · -- Case C_8: K is cyclic of order 8, so it has an element of order 8.
+    obtain ⟨ψ⟩ := hC8
+    haveI hKcyc : IsCyclic K :=
+      isCyclic_of_surjective ψ.symm ψ.symm.surjective
+    haveI : Finite K := Nat.finite_of_card_ne_zero (by rw [hK_card]; norm_num)
+    obtain ⟨k, hk⟩ := IsCyclic.exists_ofOrder_eq_natCard (α := K)
+    refine ⟨(k : G), ?_⟩
+    have hsub : orderOf (K.subtype k) = orderOf k :=
+      orderOf_injective K.subtype K.subtype_injective k
+    have : orderOf (k : G) = orderOf k := hsub
+    rw [this, hk, hK_card]
+  · -- Case C_4 × C_2: deeper commutator argument from the blueprint.
+    -- This is the [G, G] ∩ G_1 contradiction left as a known sub-stub.
+    sorry
+  · -- Case C_2^3: every element has order dividing 2, but g₁ ∈ M has order 4
+    -- and there's a preimage of g₁ in K — contradiction.
+    exfalso
+    obtain ⟨ψ⟩ := hC2cube
+    -- Every element y of (C_2)^3 satisfies y^2 = 1 (decidable check).
+    have hsq_cube : ∀ y : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2, y ^ 2 = 1 := by
+      decide
+    -- Transport this to K via ψ.
+    have hsq : ∀ x : K, x ^ 2 = 1 := by
+      intro x
+      have hψx_sq : (ψ x) ^ 2 = 1 := hsq_cube (ψ x)
+      have : ψ (x ^ 2) = 1 := by rw [map_pow]; exact hψx_sq
+      have hinj := ψ.injective
+      have heq1 : ψ (x ^ 2) = ψ 1 := by rw [this]; exact (map_one ψ).symm
+      exact hinj heq1
+    -- Now lift g₁ to K. Since qmap is surjective and g₁ ∈ M, there's x ∈ G with
+    -- qmap x = g₁; that x is in K = M.comap qmap.
+    obtain ⟨x0, hx0⟩ := qmap_surj g₁
+    have hx0K : x0 ∈ K := by
+      change x0 ∈ M.comap qmap
+      rw [Subgroup.mem_comap, hx0]
+      exact Subgroup.mem_zpowers g₁
+    set xK : K := ⟨x0, hx0K⟩
+    -- xK^2 = 1 in K.
+    have hxK2 : xK ^ 2 = 1 := hsq xK
+    -- Apply f: f(xK^2) = f(xK)^2 = g₁^2.
+    have hfxK : f xK = g₁ := by
+      change qmap (xK : G) = g₁
+      change qmap x0 = g₁
+      exact hx0
+    have hg1_sq : g₁ ^ 2 = 1 := by
+      have := congrArg f hxK2
+      rw [map_pow, map_one, hfxK] at this
+      exact this
+    have : orderOf g₁ ∣ 2 := orderOf_dvd_iff_pow_eq_one.mpr hg1_sq
+    rw [hg₁_order] at this
+    omega
+  · -- Case D_4: K ≅ D_4 is non-abelian, contradicting K abelian.
+    exfalso
+    obtain ⟨ψ⟩ := hD4
+    -- DihedralGroup 4 is non-abelian: r 1 and sr 0 do not commute.
+    have hne : (DihedralGroup.r (1 : ZMod 4)) * (DihedralGroup.sr 0)
+        ≠ (DihedralGroup.sr 0) * (DihedralGroup.r 1) := by decide
+    have habK := hK_abelian (ψ.symm (DihedralGroup.r 1)) (ψ.symm (DihedralGroup.sr 0))
+    have := congrArg ψ habK
+    rw [map_mul, map_mul, ψ.apply_symm_apply, ψ.apply_symm_apply] at this
+    exact hne this
+  · -- Case Q_8: K ≅ Q_8 is non-abelian, contradicting K abelian.
+    exfalso
+    obtain ⟨ψ⟩ := hQ8
+    have hne : (QuaternionGroup.a (1 : ZMod (2 * 2))) * (QuaternionGroup.xa 0)
+        ≠ (QuaternionGroup.xa 0) * (QuaternionGroup.a 1) := by decide
+    have habK := hK_abelian (ψ.symm (QuaternionGroup.a 1)) (ψ.symm (QuaternionGroup.xa 0))
+    have := congrArg ψ habK
+    rw [map_mul, map_mul, ψ.apply_symm_apply, ψ.apply_symm_apply] at this
+    exact hne this
+
 end OrderSixteen.Prelim
 
 namespace OrderSixteen
@@ -1654,7 +1875,267 @@ via `cyclic_center_quotient_abelian` and
 is ruled out by `thm:no-Z2cubed-quotient` (not yet formalized). -/
 theorem center_two_quotient_dihedral (h : Nat.card (Subgroup.center G) = 2) :
     Nonempty ((G ⧸ Subgroup.center G) ≃* DihedralGroup 4) := by
-  sorry
+  -- Step 1: |G/Z(G)| = 8.
+  have hQ : Nat.card (G ⧸ Subgroup.center G) = 8 := by
+    have hmul := OrderSixteen.Prelim.quotient_by_center_card G
+    rw [h, h_sixteen] at hmul
+    omega
+  -- A reusable helper. Given two distinct cyclic order-4 subgroups M₁, M₂ ≤ G/Z,
+  -- the pullbacks K₁, K₂ ≤ G are distinct, abelian, of order 8.
+  have helper : ∀ (M₁ M₂ : Subgroup (G ⧸ Subgroup.center G)),
+      M₁ ≠ M₂ → Nat.card M₁ = 4 → Nat.card M₂ = 4 →
+      IsCyclic M₁ → IsCyclic M₂ → False := by
+    intro M₁ M₂ hne hM₁card hM₂card hM₁cyc hM₂cyc
+    set qmap : G →* G ⧸ Subgroup.center G := QuotientGroup.mk' (Subgroup.center G)
+      with hqmap_def
+    set K₁ : Subgroup G := M₁.comap qmap with hK₁_def
+    set K₂ : Subgroup G := M₂.comap qmap with hK₂_def
+    -- Z ≤ K_i.
+    have hZ_le_K : ∀ M : Subgroup (G ⧸ Subgroup.center G),
+        Subgroup.center G ≤ M.comap qmap := by
+      intro M z hz
+      simp only [Subgroup.mem_comap]
+      rw [show qmap z = 1 from (QuotientGroup.eq_one_iff z).mpr hz]
+      exact M.one_mem
+    have hZK₁ : Subgroup.center G ≤ K₁ := hZ_le_K M₁
+    have hZK₂ : Subgroup.center G ≤ K₂ := hZ_le_K M₂
+    -- Cardinality: |K_i| = 8.
+    have qmap_surj : Function.Surjective qmap :=
+      QuotientGroup.mk'_surjective (Subgroup.center G)
+    have card_K : ∀ (M : Subgroup (G ⧸ Subgroup.center G)), Nat.card M = 4 →
+        Nat.card (M.comap qmap) = 8 := by
+      intro M hM
+      have hidx_comap : (M.comap qmap).index = M.index := by
+        rw [Subgroup.index_comap]
+        have hrange : qmap.range = ⊤ := MonoidHom.range_eq_top.mpr qmap_surj
+        rw [hrange, Subgroup.relIndex_top_right]
+      have hM_idx : M.index * Nat.card M = Nat.card (G ⧸ Subgroup.center G) :=
+        Subgroup.index_mul_card M
+      have hM_idx2 : M.index = 2 := by rw [hM, hQ] at hM_idx; omega
+      have hK_idx : (M.comap qmap).index * Nat.card (M.comap qmap) = Nat.card G :=
+        Subgroup.index_mul_card _
+      rw [hidx_comap, hM_idx2, h_sixteen] at hK_idx
+      omega
+    have hK₁card : Nat.card K₁ = 8 := card_K M₁ hM₁card
+    have hK₂card : Nat.card K₂ = 8 := card_K M₂ hM₂card
+    -- K_i is abelian.
+    have K_abelian : ∀ (M : Subgroup (G ⧸ Subgroup.center G)) (_ : IsCyclic M),
+        ∀ a b : (M.comap qmap), a * b = b * a := by
+      intro M hMcyc
+      apply OrderSixteen.Prelim.subgroup_abelian_of_cyclic_quot_center
+      set K := M.comap qmap with hK_def
+      let f : K →* (G ⧸ Subgroup.center G) := qmap.comp K.subtype
+      have hf_range : f.range = M := by
+        ext y
+        simp only [MonoidHom.mem_range, MonoidHom.coe_comp, Function.comp_apply,
+          Subgroup.coe_subtype, f]
+        constructor
+        · rintro ⟨⟨x, hxK⟩, rfl⟩
+          exact hxK
+        · intro hyM
+          obtain ⟨x, rfl⟩ := qmap_surj y
+          exact ⟨⟨x, hyM⟩, rfl⟩
+      have hf_ker : f.ker = (Subgroup.center G).subgroupOf K := by
+        ext x
+        constructor
+        · intro hx
+          rw [MonoidHom.mem_ker] at hx
+          rw [Subgroup.mem_subgroupOf]
+          exact (QuotientGroup.eq_one_iff (x : G)).mp hx
+        · intro hx
+          rw [Subgroup.mem_subgroupOf] at hx
+          rw [MonoidHom.mem_ker]
+          exact (QuotientGroup.eq_one_iff (x : G)).mpr hx
+      haveI : IsCyclic f.range := by
+        rw [show f.range = M from hf_range]
+        exact hMcyc
+      have hf_ker' : (Subgroup.center G).subgroupOf K = f.ker := hf_ker.symm
+      haveI hker_normal : ((Subgroup.center G).subgroupOf K).Normal := by
+        rw [hf_ker']
+        infer_instance
+      have iso : K ⧸ (Subgroup.center G).subgroupOf K ≃* f.range := by
+        refine (QuotientGroup.quotientMulEquivOfEq hf_ker.symm).trans ?_
+        exact QuotientGroup.quotientKerEquivRange f
+      exact isCyclic_of_surjective iso.symm iso.symm.surjective
+    have hK₁ab := K_abelian M₁ hM₁cyc
+    have hK₂ab := K_abelian M₂ hM₂cyc
+    -- K₁ ≠ K₂ via the correspondence theorem.
+    have hK_ne : K₁ ≠ K₂ := by
+      intro hKeq
+      apply hne
+      have hiso : (QuotientGroup.comapMk'OrderIso (Subgroup.center G)) M₁
+          = (QuotientGroup.comapMk'OrderIso (Subgroup.center G)) M₂ := by
+        apply Subtype.ext
+        exact hKeq
+      exact (QuotientGroup.comapMk'OrderIso (Subgroup.center G)).injective hiso
+    -- Apply two_abelian_subgroups_force_center_four.
+    have h_center_ge_4 : 4 ≤ Nat.card (Subgroup.center G) :=
+      OrderSixteen.Prelim.two_abelian_subgroups_force_center_four h_sixteen
+        K₁ K₂ hK₁card hK₂card hK_ne hK₁ab hK₂ab
+    omega
+  -- Step 2: Apply the order-8 classification to G/Z(G).
+  rcases OrderSixteen.Prelim.order_eight_classification hQ with
+    h1 | h2 | h3 | h4 | h5
+  · -- Case 1: G/Z(G) ≅ C_8, contradicting `order_eight_quotient_not_cyclic`.
+    exfalso
+    obtain ⟨φ⟩ := h1
+    have hcyc : IsCyclic (G ⧸ Subgroup.center G) :=
+      isCyclic_of_surjective φ.symm φ.symm.surjective
+    exact OrderSixteen.Prelim.order_eight_quotient_not_cyclic h_sixteen h hcyc
+  · -- Case 2: G/Z(G) ≅ C_4 × C_2 — produce two distinct cyclic order-4 subgroups.
+    exfalso
+    obtain ⟨φ⟩ := h2
+    let e₁ : CyclicGroup 4 × CyclicGroup 2 :=
+      (Multiplicative.ofAdd (1 : ZMod 4), 1)
+    let e₂ : CyclicGroup 4 × CyclicGroup 2 :=
+      (Multiplicative.ofAdd (1 : ZMod 4), Multiplicative.ofAdd (1 : ZMod 2))
+    let g₁ : G ⧸ Subgroup.center G := φ.symm e₁
+    let g₂ : G ⧸ Subgroup.center G := φ.symm e₂
+    let M₁ : Subgroup (G ⧸ Subgroup.center G) := Subgroup.zpowers g₁
+    let M₂ : Subgroup (G ⧸ Subgroup.center G) := Subgroup.zpowers g₂
+    have he₁_order : orderOf e₁ = 4 := by
+      change orderOf ((Multiplicative.ofAdd (1 : ZMod 4)),
+        (1 : CyclicGroup 2)) = 4
+      rw [Prod.orderOf, orderOf_one, orderOf_ofAdd_eq_addOrderOf,
+        ZMod.addOrderOf_one]
+      decide
+    have he₂_order : orderOf e₂ = 4 := by
+      change orderOf ((Multiplicative.ofAdd (1 : ZMod 4)),
+        (Multiplicative.ofAdd (1 : ZMod 2))) = 4
+      rw [Prod.orderOf, orderOf_ofAdd_eq_addOrderOf,
+        orderOf_ofAdd_eq_addOrderOf, ZMod.addOrderOf_one,
+        ZMod.addOrderOf_one]
+      decide
+    have hg₁_order : orderOf g₁ = 4 := by
+      change orderOf (φ.symm e₁) = 4
+      rw [show (φ.symm e₁ : G ⧸ Subgroup.center G) = φ.symm.toMonoidHom e₁ from rfl,
+        orderOf_injective φ.symm.toMonoidHom φ.symm.injective, he₁_order]
+    have hg₂_order : orderOf g₂ = 4 := by
+      change orderOf (φ.symm e₂) = 4
+      rw [show (φ.symm e₂ : G ⧸ Subgroup.center G) = φ.symm.toMonoidHom e₂ from rfl,
+        orderOf_injective φ.symm.toMonoidHom φ.symm.injective, he₂_order]
+    have hM₁_card : Nat.card M₁ = 4 := by
+      change Nat.card (Subgroup.zpowers g₁) = 4
+      rw [Nat.card_zpowers, hg₁_order]
+    have hM₂_card : Nat.card M₂ = 4 := by
+      change Nat.card (Subgroup.zpowers g₂) = 4
+      rw [Nat.card_zpowers, hg₂_order]
+    have hM₁_cyc : IsCyclic M₁ := by
+      change IsCyclic (Subgroup.zpowers g₁)
+      infer_instance
+    have hM₂_cyc : IsCyclic M₂ := by
+      change IsCyclic (Subgroup.zpowers g₂)
+      infer_instance
+    have hM_ne : M₁ ≠ M₂ := by
+      intro hMeq
+      have : (Subgroup.zpowers e₁ : Subgroup (CyclicGroup 4 × CyclicGroup 2))
+          = Subgroup.zpowers e₂ := by
+        have hmap_lemma : ∀ x : G ⧸ Subgroup.center G,
+            Subgroup.map φ.toMonoidHom (Subgroup.zpowers x) =
+              Subgroup.zpowers (φ x) := by
+          intro x
+          exact (MonoidHom.map_zpowers φ.toMonoidHom x).symm ▸ rfl
+        have := congr_arg (Subgroup.map φ.toMonoidHom) hMeq
+        rw [hmap_lemma, hmap_lemma, show φ g₁ = e₁ from φ.apply_symm_apply e₁,
+          show φ g₂ = e₂ from φ.apply_symm_apply e₂] at this
+        exact this
+      have he₂_mem : e₂ ∈ Subgroup.zpowers e₁ := by
+        rw [this]; exact Subgroup.mem_zpowers e₂
+      obtain ⟨k, hk⟩ := he₂_mem
+      have h_snd : (e₁ ^ k).2 = (1 : CyclicGroup 2) := by
+        rw [Prod.pow_snd]
+        change (1 : CyclicGroup 2) ^ k = 1
+        exact one_zpow k
+      have h_e2_snd : e₂.2 = Multiplicative.ofAdd (1 : ZMod 2) := rfl
+      have hofadd : (Multiplicative.ofAdd (1 : ZMod 2) : CyclicGroup 2) = 1 := by
+        rw [← h_e2_snd, ← hk]
+        exact h_snd
+      have hzmod : (1 : ZMod 2) = 0 :=
+        Multiplicative.ofAdd.injective hofadd
+      exact absurd hzmod (by decide)
+    exact helper M₁ M₂ hM_ne hM₁_card hM₂_card hM₁_cyc hM₂_cyc
+  · -- Case 3: G/Z(G) ≅ C_2 × C_2 × C_2, ruled out by `no_Z2cubed_quotient`.
+    exact absurd h3 (OrderSixteen.Prelim.no_Z2cubed_quotient h_sixteen h)
+  · -- Case 4: G/Z(G) ≅ D_4. This is the goal.
+    exact h4
+  · -- Case 5: G/Z(G) ≅ Q_8 — produce two distinct cyclic order-4 subgroups.
+    exfalso
+    obtain ⟨φ⟩ := h5
+    let e₁ : QuaternionGroup 2 := QuaternionGroup.a 1
+    let e₂ : QuaternionGroup 2 := QuaternionGroup.xa 0
+    let g₁ : G ⧸ Subgroup.center G := φ.symm e₁
+    let g₂ : G ⧸ Subgroup.center G := φ.symm e₂
+    let M₁ : Subgroup (G ⧸ Subgroup.center G) := Subgroup.zpowers g₁
+    let M₂ : Subgroup (G ⧸ Subgroup.center G) := Subgroup.zpowers g₂
+    have he₁_order : orderOf e₁ = 4 := by
+      change orderOf (QuaternionGroup.a (1 : ZMod (2 * 2))) = 4
+      rw [QuaternionGroup.orderOf_a]
+      decide
+    have he₂_order : orderOf e₂ = 4 := by
+      change orderOf (QuaternionGroup.xa (0 : ZMod (2 * 2))) = 4
+      exact QuaternionGroup.orderOf_xa _
+    have hg₁_order : orderOf g₁ = 4 := by
+      change orderOf (φ.symm e₁) = 4
+      rw [show (φ.symm e₁ : G ⧸ Subgroup.center G) = φ.symm.toMonoidHom e₁ from rfl,
+        orderOf_injective φ.symm.toMonoidHom φ.symm.injective, he₁_order]
+    have hg₂_order : orderOf g₂ = 4 := by
+      change orderOf (φ.symm e₂) = 4
+      rw [show (φ.symm e₂ : G ⧸ Subgroup.center G) = φ.symm.toMonoidHom e₂ from rfl,
+        orderOf_injective φ.symm.toMonoidHom φ.symm.injective, he₂_order]
+    have hM₁_card : Nat.card M₁ = 4 := by
+      change Nat.card (Subgroup.zpowers g₁) = 4
+      rw [Nat.card_zpowers, hg₁_order]
+    have hM₂_card : Nat.card M₂ = 4 := by
+      change Nat.card (Subgroup.zpowers g₂) = 4
+      rw [Nat.card_zpowers, hg₂_order]
+    have hM₁_cyc : IsCyclic M₁ := by
+      change IsCyclic (Subgroup.zpowers g₁)
+      infer_instance
+    have hM₂_cyc : IsCyclic M₂ := by
+      change IsCyclic (Subgroup.zpowers g₂)
+      infer_instance
+    have hM_ne : M₁ ≠ M₂ := by
+      intro hMeq
+      have hmap_lemma : ∀ x : G ⧸ Subgroup.center G,
+          Subgroup.map φ.toMonoidHom (Subgroup.zpowers x) =
+            Subgroup.zpowers (φ x) := by
+        intro x
+        exact (MonoidHom.map_zpowers φ.toMonoidHom x).symm ▸ rfl
+      have hT_eq : (Subgroup.zpowers e₁ : Subgroup (QuaternionGroup 2))
+          = Subgroup.zpowers e₂ := by
+        have := congr_arg (Subgroup.map φ.toMonoidHom) hMeq
+        rw [hmap_lemma, hmap_lemma, show φ g₁ = e₁ from φ.apply_symm_apply e₁,
+          show φ g₂ = e₂ from φ.apply_symm_apply e₂] at this
+        exact this
+      have he₂_mem : e₂ ∈ Subgroup.zpowers e₁ := by
+        rw [hT_eq]; exact Subgroup.mem_zpowers e₂
+      have he₁_fin : IsOfFinOrder e₁ := by
+        rw [← orderOf_pos_iff, he₁_order]; norm_num
+      rw [← he₁_fin.mem_powers_iff_mem_zpowers] at he₂_mem
+      obtain ⟨k, hk⟩ := he₂_mem
+      have ha_pow : (QuaternionGroup.a (1 : ZMod (2 * 2))) ^ k =
+          QuaternionGroup.a (k : ZMod (2 * 2)) :=
+        QuaternionGroup.a_one_pow k
+      have heq : (QuaternionGroup.a (k : ZMod (2 * 2)) : QuaternionGroup 2) =
+          QuaternionGroup.xa (0 : ZMod (2 * 2)) := ha_pow.symm.trans hk
+      cases heq
+    exact helper M₁ M₂ hM_ne hM₁_card hM₂_card hM₁_cyc hM₂_cyc
+
+/-- Helper: in DihedralGroup 4, every element raised to the 4th power is 1. -/
+private lemma D4_pow4_eq_one (g : DihedralGroup 4) : g ^ 4 = 1 := by
+  match g with
+  | DihedralGroup.r i =>
+    rw [DihedralGroup.r_pow]
+    have h4 : ((4 : ℕ) : ZMod 4) = 0 := by decide
+    rw [show (i * (4 : ℕ) : ZMod 4) = 0 from by rw [h4, mul_zero]]
+    rfl
+  | DihedralGroup.sr i =>
+    have h2 : DihedralGroup.sr i ^ 2 = 1 := by
+      rw [sq]; exact DihedralGroup.sr_mul_self i
+    calc (DihedralGroup.sr i) ^ 4
+        = (DihedralGroup.sr i ^ 2) ^ 2 := by rw [← pow_mul]
+      _ = 1 ^ 2 := by rw [h2]
+      _ = 1 := one_pow 2
 
 include h_sixteen in
 /-- Sub-stub: given `|G| = 16`, `|Z(G)| = 2`, and `G/Z(G) ≅ D_4`, exactly one
@@ -1671,7 +2152,325 @@ theorem center_two_witness (h : Nat.card (Subgroup.center G) = 2)
         y ∉ Subgroup.zpowers x ∧ y * x * y = x ^ 3) ∨
     (∃ x y : G, orderOf x = 8 ∧ y ^ 2 = x ^ 4 ∧
         y ∉ Subgroup.zpowers x ∧ y * x * y⁻¹ = x⁻¹) := by
-  sorry
+  -- Step 1: get x with orderOf x = 8.
+  obtain ⟨x, hx⟩ := Prelim.one_Gi_cyclic_order_eight h_sixteen h _hquot
+  -- Useful: x^8 = 1.
+  have hx8 : x ^ 8 = 1 := by rw [← hx]; exact pow_orderOf_eq_one x
+  -- Step 2: the cyclic subgroup ⟨x⟩ has cardinality 8 and is normal of index 2.
+  have hX_card : Nat.card (Subgroup.zpowers x) = 8 := by
+    rw [Nat.card_zpowers, hx]
+  have hX_index : (Subgroup.zpowers x).index = 2 := by
+    have h_index_mul := Subgroup.index_mul_card (Subgroup.zpowers x)
+    rw [hX_card, h_sixteen] at h_index_mul
+    omega
+  haveI hX_normal : (Subgroup.zpowers x).Normal :=
+    Subgroup.normal_of_index_eq_two hX_index
+  -- Step 3: pick y ∉ ⟨x⟩.
+  have hX_ne_top : Subgroup.zpowers x ≠ ⊤ := by
+    intro h_eq
+    have : Nat.card (Subgroup.zpowers x) = Nat.card G := by
+      rw [h_eq, Nat.card_congr Subgroup.topEquiv.toEquiv]
+    rw [hX_card, h_sixteen] at this
+    omega
+  obtain ⟨y, hy_notmem⟩ : ∃ y : G, y ∉ Subgroup.zpowers x := by
+    by_contra h_all
+    push_neg at h_all
+    apply hX_ne_top
+    rw [Subgroup.eq_top_iff']
+    exact h_all
+  -- Set up the iso.
+  obtain ⟨φ⟩ := _hquot
+  set a : DihedralGroup 4 := φ ((x : G ⧸ Subgroup.center G)) with ha_def
+  set b : DihedralGroup 4 := φ ((y : G ⧸ Subgroup.center G)) with hb_def
+  -- Step 4: x^4 ∈ Z(G).
+  have hx4_center : x ^ 4 ∈ Subgroup.center G := by
+    have h_a4 : a ^ 4 = 1 := D4_pow4_eq_one a
+    have h_xpow_eq_one : ((x : G ⧸ Subgroup.center G)) ^ 4 = 1 := by
+      apply φ.injective
+      rw [map_pow, ← ha_def, h_a4, map_one]
+    have h_x4_quot : ((x ^ 4 : G) : G ⧸ Subgroup.center G) = 1 := by
+      rw [← h_xpow_eq_one]; rfl
+    exact (QuotientGroup.eq_one_iff _).mp h_x4_quot
+  -- x^4 has order 2 in G.
+  have hx4_order : orderOf (x ^ 4) = 2 := by
+    rw [orderOf_pow' x (by norm_num : (4 : ℕ) ≠ 0), hx]
+    decide
+  have hx4_ne_one : x ^ 4 ≠ 1 := by
+    intro h_eq
+    have : orderOf (x ^ 4) = 1 := by rw [h_eq]; exact orderOf_one
+    rw [hx4_order] at this
+    omega
+  -- Z(G) = {1, x^4}.
+  have hcenter_mem_iff : ∀ z : G, z ∈ Subgroup.center G → z = 1 ∨ z = x ^ 4 := by
+    intro z hz
+    have hcenter_card : Nat.card (Subgroup.center G) = 2 := h
+    rw [Nat.card_eq_two_iff' (1 : Subgroup.center G)] at hcenter_card
+    obtain ⟨w, _, hw_unique⟩ := hcenter_card
+    by_cases hz_eq : z = 1
+    · exact Or.inl hz_eq
+    right
+    have h1 : (⟨z, hz⟩ : Subgroup.center G) ≠ 1 := by
+      intro heq
+      apply hz_eq
+      have := congrArg Subtype.val heq
+      simpa using this
+    have h2 : (⟨x ^ 4, hx4_center⟩ : Subgroup.center G) ≠ 1 := by
+      intro heq
+      apply hx4_ne_one
+      have := congrArg Subtype.val heq
+      simpa using this
+    have h3 : (⟨z, hz⟩ : Subgroup.center G) = (⟨x ^ 4, hx4_center⟩ : Subgroup.center G) := by
+      rw [hw_unique _ h1, hw_unique _ h2]
+    have := congrArg Subtype.val h3
+    simpa using this
+  -- Z(G) ⊆ ⟨x⟩.
+  have h_Z_sub : ∀ z ∈ Subgroup.center G, z ∈ Subgroup.zpowers x := by
+    intro z hz
+    rcases hcenter_mem_iff z hz with rfl | rfl
+    · exact one_mem _
+    · exact pow_mem (Subgroup.mem_zpowers x) 4
+  -- Step 5: x^2 ∉ Z(G).
+  have hx2_notin_Z : x ^ 2 ∉ Subgroup.center G := by
+    intro h_in
+    rcases hcenter_mem_iff _ h_in with h_eq | h_eq
+    · -- x^2 = 1 contradicts orderOf x = 8.
+      have : orderOf x ∣ 2 := orderOf_dvd_of_pow_eq_one h_eq
+      rw [hx] at this; omega
+    · -- x^2 = x^4 means x^2 = 1, again contradiction.
+      have h2 : x ^ 2 = 1 := by
+        have hself : (1 : G) = x ^ 2 := by
+          calc (1 : G) = x ^ 2 * x⁻¹ ^ 2 := by group
+            _ = x ^ 4 * x⁻¹ ^ 2 := by rw [h_eq]
+            _ = x ^ 2 := by group
+        exact hself.symm
+      have : orderOf x ∣ 2 := orderOf_dvd_of_pow_eq_one h2
+      rw [hx] at this; omega
+  -- Step 6: a has order 4 in D_4.
+  have ha_pow2_ne_one : a ^ 2 ≠ 1 := by
+    intro heq
+    apply hx2_notin_Z
+    have h_x2_quot : ((x ^ 2 : G) : G ⧸ Subgroup.center G) = 1 := by
+      have h_a_pow_inj : ((x : G ⧸ Subgroup.center G)) ^ 2 = 1 := by
+        apply φ.injective
+        rw [map_pow, ← ha_def, heq, map_one]
+      rw [← h_a_pow_inj]; rfl
+    exact (QuotientGroup.eq_one_iff _).mp h_x2_quot
+  have ha_pow4_eq_one : a ^ 4 = 1 := D4_pow4_eq_one a
+  have ha_order : orderOf a = 4 := by
+    have h_dvd_4 : orderOf a ∣ 4 := orderOf_dvd_of_pow_eq_one ha_pow4_eq_one
+    have h_not_dvd_2 : ¬ orderOf a ∣ 2 := by
+      intro hdvd
+      exact ha_pow2_ne_one (orderOf_dvd_iff_pow_eq_one.mp hdvd)
+    have h_pos : 0 < orderOf a := orderOf_pos a
+    have h_le : orderOf a ≤ 4 := Nat.le_of_dvd (by norm_num) h_dvd_4
+    interval_cases (orderOf a)
+    · exfalso; apply h_not_dvd_2; exact one_dvd 2
+    · exfalso; apply h_not_dvd_2; rfl
+    · exfalso; omega
+    · rfl
+  -- Step 7: b ∉ zpowers a.
+  have hb_notin_pow_a : b ∉ Subgroup.zpowers a := by
+    intro hb_mem
+    apply hy_notmem
+    obtain ⟨n, hn⟩ := hb_mem
+    -- b = a^n, so φ(↑y) = φ(↑x)^n = φ((↑x)^n) = φ(↑(x^n)).
+    have hy_eq : ((y : G ⧸ Subgroup.center G)) = ((x ^ n : G) : G ⧸ Subgroup.center G) := by
+      apply φ.injective
+      have : a ^ n = b := hn
+      have : φ ((x : G ⧸ Subgroup.center G)) ^ n = φ ((y : G ⧸ Subgroup.center G)) := by
+        rw [← ha_def, ← hb_def]; exact hn
+      have h_x_pow : ((x : G ⧸ Subgroup.center G)) ^ n =
+          ((x ^ n : G) : G ⧸ Subgroup.center G) := by rfl
+      rw [← h_x_pow, map_zpow]
+      exact this.symm
+    have h_quot_eq : ((y * (x ^ n)⁻¹ : G) : G ⧸ Subgroup.center G) = 1 := by
+      rw [QuotientGroup.mk_mul, hy_eq, QuotientGroup.mk_inv]
+      exact mul_inv_cancel _
+    have h_in_Z : y * (x ^ n)⁻¹ ∈ Subgroup.center G :=
+      (QuotientGroup.eq_one_iff _).mp h_quot_eq
+    have h_yx_inv_in : y * (x ^ n)⁻¹ ∈ Subgroup.zpowers x := h_Z_sub _ h_in_Z
+    have : y = (y * (x ^ n)⁻¹) * x ^ n := by group
+    rw [this]
+    exact Subgroup.mul_mem _ h_yx_inv_in (zpow_mem (Subgroup.mem_zpowers x) n)
+  -- Step 8: Show b * a * b⁻¹ * a = 1 and b ^ 2 = 1 in D_4.
+  -- Helper: any element of order 4 in D_4 is a rotation r ia.
+  -- Helper: b is a reflection sr ib (since not in zpowers a).
+  -- We use the following key facts about D_4 (DihedralGroup 4):
+  -- (i) sr ib * (r ia) * (sr ib)⁻¹ = r (-ia).
+  -- (ii) (sr ib)^2 = 1.
+  have h_main : b * a * b⁻¹ * a = 1 ∧ b ^ 2 = 1 := by
+    -- Generic helper for reflections in DihedralGroup n.
+    have key : ∀ ia ib : ZMod 4,
+        (DihedralGroup.sr ib : DihedralGroup 4) * DihedralGroup.r ia *
+          (DihedralGroup.sr ib)⁻¹ * DihedralGroup.r ia = 1 ∧
+        (DihedralGroup.sr ib : DihedralGroup 4) ^ 2 = 1 := by
+      intro ia ib
+      have hsr_inv : (DihedralGroup.sr ib : DihedralGroup 4)⁻¹ = DihedralGroup.sr ib := by
+        rw [inv_eq_iff_mul_eq_one]; exact DihedralGroup.sr_mul_self ib
+      refine ⟨?_, ?_⟩
+      · rw [hsr_inv]
+        rw [DihedralGroup.sr_mul_r, DihedralGroup.sr_mul_sr, DihedralGroup.r_mul_r]
+        show DihedralGroup.r (ib - (ib + ia) + ia) = 1
+        have : ib - (ib + ia) + ia = 0 := by ring
+        rw [this]; rfl
+      · rw [sq]; exact DihedralGroup.sr_mul_self ib
+    -- Now case split on a (must be `r ia`).
+    have h_a_form : ∃ ia : ZMod 4, a = DihedralGroup.r ia := by
+      cases h_a_match : a with
+      | r ia => exact ⟨ia, rfl⟩
+      | sr ia =>
+        exfalso
+        have : orderOf (DihedralGroup.sr ia : DihedralGroup 4) = 2 :=
+          DihedralGroup.orderOf_sr ia
+        rw [← h_a_match] at this
+        rw [ha_order] at this; omega
+    obtain ⟨ia, hai⟩ := h_a_form
+    -- Now b is sr ib.
+    have h_b_form : ∃ ib : ZMod 4, b = DihedralGroup.sr ib := by
+      cases h_b_match : b with
+      | r ib =>
+        exfalso; apply hb_notin_pow_a
+        rw [h_b_match, Subgroup.mem_zpowers_iff, hai]
+        -- For r ia with orderOf = 4, ia.val ∈ {1, 3}.
+        have h_ord_eq : orderOf (DihedralGroup.r ia : DihedralGroup 4) = 4 := by
+          rw [← hai]; exact ha_order
+        rw [DihedralGroup.orderOf_r] at h_ord_eq
+        have h_gcd : Nat.gcd 4 ia.val = 1 := by
+          have h_dvd : Nat.gcd 4 ia.val ∣ 4 := Nat.gcd_dvd_left _ _
+          have h_mul : Nat.gcd 4 ia.val * (4 / Nat.gcd 4 ia.val) = 4 :=
+            Nat.mul_div_cancel' h_dvd
+          rw [h_ord_eq] at h_mul
+          omega
+        have h_ia_val_lt : ia.val < 4 := ZMod.val_lt ia
+        have h_val_eq : ia.val = 1 ∨ ia.val = 3 := by
+          interval_cases ia.val
+          · simp at h_gcd
+          · left; rfl
+          · exfalso; norm_num at h_gcd
+          · right; rfl
+        have hia_eq : ia = (ia.val : ZMod 4) := (ZMod.natCast_zmod_val ia).symm
+        rcases h_val_eq with hv | hv
+        · -- ia = 1.
+          have hia_one : ia = 1 := by rw [hia_eq, hv]; rfl
+          rw [hia_one]
+          refine ⟨(ib.val : ℤ), ?_⟩
+          show DihedralGroup.r (1 : ZMod 4) ^ ((ib.val : ℤ) : ℤ) = DihedralGroup.r ib
+          rw [show (DihedralGroup.r (1 : ZMod 4) : DihedralGroup 4) ^ ((ib.val : ℤ) : ℤ) =
+              DihedralGroup.r ((1 : ZMod 4) * (ib.val : ℤ) : ZMod 4) from
+              DihedralGroup.r_zpow 1 (ib.val : ℤ)]
+          congr 1
+          push_cast
+          rw [one_mul]
+          exact ZMod.natCast_zmod_val ib
+        · -- ia = 3.
+          have hia_three : ia = 3 := by rw [hia_eq, hv]; rfl
+          rw [hia_three]
+          refine ⟨(3 * ib.val : ℤ), ?_⟩
+          rw [show (DihedralGroup.r (3 : ZMod 4) : DihedralGroup 4) ^ ((3 * ib.val : ℤ)) =
+              DihedralGroup.r ((3 : ZMod 4) * (3 * ib.val : ℤ) : ZMod 4) from
+              DihedralGroup.r_zpow 3 _]
+          congr 1
+          push_cast
+          have h9 : (3 : ZMod 4) * 3 = 1 := by decide
+          rw [show (3 : ZMod 4) * (3 * (ib.val : ZMod 4)) =
+              ((3 : ZMod 4) * 3) * (ib.val : ZMod 4) from by ring]
+          rw [h9, one_mul]
+          exact ZMod.natCast_zmod_val ib
+      | sr ib => exact ⟨ib, rfl⟩
+    obtain ⟨ib, hbi⟩ := h_b_form
+    rw [hai, hbi]
+    exact key ia ib
+  obtain ⟨h_conj, h_b2⟩ := h_main
+  -- Derive y * x * y⁻¹ * x ∈ Z(G).
+  have hyxyx_in_center : y * x * y⁻¹ * x ∈ Subgroup.center G := by
+    apply (QuotientGroup.eq_one_iff _).mp
+    apply φ.injective
+    rw [map_one]
+    show φ ↑(y * x * y⁻¹ * x) = 1
+    have : (↑(y * x * y⁻¹ * x) : G ⧸ Subgroup.center G) =
+        (↑y) * (↑x) * (↑y)⁻¹ * (↑x) := by rfl
+    rw [this, map_mul, map_mul, map_mul, map_inv, ← ha_def, ← hb_def]
+    exact h_conj
+  -- Derive y^2 ∈ Z(G).
+  have hy2_center : y ^ 2 ∈ Subgroup.center G := by
+    apply (QuotientGroup.eq_one_iff _).mp
+    apply φ.injective
+    rw [map_one]
+    show φ ↑(y ^ 2) = 1
+    have : (↑(y ^ 2) : G ⧸ Subgroup.center G) = (↑y) ^ 2 := by rfl
+    rw [this, map_pow, ← hb_def]
+    exact h_b2
+  -- Now y*x*y⁻¹*x ∈ Z(G) = {1, x^4}.
+  have hyxyx_cases : y * x * y⁻¹ * x = 1 ∨ y * x * y⁻¹ * x = x ^ 4 :=
+    hcenter_mem_iff _ hyxyx_in_center
+  -- y*x*y⁻¹ ∈ {x⁻¹, x^3}.
+  have hx3_eq : x ^ 4 * x⁻¹ = x ^ 3 := by
+    rw [show (4 : ℕ) = 3 + 1 from by norm_num, pow_succ, mul_assoc, mul_inv_cancel, mul_one]
+  have hconj_in_set : y * x * y⁻¹ = x ^ 3 ∨ y * x * y⁻¹ = x⁻¹ := by
+    rcases hyxyx_cases with h_eq | h_eq
+    · right
+      have h_simp : y * x * y⁻¹ = (y * x * y⁻¹ * x) * x⁻¹ := by group
+      rw [h_simp, h_eq, one_mul]
+    · left
+      have h_simp : y * x * y⁻¹ = (y * x * y⁻¹ * x) * x⁻¹ := by group
+      rw [h_simp, h_eq, hx3_eq]
+  -- y² ∈ Z(G) = {1, x^4}.
+  have hy2_cases : y ^ 2 = 1 ∨ y ^ 2 = x ^ 4 := hcenter_mem_iff _ hy2_center
+  -- Now case split.
+  rcases hconj_in_set with hconj_x3 | hconj_inv
+  · -- y * x * y⁻¹ = x^3.
+    rcases hy2_cases with hy2_1 | hy2_x4
+    · -- (B) semidihedral.
+      refine Or.inr (Or.inl ⟨x, y, hx, ?_, hy_notmem, ?_⟩)
+      · have hy_ne_one : y ≠ 1 := by
+          intro h_eq
+          apply hy_notmem
+          rw [h_eq]; exact one_mem _
+        exact orderOf_eq_prime hy2_1 hy_ne_one
+      · have heq : y * x * y = (y * x * y⁻¹) * y ^ 2 := by group
+        rw [heq, hconj_x3, hy2_1, mul_one]
+    · -- (D) y² = x^4, y * x * y⁻¹ = x^3. Substitute y' = x * y to get semidihedral.
+      have h_xpows : x * x ^ 3 * x ^ 4 = x ^ 8 := by
+        rw [show x * x ^ 3 = x ^ 4 from by rw [show (4 : ℕ) = 1 + 3 from rfl, pow_add, pow_one],
+            show x ^ 4 * x ^ 4 = x ^ 8 from by rw [← pow_add]]
+      have h_xy_sq : (x * y) ^ 2 = 1 := by
+        have heq1 : (x * y) ^ 2 = x * (y * x * y⁻¹) * y ^ 2 := by
+          rw [sq]; group
+        rw [heq1, hconj_x3, hy2_x4, h_xpows, hx8]
+      refine Or.inr (Or.inl ⟨x, x * y, hx, ?_, ?_, ?_⟩)
+      · have h_xy_ne_one : x * y ≠ 1 := by
+          intro h_eq
+          apply hy_notmem
+          have : y = x⁻¹ := (mul_eq_one_iff_eq_inv'.mp h_eq)
+          rw [this]
+          exact Subgroup.inv_mem _ (Subgroup.mem_zpowers x)
+        exact orderOf_eq_prime h_xy_sq h_xy_ne_one
+      · intro h_in
+        apply hy_notmem
+        have hy_eq : y = x⁻¹ * (x * y) := by group
+        rw [hy_eq]
+        exact Subgroup.mul_mem _ (Subgroup.inv_mem _ (Subgroup.mem_zpowers x)) h_in
+      · have heq : (x * y) * x * (x * y) = (x * y) * x * (x * y)⁻¹ * (x * y) ^ 2 := by
+          rw [sq]; group
+        rw [heq, h_xy_sq, mul_one]
+        have heq2 : (x * y) * x * (x * y)⁻¹ = x * (y * x * y⁻¹) * x⁻¹ := by group
+        rw [heq2, hconj_x3]
+        have h_assoc : x * x ^ 3 * x⁻¹ = x ^ 4 * x⁻¹ := by
+          rw [show (4 : ℕ) = 1 + 3 from rfl, pow_add, pow_one]
+        rw [h_assoc, hx3_eq]
+  · -- y * x * y⁻¹ = x⁻¹.
+    rcases hy2_cases with hy2_1 | hy2_x4
+    · -- (A) dihedral.
+      refine Or.inl ⟨x, y, hx, ?_, hy_notmem, ?_⟩
+      · have hy_ne_one : y ≠ 1 := by
+          intro h_eq
+          apply hy_notmem
+          rw [h_eq]; exact one_mem _
+        exact orderOf_eq_prime hy2_1 hy_ne_one
+      · have heq : y * x * y = (y * x * y⁻¹) * y ^ 2 := by group
+        rw [heq, hconj_inv, hy2_1, mul_one]
+    · -- (C) quaternion.
+      exact Or.inr (Or.inr ⟨x, y, hx, hy2_x4, hy_notmem, hconj_inv⟩)
 
 include h_sixteen in
 theorem center_order_two (h : Nat.card (Subgroup.center G) = 2)
