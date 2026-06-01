@@ -440,14 +440,15 @@ macro "classify_prime_sq" p:num h:term : tactic => `(tactic|(
   · exact ⟨2, by decide, hiso⟩))
 
 /-- A group of order at most `maximumOrder` is isomorphic to some group obtained by `retrieve`. -/
-theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
-  ∃ i : Nat, ∃ hv : ValidIndex n i,
-  haveI : ValidIndex n i := hv
-  Nonempty (MulEquiv G (retrieve n i))
- :=
-  match n with
-  | 1 => by
-    use 1
+theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
+  ∃ i : Nat, ∃ hv : ValidIndex n i, Nonempty (MulEquiv G (retrieve n i))
+ := by
+  have h1 : n ≥ 1 := NeZero.pos n
+  have h2 : n ≤ maximumOrder := hmax.out
+  interval_cases n
+
+  -- n = 1
+  · use 1
     haveI hv : ValidIndex 1 1 := by decide
     use hv
     apply Nonempty.intro
@@ -465,54 +466,57 @@ theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
 
     exact MulEquiv.ofUnique
 
-  | 2 => by
-    classify_prime 2 h
+  -- n = 2
+  · classify_prime 2 h
 
-  | 3 => by
-    classify_prime 3 h
+  -- n = 3
+  · classify_prime 3 h
 
-  | 4 => by classify_prime_sq 2 h
+  -- n = 4
+  · classify_prime_sq 2 h
 
-  | 5 => by
-    classify_prime 5 h
+  -- n = 5
+  · classify_prime 5 h
 
-  | 6 => by
-    obtain (hiso | hiso) := order6_classification h
+  -- n = 6
+  · obtain (hiso | hiso) := order6_classification h
     · exact ⟨2, by decide, hiso⟩
     · exact ⟨1, by decide, hiso⟩
 
-  | 7 => by
-    classify_prime 7 h
+  -- n = 7
+  · classify_prime 7 h
 
-  | 8 => by
-    sorry
+  -- n = 8
+  · sorry
 
-  | 9 => by classify_prime_sq 3 h
+  -- n = 9
+  · classify_prime_sq 3 h
 
-  | 10 => by
-    sorry
+  -- n = 10
+  · obtain (hiso | hiso) := order10_classification h
+    · exact ⟨2, by decide, hiso⟩
+    · exact ⟨1, by decide, hiso⟩
 
-  | 11 => by
-    classify_prime 11 h
+  -- n = 11
+  · classify_prime 11 h
 
-  | 12 => by
-    sorry
+  -- n = 12
+  · sorry
 
-  | 13 => by
-    sorry
+  -- n = 13
+  · classify_prime 13 h
 
-  | 14 => by
-    sorry
+  -- n = 14
+  · obtain (hiso | hiso) := order14_classification h
+    · exact ⟨2, by decide, hiso⟩
+    · exact ⟨1, by decide, hiso⟩
 
-  | 15 => by
-    sorry
+  -- n = 15
+  · obtain ⟨hiso⟩ := order15_classification h
+    exact ⟨1, by decide, ⟨hiso⟩⟩
 
-  | 16 => by
-    sorry
+  -- n = 16
+  · sorry
 
-  | 17 => by
-    sorry
-
-  | _ => by
-    have hn := n > maximumOrder
-    sorry
+  -- n = 17
+  · classify_prime 17 h
