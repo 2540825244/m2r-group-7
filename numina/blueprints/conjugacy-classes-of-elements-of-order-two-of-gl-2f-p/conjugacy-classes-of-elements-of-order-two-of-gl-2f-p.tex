@@ -1,0 +1,55 @@
+% Blueprint: Conjugacy classes of elements of order two of GL_2(F_p)
+% Created by Numina
+
+\begin{document}
+
+\section{Conjugacy classes of order-two elements of \texorpdfstring{$\mathrm{GL}_2(\mathbb{F}_p)$}{GL2(Fp)}}
+
+Throughout this section, $p$ is an odd prime and $\mathbb{F}_p = \mathbb{Z}/p\mathbb{Z}$.
+
+\begin{definition}
+  \label{def:gl2-diag-one-neg-one}
+  \lean{gl2Diag1NegOne}
+  \leanfile{M2rGroup7/Lemmas/LinearAlgebraUtils.lean}
+  \leanok
+  The element $\operatorname{diag}(1, -1) \in \mathrm{GL}_2(\mathbb{F}_p)$.
+\end{definition}
+
+\begin{definition}
+  \label{def:gl2-diag-neg-one-neg-one}
+  \lean{gl2DiagNeg1Neg1}
+  \leanfile{M2rGroup7/Lemmas/LinearAlgebraUtils.lean}
+  \leanok
+  The element $\operatorname{diag}(-1, -1) = -I \in \mathrm{GL}_2(\mathbb{F}_p)$.
+\end{definition}
+
+\begin{theorem}
+  \label{thm:gl2-order-two-classification}
+  \lean{gl2_order_two_classification}
+  \leanfile{M2rGroup7/Lemmas/LinearAlgebraUtils.lean}
+  \uses{def:gl2-diag-one-neg-one, def:gl2-diag-neg-one-neg-one}
+  \leanok
+  Let $p$ be an odd prime and let $A \in \mathrm{GL}_2(\mathbb{F}_p)$ be an element of order $2$.
+  Then $A$ is conjugate in $\mathrm{GL}_2(\mathbb{F}_p)$ to either $\operatorname{diag}(1, -1)$ or to
+  $\operatorname{diag}(-1, -1) = -I$.
+\end{theorem}
+
+\begin{proof}
+  Let $M = A$ regarded as a matrix. Since $A$ has order $2$, we have $M^2 = I$ and $M \neq I$.
+
+  If $M = -I$, then $A = \operatorname{diag}(-1, -1)$ is conjugate to itself by the identity, giving the second alternative.
+
+  Otherwise $M \neq I$ and $M \neq -I$. Since $M^2 - I = (M - I)(M + I) = 0$ and $M \neq -I$, the matrix
+  $M + I$ is nonzero, so it has a nonzero column $v_+$. From $(M - I)(M + I) = 0$ we get
+  $M v_+ = v_+$, i.e.\ $v_+$ is a $1$-eigenvector. Similarly, since $M \neq I$, the matrix $M - I$ is
+  nonzero, so it has a nonzero column $v_-$, and $(M + I)(M - I) = 0$ gives $M v_- = -v_-$, so $v_-$
+  is a $(-1)$-eigenvector.
+
+  Because $1 \neq -1$ in $\mathbb{F}_p$ (this is where we use $p \neq 2$), eigenvectors for distinct
+  eigenvalues are linearly independent, so $\{v_+, v_-\}$ is a basis of $\mathbb{F}_p^2$. The change-of-basis
+  matrix $P = [\,v_+ \mid v_-\,]$ lies in $\mathrm{GL}_2(\mathbb{F}_p)$ and satisfies
+  $M P = P \cdot \operatorname{diag}(1, -1)$, i.e.\ $P^{-1} M P = \operatorname{diag}(1, -1)$. Hence
+  $A$ is conjugate to $\operatorname{diag}(1, -1)$, giving the first alternative.
+\end{proof}
+
+\end{document}

@@ -53,6 +53,27 @@ noncomputable def gl2DiagNeg1Neg1 : GL (Fin 2) (ZMod p) := -1
     (gl2DiagNeg1Neg1 : GL (Fin 2) (ZMod p)).val =
       -(1 : Matrix (Fin 2) (Fin 2) (ZMod p)) := rfl
 
+/-- Helper: if `P` is a `2×2` matrix with nonzero determinant and
+    `A.val * P = P * diag(1,-1)`, then `A` is conjugate to `gl2Diag1NegOne hp2`. -/
+private lemma isConj_of_conj_matrix (hp2 : p ≠ 2) (A : GL (Fin 2) (ZMod p))
+    (P : Matrix (Fin 2) (Fin 2) (ZMod p)) (hPdet : P.det ≠ 0)
+    (hconj : A.val * P = P * Matrix.diagonal ![(1 : ZMod p), -1]) :
+    IsConj A (gl2Diag1NegOne hp2) := by
+  rw [isConj_iff]
+  refine ⟨(Matrix.GeneralLinearGroup.mkOfDetNeZero P hPdet)⁻¹, ?_⟩
+  apply Units.ext
+  have hP_val : (Matrix.GeneralLinearGroup.mkOfDetNeZero P hPdet : GL (Fin 2) (ZMod p)).val = P :=
+    rfl
+  have hPinv_val :
+      ((Matrix.GeneralLinearGroup.mkOfDetNeZero P hPdet : GL (Fin 2) (ZMod p))⁻¹).val = P⁻¹ := by
+    rw [Matrix.coe_units_inv, hP_val]
+  simp only [Units.val_mul, inv_inv, gl2Diag1NegOne_val, hPinv_val, hP_val]
+  rw [mul_assoc, hconj, ← mul_assoc,
+      Matrix.nonsing_inv_mul P (isUnit_iff_ne_zero.mpr hPdet), one_mul]
+
+-- `simp [Matrix.mul_apply]` after `fin_cases` needs flexible simp since `Matrix.cons_val_zero`
+-- does not fire on the `⟨n, h⟩`-form Fin indices that `fin_cases` produces.
+set_option linter.flexible false in
 /-- Any element A of GL₂(𝔽_p) of order 2 (p an odd prime) is conjugate in GL₂(𝔽_p) to
     either diag(1, -1) or diag(-1, -1). -/
 theorem gl2_order_two_classification (hp2 : p ≠ 2) (A : GL (Fin 2) (ZMod p))
@@ -77,17 +98,124 @@ theorem gl2_order_two_classification (hp2 : p ≠ 2) (A : GL (Fin 2) (ZMod p))
     -- gl2DiagNeg1Neg1 is defined as -1; show IsConj (-1) (-1) with c = 1
     change IsConj (-1 : GL (Fin 2) (ZMod p)) (-1 : GL (Fin 2) (ZMod p))
     exact ⟨1, by unfold SemiconjBy; simp [Units.val_one, mul_one]⟩
-  · -- A ≠ -I: A is conjugate to diag(1,-1)
+  · -- A ≠ -I: A is conjugate to diag(1,-1).
+    -- Write M = A.val as !![a, b; c, d] and derive the four entry equations from M*M = I.
+    -- Build a conjugating matrix P by cases on whether c = 0.
     left
-    -- Strategy: since M² = I, M ≠ I, M ≠ -I, the minimal polynomial of M divides
-    -- (X-1)(X+1), which is squarefree (p odd). Both eigenvalues
-    -- ±1 lie in 𝔽_p, so M is diagonalizable over 𝔽_p with eigenvalues {1, -1}.
-    -- Concretely: since M ≠ -I, the matrix M + I ≠ 0, so pick a nonzero column v₊
-    -- of M + I; it satisfies M * v₊ = v₊ (a 1-eigenvector, since (M-I)(M+I) = M²-I = 0).
-    -- Similarly, since M ≠ I, pick a nonzero column v₋ of M - I satisfying M * v₋ = -v₋.
-    -- Since 1 ≠ -1 (p ≠ 2), v₊ and v₋ are linearly independent.
-    -- The matrix P = [v₊ | v₋] ∈ GL₂(𝔽_p) conjugates A to diag(1,-1).
-    sorry
+    set M := A.val with hM_def
+    have hM_eq : M = !![M 0 0, M 0 1; M 1 0, M 1 1] := Matrix.eta_fin_two M
+    set a := M 0 0
+    set b := M 0 1
+    set c := M 1 0
+    set d := M 1 1
+    have hsq : !![a, b; c, d] * !![a, b; c, d] = (1 : Matrix (Fin 2) (Fin 2) (ZMod p)) := by
+      rw [← hM_eq]; exact hM_sq
+    rw [Matrix.mul_fin_two] at hsq
+    have h00 : a * a + b * c = 1 := by
+      have := congrArg (fun N : Matrix (Fin 2) (Fin 2) (ZMod p) => N 0 0) hsq
+      simp only [Matrix.one_apply, Fin.isValue] at this; exact this
+    have h01 : a * b + b * d = 0 := by
+      have := congrArg (fun N : Matrix (Fin 2) (Fin 2) (ZMod p) => N 0 1) hsq
+      simp only [Matrix.one_apply, Fin.isValue] at this; exact this
+    have h10 : c * a + d * c = 0 := by
+      have := congrArg (fun N : Matrix (Fin 2) (Fin 2) (ZMod p) => N 1 0) hsq
+      simp only [Matrix.one_apply, Fin.isValue] at this; exact this
+    have h11 : c * b + d * d = 1 := by
+      have := congrArg (fun N : Matrix (Fin 2) (Fin 2) (ZMod p) => N 1 1) hsq
+      simp only [Matrix.one_apply, Fin.isValue] at this; exact this
+    have hM_ne_one : M ≠ 1 := by
+      intro h; apply hA_ne1; ext1; rw [Units.val_one]; exact h
+    have hM_ne_negone : M ≠ -1 := by
+      intro h; apply hAneg; ext1; rw [Units.val_neg, Units.val_one]; exact h
+    have h_two_ne_zero : (2 : ZMod p) ≠ 0 := by
+      have hp_prime := hp.out
+      have h2cast : (2 : ZMod p) = ((2 : ℕ) : ZMod p) := by norm_cast
+      rw [h2cast, Ne, ZMod.natCast_eq_zero_iff]
+      intro hdvd
+      have := (Nat.prime_dvd_prime_iff_eq hp_prime Nat.prime_two).mp hdvd
+      exact hp2 this
+    by_cases hc0 : c = 0
+    · -- c = 0: a² = d² = 1, and either a = -d (giving the diagonalizable case)
+      -- or a = d = ±1 (leading to M = ±I, contradicting hM_ne_one / hM_ne_negone).
+      have ha_sq : a * a = 1 := by rw [hc0] at h00; simpa using h00
+      have hd_sq : d * d = 1 := by rw [hc0] at h11; simpa using h11
+      have hbad : b * (a + d) = 0 := by linear_combination h01
+      have ha_cases : a = 1 ∨ a = -1 := by
+        have : (a - 1) * (a + 1) = 0 := by linear_combination ha_sq
+        rcases mul_eq_zero.mp this with h | h
+        · left; linear_combination h
+        · right; linear_combination h
+      have hd_cases : d = 1 ∨ d = -1 := by
+        have : (d - 1) * (d + 1) = 0 := by linear_combination hd_sq
+        rcases mul_eq_zero.mp this with h | h
+        · left; linear_combination h
+        · right; linear_combination h
+      rcases ha_cases with ha | ha
+      · rcases hd_cases with hd | hd
+        · exfalso
+          have hb0 : b = 0 := by
+            have h2b : b * 2 = 0 := by rw [ha, hd] at hbad; linear_combination hbad
+            rcases mul_eq_zero.mp h2b with h | h
+            · exact h
+            · exact absurd h h_two_ne_zero
+          apply hM_ne_one
+          rw [hM_eq, ha, hb0, hc0, hd]
+          ext i j; fin_cases i <;> fin_cases j <;> simp
+        · apply isConj_of_conj_matrix hp2 A !![(1 : ZMod p), b; 0, -2]
+          · rw [Matrix.det_fin_two_of]
+            intro h
+            apply h_two_ne_zero
+            linear_combination -h
+          · change M * _ = _
+            rw [hM_eq, ha, hc0, hd]
+            ext i j; fin_cases i <;> fin_cases j <;>
+              simp [Matrix.mul_apply, Fin.sum_univ_succ]; ring
+      · rcases hd_cases with hd | hd
+        · apply isConj_of_conj_matrix hp2 A !![b, (-2 : ZMod p); 2, 0]
+          · rw [Matrix.det_fin_two_of]
+            intro h4
+            have h2sq : (2 : ZMod p) * 2 = 0 := by linear_combination h4
+            rcases mul_eq_zero.mp h2sq with h | h
+            · exact h_two_ne_zero h
+            · exact h_two_ne_zero h
+          · change M * _ = _
+            rw [hM_eq, ha, hc0, hd]
+            ext i j; fin_cases i <;> fin_cases j <;>
+              simp [Matrix.mul_apply, Fin.sum_univ_succ]; ring
+        · exfalso
+          have hb0 : b = 0 := by
+            have h2b : b * (-2) = 0 := by rw [ha, hd] at hbad; linear_combination hbad
+            rcases mul_eq_zero.mp h2b with h | h
+            · exact h
+            · exfalso; apply h_two_ne_zero; linear_combination -h
+          apply hM_ne_negone
+          rw [hM_eq, ha, hb0, hc0, hd]
+          ext i j; fin_cases i <;> fin_cases j <;> simp
+    · -- c ≠ 0: h10 forces a + d = 0, and we take P = !![a+1, a-1; c, c] (det = 2c ≠ 0).
+      have had : a + d = 0 := by
+        have hcad : c * (a + d) = 0 := by linear_combination h10
+        rcases mul_eq_zero.mp hcad with h | h
+        · exact absurd h hc0
+        · exact h
+      have hd_eq : d = -a := by linear_combination had
+      have hbc : b * c = 1 - a * a := by linear_combination h00
+      apply isConj_of_conj_matrix hp2 A !![a + 1, a - 1; c, c]
+      · rw [Matrix.det_fin_two_of]
+        intro hdet
+        have h2c : (2 : ZMod p) * c = 0 := by linear_combination hdet
+        rcases mul_eq_zero.mp h2c with h | h
+        · exact h_two_ne_zero h
+        · exact hc0 h
+      · change M * _ = _
+        rw [hM_eq, hd_eq]
+        have hbc' : c * b = 1 - a * a := by linear_combination hbc
+        ext i j
+        fin_cases i <;> fin_cases j <;>
+          simp [Matrix.mul_apply, Fin.sum_univ_succ] <;>
+          first
+            | linear_combination hbc
+            | linear_combination hbc'
+            | ring
 
 end GL2OrderTwo
 
