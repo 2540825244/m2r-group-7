@@ -33,6 +33,147 @@ lemma sylow_index_eq {p q : ℕ} {a b : ℕ}
   rw [sylow_card_eq hpq h P, h] at hcard
   exact Nat.eq_of_mul_eq_mul_right (pow_pos hp.out.pos a) (hcard.trans (mul_comm _ _))
 
+/-- Two distinct Sylow p-subgroups, each of prime order p, intersect trivially. -/
+lemma sylow_prime_order_disjoint {p : ℕ} [hp : Fact p.Prime]
+    {G : Type*} [Group G] [Finite G]
+    (h_sylow_card : ∀ P : Sylow p G, Nat.card ↥(P : Subgroup G) = p)
+    {P₁ P₂ : Sylow p G} (hne : P₁ ≠ P₂) :
+    Disjoint (P₁ : Subgroup G) P₂ := by
+  rw [disjoint_iff]
+  have hdvd : Nat.card ↥((P₁ : Subgroup G) ⊓ P₂) ∣ p :=
+    calc Nat.card ↥((P₁ : Subgroup G) ⊓ P₂)
+        ∣ Nat.card ↥(P₁ : Subgroup G) := Subgroup.card_dvd_of_le inf_le_left
+      _ = p := h_sylow_card P₁
+  rcases hp.out.eq_one_or_self_of_dvd _ hdvd with h1 | heqp
+  · exact Subgroup.card_eq_one.mp h1
+  · exfalso; apply hne; apply Sylow.ext
+    have hce1 : Nat.card ↥((P₁ : Subgroup G) ⊓ P₂) = Nat.card ↥(P₁ : Subgroup G) :=
+      heqp.trans (h_sylow_card P₁).symm
+    have hce2 : Nat.card ↥((P₁ : Subgroup G) ⊓ P₂) = Nat.card ↥(P₂ : Subgroup G) :=
+      heqp.trans (h_sylow_card P₂).symm
+    have h_sgOf_card : ∀ (H K : Subgroup G), H ≤ K →
+        Nat.card ↥(H.subgroupOf K) = Nat.card ↥H := fun H K hle => by
+      calc Nat.card ↥(H.subgroupOf K)
+          = Nat.card ↥((H.subgroupOf K).map K.subtype) :=
+              (Subgroup.card_map_of_injective Subtype.coe_injective).symm
+        _ = Nat.card ↥H := by rw [Subgroup.map_subgroupOf_eq_of_le hle]
+    have map_top_subtype : ∀ K : Subgroup G,
+        Subgroup.map K.subtype (⊤ : Subgroup ↥K) = K := fun K => by
+      ext x; simp only [Subgroup.mem_map, Subgroup.mem_top, true_and]
+      exact ⟨fun ⟨y, hy⟩ => hy ▸ y.prop, fun hx => ⟨⟨x, hx⟩, rfl⟩⟩
+    have heq1 : (P₁ : Subgroup G) ⊓ P₂ = P₁ := by
+      haveI : Finite ↥((P₁ ⊓ P₂ : Subgroup G).subgroupOf P₁) := inferInstance
+      have htop := (Subgroup.card_eq_iff_eq_top _).mp
+        ((h_sgOf_card _ P₁ inf_le_left).trans hce1)
+      have hmb := Subgroup.map_subgroupOf_eq_of_le (inf_le_left (a := (P₁ : Subgroup G)) (b := P₂))
+      rw [htop] at hmb; exact (map_top_subtype P₁ ▸ hmb).symm
+    have heq2 : (P₁ : Subgroup G) ⊓ P₂ = P₂ := by
+      haveI : Finite ↥((P₁ ⊓ P₂ : Subgroup G).subgroupOf P₂) := inferInstance
+      have htop := (Subgroup.card_eq_iff_eq_top _).mp
+        ((h_sgOf_card _ P₂ inf_le_right).trans hce2)
+      have hmb := Subgroup.map_subgroupOf_eq_of_le (inf_le_right (a := (P₁ : Subgroup G)) (b := P₂))
+      rw [htop] at hmb; exact (map_top_subtype P₂ ▸ hmb).symm
+    exact heq1.symm.trans heq2
+
+/-- The union of all Sylow p-subgroups, when each has prime order p, has
+    cardinality 1 + n_p * (p - 1) where n_p = Nat.card (Sylow p G). -/
+lemma sylow_prime_union_card {p : ℕ} [hp : Fact p.Prime]
+    {G : Type*} [Group G] [Finite G]
+    (h_sylow_card : ∀ P : Sylow p G, Nat.card ↥(P : Subgroup G) = p) :
+    Nat.card (⋃ P : Sylow p G, (P : Subgroup G) : Set G) =
+      1 + Nat.card (Sylow p G) * (p - 1) := by
+  haveI hFinG : Fintype G := Fintype.ofFinite G
+  haveI hDecEq : DecidableEq G := Classical.decEq G
+  let toFset : Sylow p G → Finset G := fun P =>
+    letI : Fintype ↥(P : Subgroup G) := Fintype.ofFinite _
+    ((P : Subgroup G) : Set G).toFinset
+  have mem_toFset : ∀ (P : Sylow p G) (x : G), x ∈ toFset P ↔ x ∈ (P : Subgroup G) := fun P x => by
+    letI : Fintype ↥(P : Subgroup G) := Fintype.ofFinite _
+    simp [toFset, Set.mem_toFinset, SetLike.mem_coe]
+  have toFset_card : ∀ P : Sylow p G, (toFset P).card = p := fun P => by
+    letI : Fintype ↥(P : Subgroup G) := Fintype.ofFinite _
+    have : (toFset P).card = Nat.card ↥(P : Subgroup G) := by simp [toFset, Set.toFinset_card]
+    rw [this, h_sylow_card]
+  have hbU_set : (Finset.univ.biUnion toFset : Set G) =
+      ⋃ P : Sylow p G, (P : Subgroup G) := by
+    ext x; simp [mem_toFset, Set.mem_iUnion, SetLike.mem_coe]
+  have h_ne_pdisj : Set.PairwiseDisjoint ↑(Finset.univ : Finset (Sylow p G))
+      (fun P => toFset P \ {(1 : G)}) := by
+    intro P₁ _ P₂ _ hne
+    simp only [Function.onFun, Finset.disjoint_left]
+    rintro x hx1 hx2
+    simp only [Finset.mem_sdiff, mem_toFset, Finset.mem_singleton] at hx1 hx2
+    exact hx1.2 (Subgroup.mem_bot.mp ((disjoint_iff.mp
+      (sylow_prime_order_disjoint h_sylow_card hne)) ▸
+      Subgroup.mem_inf.mpr ⟨hx1.1, hx2.1⟩))
+  have h_ne_card : (Finset.univ.biUnion (fun P => toFset P \ {(1 : G)})).card =
+      Nat.card (Sylow p G) * (p - 1) := by
+    rw [Finset.card_biUnion h_ne_pdisj]
+    have h_each : ∀ P : Sylow p G, (toFset P \ {(1 : G)}).card = p - 1 := fun P => by
+      have hmem : (1 : G) ∈ toFset P := (mem_toFset _ _).mpr (P : Subgroup G).one_mem
+      rw [Finset.card_sdiff, Finset.inter_comm, Finset.inter_singleton_of_mem hmem,
+          Finset.card_singleton, toFset_card]
+    simp only [h_each, Finset.sum_const, Finset.card_univ, smul_eq_mul, ← Nat.card_eq_fintype_card]
+  have hU_split : Finset.univ.biUnion toFset =
+      {(1 : G)} ∪ Finset.univ.biUnion (fun P => toFset P \ {(1 : G)}) := by
+    ext x
+    simp only [Finset.mem_biUnion, Finset.mem_univ, true_and, Finset.mem_union,
+                Finset.mem_singleton, Finset.mem_sdiff, mem_toFset]
+    constructor
+    · rintro ⟨P, hxP⟩
+      rcases eq_or_ne x 1 with rfl | hx1
+      · left; rfl
+      · right; exact ⟨P, hxP, hx1⟩
+    · rintro (rfl | ⟨P, hxP, _⟩)
+      · obtain ⟨P⟩ : Nonempty (Sylow p G) := inferInstance
+        exact ⟨P, (P : Subgroup G).one_mem⟩
+      · exact ⟨P, hxP⟩
+  have hU_disj : Disjoint {(1 : G)} (Finset.univ.biUnion (fun P => toFset P \ {(1 : G)})) := by
+    simp only [Finset.disjoint_left, Finset.mem_singleton, Finset.mem_biUnion, Finset.mem_univ,
+                true_and, Finset.mem_sdiff, mem_toFset]
+    rintro _ rfl ⟨_, _, h1⟩; exact h1 rfl
+  have hFcard : (Finset.univ.biUnion toFset).card = 1 + Nat.card (Sylow p G) * (p - 1) := by
+    rw [hU_split, Finset.card_union_of_disjoint hU_disj, Finset.card_singleton, h_ne_card]
+  rw [show (⋃ P : Sylow p G, (P : Subgroup G) : Set G) =
+      ↑(Finset.univ.biUnion toFset) from hbU_set.symm]
+  exact (Nat.card_eq_finsetCard _).trans hFcard
+
+/-- When each Sylow p-subgroup has prime order p, the number of elements of order p
+    in G is n_p * (p - 1). -/
+lemma sylow_elements_order_p_card {p : ℕ} [hp : Fact p.Prime]
+    {G : Type*} [Group G] [Finite G]
+    (h_sylow_card : ∀ P : Sylow p G, Nat.card ↥(P : Subgroup G) = p) :
+    Nat.card {x : G | orderOf x = p} = Nat.card (Sylow p G) * (p - 1) := by
+  have hset_eq : ({x : G | orderOf x = p} : Set G) =
+      (⋃ P : Sylow p G, (P : Subgroup G) : Set G) \ {(1 : G)} := by
+    ext x
+    simp only [Set.mem_setOf_eq, Set.mem_diff, Set.mem_iUnion, SetLike.mem_coe,
+                Set.mem_singleton_iff]
+    constructor
+    · intro hox
+      constructor
+      · have hzp : IsPGroup p ↥(Subgroup.zpowers x) :=
+          IsPGroup.of_card (n := 1) (by rw [Nat.card_zpowers, hox, pow_one])
+        obtain ⟨Q, hQ⟩ := IsPGroup.exists_le_sylow hzp
+        exact ⟨Q, hQ (Subgroup.mem_zpowers x)⟩
+      · intro h1; rw [h1, orderOf_one] at hox; linarith [hp.out.one_lt]
+    · rintro ⟨⟨P, hxP⟩, hx1⟩
+      have hdvd : orderOf x ∣ p :=
+        (h_sylow_card P) ▸ Subgroup.orderOf_dvd_natCard (P : Subgroup G) hxP
+      rcases hp.out.eq_one_or_self_of_dvd _ hdvd with h1' | hpeq
+      · exact absurd (orderOf_eq_one_iff.mp h1') hx1
+      · exact hpeq
+  have h1_mem : (1 : G) ∈ (⋃ P : Sylow p G, (P : Subgroup G) : Set G) := by
+    simp only [Set.mem_iUnion, SetLike.mem_coe]
+    obtain ⟨P⟩ : Nonempty (Sylow p G) := inferInstance
+    exact ⟨P, (P : Subgroup G).one_mem⟩
+  have hcard_eq : Nat.card {x : G | orderOf x = p} =
+      Nat.card (⋃ P : Sylow p G, (P : Subgroup G) : Set G) - 1 :=
+    (Nat.card_congr (Equiv.setCongr hset_eq)).trans
+      (Set.ncard_diff_singleton_of_mem h1_mem)
+  rw [hcard_eq, sylow_prime_union_card h_sylow_card]
+  omega
+
 /-- Every group G of order p^2 q has either a normal Sylow p-group or normal Sylow q-group -/
 lemma p2q_group_has_normal_sylow_subgroup {p : ℕ} {q : ℕ}
     [h_p_prime : Fact p.Prime] [h_q_prime : Fact q.Prime]
@@ -137,50 +278,6 @@ lemma p2q_group_has_normal_sylow_subgroup {p : ℕ} {q : ℕ}
         -- Any Sylow p-subgroup has order p^2
         have h_p_p2_gen : ∀ P' : Sylow p G, Nat.card ↥(P' : Subgroup G) = p ^ 2 := fun P' =>
           sylow_card_eq h_p_ne_q (show Nat.card G = p ^ 2 * q ^ 1 by aesop) P'
-        -- Distinct Sylow q-subgroups intersect trivially
-        have h_Qdisj : ∀ Q₁ Q₂ : Sylow q G, Q₁ ≠ Q₂ → Disjoint (Q₁ : Subgroup G) Q₂ := by
-          intro Q₁ Q₂ hne
-          rw [disjoint_iff]
-          have hdvd : Nat.card ↥((Q₁ : Subgroup G) ⊓ Q₂) ∣ q := by
-            calc Nat.card ↥((Q₁ : Subgroup G) ⊓ Q₂)
-                ∣ Nat.card ↥(Q₁ : Subgroup G) := Subgroup.card_dvd_of_le inf_le_left
-              _ = q := h_sylow_q_card Q₁
-          rcases h_q_prime.out.eq_one_or_self_of_dvd _ hdvd with h1 | hq
-          · exact Subgroup.card_eq_one.mp h1
-          · exfalso; apply hne; apply Sylow.ext
-            have hce1 : Nat.card ↥((Q₁ : Subgroup G) ⊓ Q₂) = Nat.card ↥(Q₁ : Subgroup G) :=
-              hq.trans (h_sylow_q_card Q₁).symm
-            have hce2 : Nat.card ↥((Q₁ : Subgroup G) ⊓ Q₂) = Nat.card ↥(Q₂ : Subgroup G) :=
-              hq.trans (h_sylow_q_card Q₂).symm
-            -- subgroupOf preserves Nat.card (via injective subtype map)
-            have h_sgOf_card : ∀ (H K : Subgroup G), H ≤ K →
-                Nat.card ↥(H.subgroupOf K) = Nat.card ↥H := fun H K hle => by
-              calc Nat.card ↥(H.subgroupOf K)
-                  = Nat.card ↥((H.subgroupOf K).map K.subtype) :=
-                      (Subgroup.card_map_of_injective Subtype.coe_injective).symm
-                _ = Nat.card ↥H := by rw [Subgroup.map_subgroupOf_eq_of_le hle]
-            -- map K.subtype ⊤ = K (the image of ⊤ under the inclusion is K itself)
-            have map_top_subtype : ∀ K : Subgroup G,
-                Subgroup.map K.subtype (⊤ : Subgroup ↥K) = K := fun K => by
-              ext x; simp only [Subgroup.mem_map, Subgroup.mem_top, true_and]
-              exact ⟨fun ⟨y, hy⟩ => hy ▸ y.prop, fun hx => ⟨⟨x, hx⟩, rfl⟩⟩
-            have heq1 : (Q₁ : Subgroup G) ⊓ Q₂ = Q₁ := by
-              haveI : Finite ↥((Q₁ ⊓ Q₂ : Subgroup G).subgroupOf Q₁) := inferInstance
-              have htop := (Subgroup.card_eq_iff_eq_top _).mp
-                ((h_sgOf_card _ Q₁ inf_le_left).trans hce1)
-              have hmb := Subgroup.map_subgroupOf_eq_of_le
-                (inf_le_left (a := (Q₁ : Subgroup G)) (b := Q₂))
-              rw [htop] at hmb
-              exact (map_top_subtype Q₁ ▸ hmb).symm
-            have heq2 : (Q₁ : Subgroup G) ⊓ Q₂ = Q₂ := by
-              haveI : Finite ↥((Q₁ ⊓ Q₂ : Subgroup G).subgroupOf Q₂) := inferInstance
-              have htop := (Subgroup.card_eq_iff_eq_top _).mp
-                ((h_sgOf_card _ Q₂ inf_le_right).trans hce2)
-              have hmb := Subgroup.map_subgroupOf_eq_of_le
-                (inf_le_right (a := (Q₁ : Subgroup G)) (b := Q₂))
-              rw [htop] at hmb
-              exact (map_top_subtype Q₂ ▸ hmb).symm
-            exact heq1.symm.trans heq2
         -- A Sylow p-subgroup and a Sylow q-subgroup always intersect trivially (different primes)
         have h_PQdisj : ∀ (P' : Sylow p G) (Q' : Sylow q G), Disjoint (P' : Subgroup G) Q' :=
           fun P' Q' => IsPGroup.disjoint_of_ne p q h_p_ne_q _ _ P'.isPGroup' Q'.isPGroup'
@@ -191,50 +288,15 @@ lemma p2q_group_has_normal_sylow_subgroup {p : ℕ} {q : ℕ}
             ▸ Subgroup.mem_inf.mpr ⟨hxP, hxQ⟩))
         -- U = union of all Sylow q-subgroups (as a Finset)
         let U : Finset G := Finset.univ.biUnion (fun Q' : Sylow q G => toFset Q')
-        -- Non-identity parts of distinct Sylow q-subgroups are pairwise disjoint
-        have h_ne_pdisj : Set.PairwiseDisjoint ↑(Finset.univ : Finset (Sylow q G))
-            (fun Q' : Sylow q G => toFset Q' \ {(1 : G)}) := by
-          intro Q₁ _ Q₂ _ hne
-          simp only [Function.onFun]
-          rw [Finset.disjoint_left]
-          rintro x hx1 hx2
-          simp only [Finset.mem_sdiff, mem_toFset, Finset.mem_singleton] at hx1 hx2
-          exact hx1.2 (Subgroup.mem_bot.mp ((disjoint_iff.mp (h_Qdisj Q₁ Q₂ hne))
-            ▸ Subgroup.mem_inf.mpr ⟨hx1.1, hx2.1⟩))
-        -- The biUnion of non-identity parts has cardinality n_q * (q - 1)
-        have h_ne_card : (Finset.univ.biUnion (fun Q' : Sylow q G =>
-            toFset Q' \ {(1 : G)})).card = n_q * (q - 1) := by
-          rw [Finset.card_biUnion h_ne_pdisj]
-          have h_each : ∀ Q' : Sylow q G, (toFset Q' \ {(1 : G)}).card = q - 1 := fun Q' => by
-            have hmem : (1 : G) ∈ toFset Q' := (mem_toFset _ _).mpr (Q' : Subgroup G).one_mem
-            rw [Finset.card_sdiff, Finset.inter_comm, Finset.inter_singleton_of_mem hmem,
-                Finset.card_singleton, toFset_card, h_sylow_q_card]
-          simp only [h_each, Finset.sum_const, Finset.card_univ, smul_eq_mul,
-                      ← Nat.card_eq_fintype_card]
-          rfl
-        -- U decomposes as {1} ∪ (non-identity parts)
-        have hU_split : U = {(1 : G)} ∪ Finset.univ.biUnion (fun Q' : Sylow q G =>
-            toFset Q' \ {(1 : G)}) := by
-          ext x
-          simp only [U, Finset.mem_biUnion, Finset.mem_univ, true_and, Finset.mem_union,
-                      Finset.mem_singleton, Finset.mem_sdiff, mem_toFset]
-          constructor
-          · rintro ⟨Q', hxQ'⟩
-            rcases eq_or_ne x 1 with rfl | hx1
-            · left; rfl
-            · right; exact ⟨Q', hxQ', hx1⟩
-          · rintro (rfl | ⟨Q', hxQ', _⟩)
-            · exact ⟨Q, (Q : Subgroup G).one_mem⟩
-            · exact ⟨Q', hxQ'⟩
-        have hU_split_disj : Disjoint {(1 : G)} (Finset.univ.biUnion (fun Q' : Sylow q G =>
-            toFset Q' \ {(1 : G)})) := by
-          simp only [Finset.disjoint_left, Finset.mem_singleton, Finset.mem_biUnion,
-                      Finset.mem_univ, true_and, Finset.mem_sdiff, mem_toFset]
-          rintro _ rfl ⟨Q', _, h1⟩; exact h1 rfl
-        -- |U| = 1 + n_q * (q - 1)
+        -- |U| = 1 + n_q * (q - 1) via sylow_prime_union_card
         have hUcard : U.card = 1 + n_q * (q - 1) := by
-          rw [hU_split, Finset.card_union_of_disjoint hU_split_disj, Finset.card_singleton,
-              h_ne_card]
+          have hset : (↑U : Set G) = ⋃ Q' : Sylow q G, (Q' : Subgroup G) := by
+            ext x; simp [U, mem_toFset, Set.mem_iUnion, SetLike.mem_coe]
+          calc U.card
+              = Nat.card ↥U := (Nat.card_eq_finsetCard U).symm
+            _ = Nat.card (⋃ Q' : Sylow q G, (Q' : Subgroup G) : Set G) :=
+                Nat.card_congr (Equiv.setCongr hset)
+            _ = 1 + n_q * (q - 1) := sylow_prime_union_card h_sylow_q_card
         -- |univ \ U| = p^2 - 1  (the "remaining" elements)
         have hTcard : (Finset.univ \ U).card = p ^ 2 - 1 := by
           have hsum : (Finset.univ \ U).card + U.card = Fintype.card G := by
@@ -295,3 +357,4 @@ lemma p2q_group_has_normal_sylow_subgroup {p : ℕ} {q : ℕ}
         rw [Nat.mod_eq_of_lt h_gt, Nat.mod_eq_of_lt h_p_prime.out.one_lt] at hmod
         linarith [h_q_prime.out.one_lt]
   tauto
+
