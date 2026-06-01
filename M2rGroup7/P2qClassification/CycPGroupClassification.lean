@@ -420,3 +420,56 @@ theorem classify_Cqn_rtimes_Cpm
         have hr_le_m := hr.trans (min_le_left m _)
         have hr'_le_m := hr'_le.trans (min_le_left m _)
         omega
+
+/-- Convenient variant of `classify_Cqn_rtimes_Cpm`: given an explicit `r` and a
+    proof that `|f.range| = p^r`, build the iso to the canonical action. -/
+theorem classify_Cqn_rtimes_Cpm_exists
+    {p q r : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (hpq : p ≠ q) (hq_odd : q ≠ 2)
+    (m n : ℕ) (hm : 0 < m) (hn : 0 < n)
+    (f : CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n)))
+    (h : Nat.card f.range = p ^ r)
+    (hr : r ≤ min m ((q - 1).factorization p)) :
+      Nonempty (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m)) f ≃*
+               SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+                 (canonicalAction p q n m hpq hq_odd hn r hr)) := by
+  apply semidirectProduct_iso_if_range_eq hp (card_cyclicGroup _)
+  have h_aut_iso : MulAut (CyclicGroup (q ^ n)) ≃* (ZMod (q ^ n))ˣ := by
+    have h' := IsCyclic.mulAutMulEquiv (CyclicGroup (q ^ n))
+    rwa [card_cyclicGroup] at h'
+  haveI : Finite (MulAut (CyclicGroup (q ^ n))) :=
+    Finite.of_equiv _ h_aut_iso.toEquiv.symm
+  haveI : IsCyclic (MulAut (CyclicGroup (q ^ n))) :=
+    (MulEquiv.isCyclic h_aut_iso).mpr (ZMod.isCyclic_units_of_prime_pow q hq.out hq_odd n)
+  exact cyclic_subgroup_of_cyclic_group_is_unique
+    Nat.card_pos rfl f.range _ h
+    (canonicalAction_range_card p q n m r hpq hq_odd hn hr)
+
+/-- Abstract-group variant of `classify_Cqn_rtimes_Cpm`: works for any cyclic groups
+    N, K with the right cardinalities, avoiding transport to canonical CyclicGroup types. -/
+theorem classify_sdp
+    {N K : Type*} [Group N] [Group K] [IsCyclic N] [IsCyclic K]
+    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (hpq : p ≠ q) (hq_odd : q ≠ 2)
+    (m n : ℕ) (hm : 0 < m) (hn : 0 < n)
+    (hN : Nat.card N = q ^ n) (hK : Nat.card K = p ^ m)
+    (φ : K →* MulAut N) :
+    ∃! r : Fin (min m ((q - 1).factorization p) + 1),
+      Nonempty (SemidirectProduct N K φ ≃*
+               SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+                 (canonicalAction p q n m hpq hq_odd hn ↑r (Nat.lt_succ_iff.mp r.isLt))) := by
+  haveI : Finite N := Nat.finite_of_card_ne_zero (by
+    rw [hN]; exact pow_ne_zero n hq.out.ne_zero)
+  haveI : Finite K := Nat.finite_of_card_ne_zero (by
+    rw [hK]; exact pow_ne_zero m hp.out.ne_zero)
+  let eN : N ≃* CyclicGroup (q ^ n) := mulEquivOfCyclicCardEq (by rw [hN, card_cyclicGroup])
+  let eK : K ≃* CyclicGroup (p ^ m) := mulEquivOfCyclicCardEq (by rw [hK, card_cyclicGroup])
+  let f : CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n)) :=
+    (MulAut.congr eN).toMonoidHom.comp (φ.comp eK.symm.toMonoidHom)
+  have h_bridge : SemidirectProduct N K φ ≃*
+      SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m)) f :=
+    SemidirectProduct.congr' (φ₁ := φ) (fn := eN) (fg := eK)
+  obtain ⟨r, hr_iso, hr_uniq⟩ := classify_Cqn_rtimes_Cpm hpq hq_odd m n hm hn f
+  refine ⟨r, ⟨h_bridge.trans hr_iso.some⟩, ?_⟩
+  intro r' hr'_iso
+  exact hr_uniq r' ⟨h_bridge.symm.trans hr'_iso.some⟩

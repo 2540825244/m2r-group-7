@@ -17,3 +17,21 @@ lemma eq_one_of_coprime_card {G H : Type*} [Group G] [Group H]
   have h2 : Nat.card φ.range ∣ Nat.card H := Subgroup.card_subgroup_dvd_card φ.range
   have h := Nat.dvd_gcd h1 h2
   rwa [hcop, Nat.dvd_one] at h
+
+/-- Transporting a non-trivial action along isomorphisms yields a non-trivial action.
+    If `φ : K →* MulAut N` is non-trivial and `eN : N ≃* N'`, `eK : K ≃* K'`, then
+    the conjugated action `(MulAut.congr eN) ∘ φ ∘ eK⁻¹` is also non-trivial. -/
+lemma transported_action_ne_one
+    {N N' K K' : Type*} [Group N] [Group N'] [Group K] [Group K']
+    (eN : N ≃* N') (eK : K ≃* K')
+    {φ : K →* MulAut N} (hφ : φ ≠ 1) :
+    (MulAut.congr eN).toMonoidHom.comp (φ.comp eK.symm.toMonoidHom) ≠ 1 := by
+  intro h_eq
+  apply hφ
+  refine MonoidHom.ext fun k => ?_
+  have h1 : ((MulAut.congr eN).toMonoidHom.comp (φ.comp eK.symm.toMonoidHom)) (eK k) = 1 := by
+    rw [h_eq]; simp
+  have h2 : ((MulAut.congr eN).toMonoidHom.comp (φ.comp eK.symm.toMonoidHom)) (eK k) =
+      (MulAut.congr eN) (φ k) := by simp [MulEquiv.symm_apply_apply]
+  rw [h2] at h1
+  exact (MulEquiv.map_eq_one_iff _).mp h1
