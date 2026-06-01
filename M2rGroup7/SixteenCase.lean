@@ -21,6 +21,17 @@ lemma fact1 {G : Type*} [Group G] (H₁ H₂ : Subgroup G)
     Nonempty (H₁ × H₂ ≃* ↑(H₁ ⊔ H₂)) :=
   ⟨fact1_mulEquiv H₁ H₂ h_disj h_comm⟩
 
+
+/-- Wild's Fact 2, first part: If the order of each member of `G` is at most 2,
+    then `G` is abelian. -/
+lemma fact2_part1 {G : Type*} [Group G] (h : ∀ x : G, x ^ 2 = 1) :
+    IsMulCommutative G := sorry
+
+/-- Wild's Fact 2, second part: If the order of each member of `G` is at most 2
+    and `G` is finite, then `G ≃ C₂ × ⋯ × C₂`. -/
+lemma fact2_part2 {G : Type*} [Group G] [Finite G] (h : ∀ x : G, x ^ 2 = 1) :
+    ∃ n : ℕ, Nonempty (G ≃* (Fin n → CyclicGroup 2)) := sorry
+
 structure ExtensionType where
   N : Type*
   [g : Group N]
