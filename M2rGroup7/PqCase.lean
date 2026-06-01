@@ -36,3 +36,42 @@ theorem order6_classification {G : Type*} [Group G] (h : Nat.card G = 6) :
     have hDnc : ¬IsCyclic (DihedralGroup 3) := DihedralGroup.not_isCyclic (by decide)
     have h23 : Nat.card G = 2 * 3 := by linarith
     exact nonempty_mulEquiv_of_card_eq_prime_mul_prime_of_not_isCyclic' (by norm_num) h23 hc hD hDnc
+
+/-- A group of order 10 is isomorphic to CyclicGroup 10 or DihedralGroup 5. -/
+theorem order10_classification {G : Type*} [Group G] (h : Nat.card G = 10) :
+    Nonempty (G ≃* CyclicGroup 10) ∨ Nonempty (G ≃* DihedralGroup 5) := by
+  by_cases hc : IsCyclic G
+  · left
+    haveI := hc
+    exact ⟨mulEquivOfCyclicCardEq (h.trans (card_cyclicGroup 10).symm)⟩
+  · right
+    haveI : Fact (Nat.Prime 2) := ⟨by decide⟩
+    haveI : Fact (Nat.Prime 5) := ⟨by decide⟩
+    have hD : Nat.card (DihedralGroup 5) = 2 * 5 := DihedralGroup.nat_card
+    have hDnc : ¬IsCyclic (DihedralGroup 5) := DihedralGroup.not_isCyclic (by decide)
+    have h25 : Nat.card G = 2 * 5 := by linarith
+    exact nonempty_mulEquiv_of_card_eq_prime_mul_prime_of_not_isCyclic' (by norm_num) h25 hc hD hDnc
+
+/-- A group of order 14 is isomorphic to CyclicGroup 14 or DihedralGroup 7. -/
+theorem order14_classification {G : Type*} [Group G] (h : Nat.card G = 14) :
+    Nonempty (G ≃* CyclicGroup 14) ∨ Nonempty (G ≃* DihedralGroup 7) := by
+  by_cases hc : IsCyclic G
+  · left
+    haveI := hc
+    exact ⟨mulEquivOfCyclicCardEq (h.trans (card_cyclicGroup 14).symm)⟩
+  · right
+    haveI : Fact (Nat.Prime 2) := ⟨by decide⟩
+    haveI : Fact (Nat.Prime 7) := ⟨by decide⟩
+    have hD : Nat.card (DihedralGroup 7) = 2 * 7 := DihedralGroup.nat_card
+    have hDnc : ¬IsCyclic (DihedralGroup 7) := DihedralGroup.not_isCyclic (by decide)
+    have h27 : Nat.card G = 2 * 7 := by linarith
+    exact nonempty_mulEquiv_of_card_eq_prime_mul_prime_of_not_isCyclic' (by norm_num) h27 hc hD hDnc
+
+/-- A group of order 15 is isomorphic to CyclicGroup 15. -/
+theorem order15_classification {G : Type*} [Group G] (h : Nat.card G = 15) :
+    Nonempty (G ≃* CyclicGroup 15) := by
+  haveI : Fact (Nat.Prime 3) := ⟨by decide⟩
+  haveI : Fact (Nat.Prime 5) := ⟨by decide⟩
+  have h35 : Nat.card G = 3 * 5 := by linarith
+  haveI : IsCyclic G := isCyclic_of_card_eq_prime_mul_prime (by norm_num) (by decide) h35
+  exact ⟨mulEquivOfCyclicCardEq (h.trans (card_cyclicGroup 15).symm)⟩
