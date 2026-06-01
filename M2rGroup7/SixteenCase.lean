@@ -39,7 +39,7 @@ structure ExtensionType where
   act : MulAut N
   glue : N
   map_glue : act glue = glue
-  pow_n : act^ n = MulAut.conj glue
+  pow_n : act ^ n = MulAut.conj glue
 
 instance (E : ExtensionType) : Group E.N := E.g
 
@@ -183,5 +183,45 @@ noncomputable def conjugateActEquiv
           map_glue := hv τ, pow_n := hpow_τ }) :
     G ≃* G' := by
   sorry
+
+def ext_16_1 : ExtensionType where
+  N := CyclicGroup 8
+  n := 2
+  act := 1
+  glue := Multiplicative.ofAdd 1
+  map_glue := rfl
+  pow_n := by
+    ext y
+    simp only [one_pow, MulAut.one_apply, MulAut.conj_apply, mul_comm, mul_inv_cancel_right]
+
+noncomputable def realise_16_1 : RealiseExtType (CyclicGroup 16) ext_16_1 :=
+  let a : CyclicGroup 16 := Multiplicative.ofAdd 1
+  let ι : CyclicGroup 8 →* CyclicGroup 16 := cyclicHom 8 (Multiplicative.ofAdd 2) (by decide)
+  {
+    a := a
+    ι := ι
+    act_a := by
+      intro x
+      simp_all only [mul_inv_cancel_comm]
+      rfl
+    pow_a_n := rfl
+    equiv := Equiv.ofBijective
+      (fun p : CyclicGroup 8 × Fin 2 =>
+        (ι p.1) * a ^ (p.2 : ℕ))
+      (by sorry)
+    equiv_apply x i := by
+      simp only [Equiv.ofBijective_apply, mul_left_inj, ι, a]
+      rfl
+  }
+
+def ext_16_5 : ExtensionType where
+  N := CyclicGroup 8
+  n := 2
+  act := 1
+  glue := 1
+  map_glue := rfl
+  pow_n := by
+    ext y
+    simp only [one_pow, MulAut.one_apply, map_one]
 
 end OrderSixteen
