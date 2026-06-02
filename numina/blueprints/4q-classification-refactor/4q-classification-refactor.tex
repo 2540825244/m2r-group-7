@@ -3,6 +3,485 @@
 
 \begin{document}
 
-% Your blueprint will go here.
+\section{Setup}
+
+We classify finite groups $G$ of order $4q$, where $q$ is a prime with $q \geq
+3$. Equivalently, $|G| = p^2 q$ for $p = 2$. The full classification produces
+five generic isomorphism types and one extra type when $q = 3$:
+\[
+\begin{aligned}
+& C_{4q}, \quad C_2 \times C_2 \times C_q, \\
+& C_q \rtimes_{\varphi_1} C_4, \quad
+  C_q \rtimes_{\varphi_2} C_4 \ (\text{only when } q \equiv 1 \pmod 4), \\
+& C_q \rtimes (C_2 \times C_2), \quad
+  (C_2 \times C_2) \rtimes C_3 \ (\text{only when } q = 3).
+\end{aligned}
+\]
+The actions $\varphi_1, \varphi_2$ are the canonical actions of $C_4$ on $C_q$
+with image of order $2$ and $4$ respectively; the action of $C_2 \times C_2$ on
+$C_q$ is canonical with image of order $2$, giving the dihedral group
+$D_{2q}$; the action of $C_3$ on $C_2 \times C_2$ is the canonical order-$3$
+permutation (giving $A_4$ when $q = 3$).
+
+This refactor moves the heavy lifting into a single classification engine
+\texttt{classify\_sdp} that operates on \emph{abstract} cyclic groups and uses
+a canonical action transported to those abstract groups
+(\texttt{sdpCanonicalAction}). At call sites, $\varphi$ is conjugated into the
+concrete cyclic groups \emph{before} classification, so the output isomorphism
+already lives in the concrete cyclic groups by definitional equality. This
+eliminates the long chain of transport bridges previously needed.
+
+\section{Sylow structure for $p^2 q$ groups}
+
+\begin{lemma}[A group of order $p^2 q$ has a normal Sylow subgroup]
+    \label{lem:p2q-normal-sylow}
+    Let $p, q$ be distinct primes and let $G$ be a finite group of order
+    $p^2 q$. Then either the number of Sylow $p$-subgroups of $G$ is $1$ (so
+    the unique Sylow $p$-subgroup is normal) or the number of Sylow
+    $q$-subgroups of $G$ is $1$ (so the unique Sylow $q$-subgroup is normal).
+\end{lemma}
+\begin{proof}
+    Standard Sylow counting. Already established as
+    \texttt{p2q\_group\_has\_normal\_sylow\_subgroup} in
+    \texttt{M2rGroup7.Lemmas.SylowUtils}.
+\end{proof}
+
+\begin{lemma}[Sylow cardinality and index]
+    \label{lem:sylow-card-index}
+    Let $p, q$ be distinct primes, $a, b \in \mathbb{N}$, and let $G$ be a
+    finite group with $|G| = p^a q^b$. Then every Sylow $p$-subgroup of $G$
+    has order $p^a$ and index $q^b$.
+\end{lemma}
+\begin{proof}
+    From $|G| = p^a q^b$ and coprimality of $p^a$ and $q^b$, the multiplicity
+    of $p$ in $|G|$ is $a$, so every Sylow $p$-subgroup has order $p^a$ by
+    Mathlib's \texttt{Sylow.card\_eq\_multiplicity}. The index is then
+    $|G|/p^a = q^b$ by Lagrange. Already established as
+    \texttt{sylow\_card\_eq} and \texttt{sylow\_index\_eq}.
+\end{proof}
+
+\section{Background results}
+
+\begin{lemma}[Cyclic classification of prime order]
+    \label{lem:prime-classification}
+    If $|G| = n$ with $n$ prime, then $G \cong C_n$.
+\end{lemma}
+\begin{proof}
+    A group of prime order is cyclic. Two cyclic groups of equal finite order
+    are isomorphic via Mathlib's \texttt{mulEquivOfCyclicCardEq}. Already
+    established as \texttt{prime\_classification} in
+    \texttt{M2rGroup7.Classification}.
+\end{proof}
+
+\begin{lemma}[Classification of groups of order $p^2$]
+    \label{lem:p-squared-classification}
+    For any prime $p$, a group of order $p^2$ is isomorphic to either
+    $C_{p^2}$ or $C_p \times C_p$.
+\end{lemma}
+\begin{proof}
+    Any group of order $p^2$ is abelian; either it is cyclic (and isomorphic
+    to $C_{p^2}$) or it has exponent $p$, in which case it is a $2$-dimensional
+    $\mathbb{F}_p$-vector space. Already established as
+    \texttt{p\_squared\_classification}.
+\end{proof}
+
+\begin{lemma}[Aut$(C_{p^2}) \cong C_{p(p-1)}$]
+    \label{lem:aut-cyclic-p2}
+    For any prime $p$, $\mathrm{MulAut}(C_{p^2}) \cong C_{p(p-1)}$.
+\end{lemma}
+\begin{proof}
+    $\mathrm{MulAut}(C_{p^2}) \cong (\mathbb{Z}/p^2 \mathbb{Z})^\times$, which is
+    cyclic of order $\varphi(p^2) = p(p-1)$. Already established as
+    \texttt{aut\_of\_cyclic\_p2}.
+\end{proof}
+
+\begin{lemma}[Aut$(C_p \times C_p) \cong \mathrm{GL}_2(\mathbb{F}_p)$]
+    \label{lem:aut-CpCp}
+    For any prime $p$, $\mathrm{MulAut}(C_p \times C_p) \cong
+    \mathrm{GL}_2(\mathbb{F}_p)$.
+\end{lemma}
+\begin{proof}
+    $C_p \times C_p$ is a $2$-dimensional $\mathbb{F}_p$-vector space and
+    every additive automorphism is automatically $\mathbb{F}_p$-linear.
+    Already established as \texttt{aut\_of\_CpCp}.
+\end{proof}
+
+\begin{lemma}[$\mathrm{GL}_2(\mathbb{F}_2) \cong D_3$]
+    \label{lem:GL2F2-isoS3}
+    $\mathrm{GL}_2(\mathbb{F}_2)$ is isomorphic to the dihedral group of order
+    $6$.
+\end{lemma}
+\begin{proof}
+    A direct computation: $|\mathrm{GL}_2(\mathbb{F}_2)| = 6$ and
+    $\mathrm{GL}_2(\mathbb{F}_2)$ is non-abelian. Already established as
+    \texttt{GL2F2\_isoS3}.
+\end{proof}
+
+\begin{lemma}[Trivial homomorphism from coprime cardinalities]
+    \label{lem:eq-one-of-coprime-card}
+    Let $G, H$ be finite groups with $\gcd(|G|, |H|) = 1$. Then every group
+    homomorphism $\varphi : G \to H$ satisfies $\varphi = 1$.
+\end{lemma}
+\begin{proof}
+    The image $\varphi(G)$ is a subgroup of $H$ whose cardinality divides
+    $\gcd(|G|,|H|) = 1$, so $|\varphi(G)| = 1$ and $\varphi$ is trivial.
+    Already established as \texttt{eq\_one\_of\_coprime\_card}.
+\end{proof}
+
+\begin{lemma}[Semidirect product with trivial action is a direct product]
+    \label{lem:sdp-trivial-action}
+    Let $N, K$ be groups and let $\varphi : K \to \mathrm{Aut}(N)$ with
+    $\varphi = 1$. Then $N \rtimes_\varphi K \cong N \times K$.
+\end{lemma}
+\begin{proof}
+    The multiplication on $N \rtimes_\varphi K$,
+    $(n_1, k_1)(n_2, k_2) = (n_1 \cdot \varphi(k_1)(n_2),\ k_1 k_2)$,
+    reduces to $(n_1 n_2, k_1 k_2)$. Already established as
+    \texttt{SemidirectProduct.mulEquivOfTrivialAction}.
+\end{proof}
+
+\begin{lemma}[Coprime cyclic direct product]
+    \label{lem:cyclic-prod}
+    For positive integers $m, n$ with $\gcd(m, n) = 1$,
+    $C_m \times C_n \cong C_{mn}$.
+\end{lemma}
+\begin{proof}
+    Already established as \texttt{CyclicGroup.prodMulEquiv}.
+\end{proof}
+
+\begin{lemma}[Schur--Zassenhaus complement]
+    \label{lem:schur-zassenhaus}
+    Let $G$ be a finite group and $N \trianglelefteq G$ a normal subgroup
+    with $\gcd(|N|, [G:N]) = 1$. Then there exists a subgroup $K \leq G$
+    with $N \cap K = \{1\}$ and $NK = G$.
+\end{lemma}
+\begin{proof}
+    Mathlib's \texttt{Subgroup.exists\_right\_complement'\_of\_coprime}.
+\end{proof}
+
+\begin{lemma}[Semidirect product from a complement]
+    \label{lem:sdp-from-complement}
+    Let $G$ be a group with $N \trianglelefteq G$ and let $K \leq G$ be a
+    complement of $N$. Then $G \cong N \rtimes_\varphi K$ where $\varphi$ is
+    the conjugation action of $K$ on $N$.
+\end{lemma}
+\begin{proof}
+    Mathlib's \texttt{SemidirectProduct.mulEquivSubgroup}.
+\end{proof}
+
+\begin{lemma}[Transport of a semidirect product]
+    \label{lem:sdp-congr}
+    Let $f_N : N_1 \cong N_2$ and $f_K : K_1 \cong K_2$ be group isomorphisms
+    and let $\varphi_1 : K_1 \to \mathrm{Aut}(N_1)$. Set
+    $\varphi_2 := (\mathrm{MulAut.congr}\,f_N) \circ \varphi_1 \circ f_K^{-1}$.
+    Then $N_1 \rtimes_{\varphi_1} K_1 \cong N_2 \rtimes_{\varphi_2} K_2$.
+\end{lemma}
+\begin{proof}
+    \texttt{SemidirectProduct.congr'}; the underlying map sends
+    $(n, k)$ to $(f_N(n), f_K(k))$.
+\end{proof}
+
+\section{Classification engine on cyclic groups}
+
+The refactor introduces a single classification engine
+\texttt{classify\_sdp} that takes abstract cyclic groups $N$ and $K$ with
+$|N| = q^n$ and $|K| = p^m$ and any $\varphi : K \to \mathrm{Aut}(N)$, and
+produces a unique invariant $r$ together with an isomorphism to a canonical
+semidirect product. The canonical action is built directly in the abstract
+groups so that no transport bridges are needed at call sites.
+
+\begin{theorem}[Classification of semidirect products of cyclic groups]
+    \label{thm:classify-sdp}
+    \uses{lem:sdp-congr}
+    Let $p, q$ be distinct primes with $q$ odd, let $m \geq 1$ and $n \geq 1$,
+    and let $N$, $K$ be (abstract) cyclic groups with $|N| = q^n$ and
+    $|K| = p^m$. For any homomorphism $\varphi : K \to \mathrm{Aut}(N)$ there
+    exists a unique $r \in \{0, 1, \dots, \min(m, v_p(q-1))\}$ together with an
+    isomorphism
+    \[
+        N \rtimes_\varphi K \ \cong\ N \rtimes_{\psi_r} K,
+    \]
+    where $\psi_r := \mathtt{sdpCanonicalAction}(\dots, r) : K \to
+    \mathrm{Aut}(N)$ is the canonical action of image-order $p^r$.
+\end{theorem}
+\begin{proof}
+    A two-step bridge using Lemma~\ref{lem:sdp-congr}: conjugate $\varphi$
+    across the unique iso $N \cong C_{q^n}$ and $K \cong C_{p^m}$, apply the
+    concrete classification on $C_{q^n} \rtimes C_{p^m}$, and conjugate back.
+    Implemented as \texttt{classify\_sdp} in
+    \texttt{M2rGroup7.P2qClassification.CycPGroupClassification}.
+\end{proof}
+
+\begin{lemma}[Range cardinality of $\psi_r$]
+    \label{lem:sdp-canonical-range}
+    \uses{thm:classify-sdp}
+    The image $\psi_r(K)$ has cardinality exactly $p^r$.
+\end{lemma}
+\begin{proof}
+    Already established as \texttt{sdpCanonicalAction\_range\_card}.
+\end{proof}
+
+\begin{lemma}[Iso of two homomorphisms with equal images]
+    \label{lem:sdp-iso-range-eq}
+    Let $p$ be prime, $N$ be a finite group with $\gcd(|N|, p) = 1$, $K$ be a
+    cyclic $p$-group with $|K| = p$, and let
+    $f_1, f_2 : K \to \mathrm{Aut}(N)$ have the same image. Then
+    $N \rtimes_{f_1} K \cong N \rtimes_{f_2} K$.
+\end{lemma}
+\begin{proof}
+    Already established as \texttt{semidirectProduct\_iso\_if\_range\_eq}.
+\end{proof}
+
+\section{Canonical actions for $4q$ groups}
+
+The three canonical actions used in the $4q$ classification are obtained by
+specialising \texttt{sdpCanonicalAction} to the concrete cyclic groups
+$C_q$ and $C_4$ (or $C_2$).
+
+\begin{definition}[$\varphi_1 : C_4 \to \mathrm{Aut}(C_q)$, image of order $2$]
+    \label{def:canonicalC4OnCq-r1}
+    \uses{thm:classify-sdp}
+    For an odd prime $q$, define
+    \[
+        \mathtt{canonicalC4OnCqAction} :=
+            \mathtt{sdpCanonicalAction}\bigl(\dots, m = 2,\, n = 1,\, r = 1\bigr)
+            \,:\, C_4 \to \mathrm{Aut}(C_q).
+    \]
+\end{definition}
+
+\begin{definition}[$\varphi_2 : C_4 \to \mathrm{Aut}(C_q)$, image of order $4$]
+    \label{def:canonicalC4OnCq-r2}
+    \uses{thm:classify-sdp}
+    For an odd prime $q$ with $q \equiv 1 \pmod 4$, define
+    \[
+        \mathtt{canonicalC4OnCqAction\_r2} :=
+            \mathtt{sdpCanonicalAction}\bigl(\dots, m = 2,\, n = 1,\, r = 2\bigr).
+    \]
+    The hypothesis $r = 2 \leq \min(2, v_2(q - 1))$ requires $v_2(q-1) \geq 2$,
+    equivalently $q \equiv 1 \pmod 4$.
+\end{definition}
+
+\begin{definition}[$\varphi : C_2 \times C_2 \to \mathrm{Aut}(C_q)$, image of order $2$]
+    \label{def:canonicalC2C2OnCq}
+    \uses{thm:classify-sdp}
+    For an odd prime $q$, define
+    \[
+        \mathtt{canonicalC2C2OnCqAction} :=
+            \mathtt{sdpCanonicalAction}\bigl(\dots, m = 1,\, n = 1,\, r = 1\bigr)
+            \circ \mathrm{fst},
+    \]
+    where $\mathrm{fst} : C_2 \times C_2 \to C_2$ is projection on the first
+    factor. The resulting semidirect product $C_q \rtimes (C_2 \times C_2)$
+    is isomorphic to the dihedral group $D_{2q}$.
+\end{definition}
+
+\section{The order-$3$ canonical action (case $q = 3$)}
+
+When $q = 3$ and the Sylow $2$-subgroup is $C_2 \times C_2$, the action
+$C_3 \to \mathrm{Aut}(C_2 \times C_2) \cong S_3$ can be nontrivial because
+$S_3$ has elements of order $3$. The resulting semidirect product is $A_4$.
+
+\begin{definition}[Order-$3$ automorphism of $C_2 \times C_2$]
+    \label{def:c2c2OrderThreeAut}
+    Let $\sigma : C_2 \times C_2 \to C_2 \times C_2$ be the automorphism
+    $(x, y) \mapsto (xy, x)$. Then $\sigma^3 = \mathrm{id}$ and $\sigma$ has
+    order exactly $3$ in $\mathrm{MulAut}(C_2 \times C_2)$.
+\end{definition}
+\begin{lemma}
+    \label{lem:orderOf-c2c2OrderThreeAut}
+    \uses{def:c2c2OrderThreeAut}
+    $\mathrm{ord}(\sigma) = 3$.
+\end{lemma}
+\begin{proof}
+    Verify $\sigma^3 = \mathrm{id}$ by direct computation in $C_2 \times C_2$
+    using that every element has order dividing $2$, then exhibit a witness
+    $(g, 1)$ with $g$ a generator of $C_2$ where $\sigma(g, 1) = (g, g)
+    \neq (g, 1)$ to show $\sigma \neq \mathrm{id}$.
+\end{proof}
+
+\begin{definition}[$\psi : C_3 \to \mathrm{Aut}(C_2 \times C_2)$ sending generator to $\sigma$]
+    \label{def:canonicalC3OnC2C2}
+    \uses{lem:orderOf-c2c2OrderThreeAut}
+    Define $\mathtt{canonicalC3OnC2C2Action} : C_3 \to
+    \mathrm{MulAut}(C_2 \times C_2)$ by extending the assignment
+    (generator of $C_3$) $\mapsto \sigma$ to a group homomorphism, which is
+    well-defined because $|\sigma| = 3 = |C_3|$.
+\end{definition}
+
+\begin{lemma}[Range cardinality of $\psi$]
+    \label{lem:canonicalC3OnC2C2-range}
+    \uses{def:canonicalC3OnC2C2, lem:orderOf-c2c2OrderThreeAut}
+    The image of $\mathtt{canonicalC3OnC2C2Action}$ has cardinality $3$.
+\end{lemma}
+\begin{proof}
+    The range equals $\langle \sigma \rangle$, whose cardinality is
+    $\mathrm{ord}(\sigma) = 3$.
+\end{proof}
+
+\begin{lemma}[Uniqueness of semidirect product $C_3 \to \mathrm{Aut}(C_2 \times C_2)$ with image of order $3$]
+    \label{lem:sdp-C3-on-C2C2-iso}
+    \uses{lem:canonicalC3OnC2C2-range}
+    Let $f_1, f_2 : C_3 \to \mathrm{Aut}(C_2 \times C_2)$ both have image of
+    cardinality $3$. Then $(C_2 \times C_2) \rtimes_{f_1} C_3 \cong
+    (C_2 \times C_2) \rtimes_{f_2} C_3$.
+\end{lemma}
+\begin{proof}
+    $\mathrm{MulAut}(C_2 \times C_2) \cong D_3$ has a unique Sylow
+    $3$-subgroup (since $|D_3| = 6 = 3 \cdot 2$ and $n_3 \equiv 1
+    \pmod 3$ with $n_3 \mid 2$ forces $n_3 = 1$). Hence both images coincide
+    with this Sylow $3$-subgroup. Apply
+    Lemma~\ref{lem:sdp-iso-range-eq} with $p = 3$.
+\end{proof}
+
+\section{The main classification}
+
+\begin{theorem}[Classification of groups of order $4q$ for $q \geq 3$ prime]
+    \label{thm:classification-4q}
+    \uses{lem:p2q-normal-sylow, lem:sylow-card-index,
+          lem:prime-classification, lem:p-squared-classification,
+          lem:aut-cyclic-p2, lem:aut-CpCp, lem:GL2F2-isoS3,
+          lem:eq-one-of-coprime-card, lem:sdp-trivial-action,
+          lem:cyclic-prod, lem:schur-zassenhaus, lem:sdp-from-complement,
+          lem:sdp-congr,
+          thm:classify-sdp, lem:sdp-canonical-range,
+          def:canonicalC4OnCq-r1, def:canonicalC4OnCq-r2,
+          def:canonicalC2C2OnCq, def:canonicalC3OnC2C2,
+          lem:sdp-C3-on-C2C2-iso}
+    Let $q$ be a prime with $q \geq 3$ and let $G$ be a group with $|G| = 4q$.
+    Then exactly one of the following holds:
+    \begin{enumerate}
+        \item $G \cong C_{4q}$.
+        \item $G \cong C_2 \times C_2 \times C_q$.
+        \item $G \cong C_q \rtimes_{\varphi_1} C_4$, where $\varphi_1$ is
+            $\mathtt{canonicalC4OnCqAction}$ (image of order $2$).
+        \item $q \equiv 1 \pmod 4$ and $G \cong C_q \rtimes_{\varphi_2} C_4$,
+            where $\varphi_2$ is $\mathtt{canonicalC4OnCqAction\_r2}$ (image
+            of order $4$).
+        \item $G \cong C_q \rtimes_\varphi (C_2 \times C_2)$, where $\varphi$
+            is $\mathtt{canonicalC2C2OnCqAction}$ (image of order $2$);
+            this group is isomorphic to $D_{2q}$.
+        \item $q = 3$ and $G \cong (C_2 \times C_2) \rtimes_\psi C_3$, where
+            $\psi$ is $\mathtt{canonicalC3OnC2C2Action}$; this group is
+            isomorphic to $A_4$.
+    \end{enumerate}
+    Implemented as \texttt{classification\_4q} in
+    \texttt{M2rGroup7.P2qClassification.FourQClassification}.
+\end{theorem}
+\begin{proof}
+    \uses{lem:p2q-normal-sylow, lem:sylow-card-index,
+          lem:prime-classification, lem:p-squared-classification,
+          lem:aut-cyclic-p2, lem:aut-CpCp, lem:GL2F2-isoS3,
+          lem:eq-one-of-coprime-card, lem:sdp-trivial-action,
+          lem:cyclic-prod, lem:schur-zassenhaus, lem:sdp-from-complement,
+          lem:sdp-congr,
+          thm:classify-sdp, lem:sdp-canonical-range,
+          def:canonicalC4OnCq-r1, def:canonicalC4OnCq-r2,
+          def:canonicalC2C2OnCq, def:canonicalC3OnC2C2,
+          lem:sdp-C3-on-C2C2-iso}
+    By Lemma~\ref{lem:p2q-normal-sylow} applied with $p = 2$, either the
+    Sylow $2$-subgroup or the Sylow $q$-subgroup of $G$ is normal.
+
+    \emph{Case 1: normal Sylow $2$-subgroup $P$.} By
+    Lemma~\ref{lem:sylow-card-index}, $|P| = 4$ and $[G:P] = q$. By
+    Lemma~\ref{lem:schur-zassenhaus} (with $\gcd(4, q) = 1$) there is a
+    complement $K \leq G$ with $|K| = q$. By
+    Lemma~\ref{lem:sdp-from-complement}, $G \cong P \rtimes_\varphi K$ for
+    some $\varphi$. By Lemma~\ref{lem:prime-classification}, $K \cong C_q$.
+
+    \begin{itemize}
+        \item If $P \cong C_4$: by Lemma~\ref{lem:aut-cyclic-p2},
+            $\mathrm{Aut}(P) \cong C_2$. Since $\gcd(q, 2) = 1$, by
+            Lemma~\ref{lem:eq-one-of-coprime-card}, $\varphi = 1$. Combine
+            Lemma~\ref{lem:sdp-trivial-action} and
+            Lemma~\ref{lem:cyclic-prod} to get $G \cong C_{4q}$ (outcome 1).
+
+        \item If $P \cong C_2 \times C_2$: by Lemma~\ref{lem:aut-CpCp} and
+            Lemma~\ref{lem:GL2F2-isoS3}, $|\mathrm{Aut}(P)| = 6$.
+
+            If $q > 3$, then $\gcd(q, 6) = 1$ and
+            Lemma~\ref{lem:eq-one-of-coprime-card} forces $\varphi = 1$,
+            giving $G \cong C_2 \times C_2 \times C_q$ (outcome 2).
+
+            If $q = 3$, we split on whether $\varphi$ is trivial.
+            If yes, $G \cong C_2 \times C_2 \times C_3$ (outcome 2). If no,
+            transport $\varphi$ along $P \cong C_2 \times C_2$ and
+            $K \cong C_3$ to a nontrivial
+            $\varphi' : C_3 \to \mathrm{Aut}(C_2 \times C_2)$. Its image has
+            cardinality $3$ (since the image is a non-trivial subgroup of the
+            cyclic $C_3$). By Lemma~\ref{lem:canonicalC3OnC2C2-range} and
+            Lemma~\ref{lem:sdp-C3-on-C2C2-iso}, $G$ is isomorphic to the
+            semidirect product with $\mathtt{canonicalC3OnC2C2Action}$
+            (outcome 6).
+    \end{itemize}
+
+    \emph{Case 2: normal Sylow $q$-subgroup $Q$.} By
+    Lemma~\ref{lem:sylow-card-index}, $|Q| = q$ and $[G:Q] = 4$. By
+    Lemma~\ref{lem:schur-zassenhaus} there is a complement $K$ with
+    $|K| = 4$, and by Lemma~\ref{lem:sdp-from-complement},
+    $G \cong Q \rtimes_\varphi K$ with $\varphi : K \to \mathrm{Aut}(Q)$. By
+    Lemma~\ref{lem:prime-classification}, $Q \cong C_q$.
+
+    \begin{itemize}
+        \item If $K \cong C_4$: transport $\varphi$ across $Q \cong C_q$
+            and $K \cong C_4$ (Lemma~\ref{lem:sdp-congr}) to obtain
+            $\varphi' : C_4 \to \mathrm{Aut}(C_q)$. Apply
+            Theorem~\ref{thm:classify-sdp} with $p = 2$, $m = 2$, $n = 1$ to
+            get a unique
+            $r \in \{0, 1, 2\} \cap \{0, \dots, \min(2, v_2(q-1))\}$ and an
+            isomorphism to the canonical $\psi_r$-semidirect product.
+            \begin{itemize}
+                \item $r = 0$: $\psi_0$ has image of cardinality $1$ by
+                    Lemma~\ref{lem:sdp-canonical-range}, so $\psi_0 = 1$;
+                    Lemma~\ref{lem:sdp-trivial-action} and
+                    Lemma~\ref{lem:cyclic-prod} give
+                    $G \cong C_q \times C_4 \cong C_{4q}$ (outcome 1).
+                \item $r = 1$: $\psi_1$ equals
+                    $\mathtt{canonicalC4OnCqAction}$ by definitional equality
+                    (same head function, same explicit arguments, proof
+                    arguments equal by proof irrelevance), giving outcome 3.
+                \item $r = 2$: forces $\min(2, v_2(q-1)) \geq 2$ hence
+                    $v_2(q-1) \geq 2$ hence $q \equiv 1 \pmod 4$; $\psi_2$
+                    equals $\mathtt{canonicalC4OnCqAction\_r2}$ by
+                    definitional equality, giving outcome 4.
+            \end{itemize}
+
+        \item If $K \cong C_2 \times C_2$: if $\varphi = 1$ then
+            Lemma~\ref{lem:sdp-trivial-action} gives
+            $G \cong C_q \times C_2 \times C_2 \cong C_2 \times C_2 \times C_q$
+            (outcome 2). Otherwise, transport $\varphi$ to
+            $\varphi' : C_2 \times C_2 \to \mathrm{Aut}(C_q)$; its image is a
+            subgroup of $\mathrm{Aut}(C_q) \cong C_{q-1}$ and thus cyclic.
+            The image cardinality divides $|C_2 \times C_2| = 4$ and divides
+            $|\mathrm{Aut}(C_q)| = q - 1$, but also (as a hom from
+            $C_2 \times C_2$ into a cyclic group) divides $2$; combined with
+            $\varphi' \neq 1$, the image has cardinality exactly $2$.
+            $\mathtt{canonicalC2C2OnCqAction}$ has the same image cardinality
+            (Definition~\ref{def:canonicalC2C2OnCq}), so by
+            \texttt{semidirectProduct\_CpCp\_iso} (a $C_p \times C_p$ analogue
+            of Lemma~\ref{lem:sdp-iso-range-eq}; see
+            \texttt{M2rGroup7.Lemmas.ClassificationUtils}) the two semidirect
+            products are isomorphic, giving outcome 5.
+    \end{itemize}
+\end{proof}
+
+\section{Notes on the refactor}
+
+The chief design choice in this refactor is to define
+\texttt{canonicalC4OnCqAction}, \texttt{canonicalC4OnCqAction\_r2}, and
+\texttt{canonicalC2C2OnCqAction} as direct applications of
+\texttt{sdpCanonicalAction} to the concrete cyclic groups $C_q$ and $C_4$ (or
+$C_2$). All three are marked \texttt{@[reducible]} so that the elaborator can
+unify, by congruence and proof irrelevance, the term
+\texttt{sdpCanonicalAction \dots r \dots} produced by
+\texttt{classify\_sdp} with each canonical action at the appropriate value of
+$r$.
+
+In the Case 2 / $K \cong C_4$ branch the proof destructures the output
+$r : \mathrm{Fin}(\min(2, v_2(q-1)) + 1)$ as $\langle r_{\mathrm{val}},
+h_{\mathrm{lt}} \rangle$ and applies \texttt{interval\_cases r\_val}, so
+that within each case $r$ in the type of the witness iso is literally
+substituted by $0$, $1$, or $2$. This eliminates the need for an explicit
+rewrite chain and allows the $r = 1$ and $r = 2$ cases to close with
+$\mathtt{h\_iso\_g\_q\_k.symm.trans\;(h\_bridge.trans\;e)}$.
 
 \end{document}
