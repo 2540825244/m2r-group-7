@@ -115,46 +115,131 @@ realised by an explicit order-$16$ group in
 \end{lemma}
 
 \begin{proof}
-  Since $|G| = 16$ and $|H| = 8$, the index $[G : H] = 2$.  By
-  Lemma~\ref{lem:inducing-element-exists} there exists an inducing element
-  $a \in G \setminus H$.  Choose one of minimal order; since $a \notin H$ and
-  $|H| = 8$, we have $a^2 \in H$, so the order of $a$ lies in
-  $\{2, 4, 8, 16\}$.  Apply Lemma~\ref{lem:realise-from-normal-index-2} to
-  obtain a realisation of the extension type $(H, 2, \tau, v)$ where
-  $v = a^2$ and $\tau$ is conjugation by $a$ on $H \simeq C_8$.
+  Write $H = \langle x \rangle$ with $|x| = 8$. The hypotheses $|G| = 16$ and
+  $|H| = 8$ give $[G : H] = 2$, so $H$ is normal of index $2$ and Lagrange
+  gives a partition $G = H \sqcup Ha$ for any chosen
+  $a \in G \setminus H$.
 
+  By Lemma~\ref{lem:inducing-element-exists} the set $G \setminus H$ is
+  non-empty, so the set
+  $\{\,|b| \mid b \in G \setminus H\,\}$ is a non-empty subset of the positive
+  divisors of $|G| = 16$, hence has a minimum. Choose an inducing element
+  $a \in G \setminus H$ of \emph{minimal order}. Because $a \notin H$ but
+  $a^2 \in H$ (since the coset $Ha$ has order $2$ in $G/H$), the order of $a$
+  is even, and as $|a|$ divides $|G| = 16$ we have
+  $|a| \in \{2, 4, 8, 16\}$.
+
+  Set $v := a^2 \in H$ and let $\tau := \mathrm{conj}_a \in \mathrm{Aut}(H)$ be
+  conjugation by $a$ restricted to $H$. By
+  Lemma~\ref{lem:realise-from-normal-index-2}, $G$ realises the extension type
+  $(H, 2, \tau, v)$.
+
+  Recall (Wild's Fact~3 for $\mathrm{Aut}(C_8)$) that
+  $\mathrm{Aut}(H) \cong (\mathbb{Z}/8\mathbb{Z})^\times =
+  \{1, 3, 5, 7\}$ as a multiplicative group, with $\tau$ acting as $x \mapsto
+  x^k$ for one of the four odd residues $k$. Every such $k$ satisfies
+  $k^2 \equiv 1 \pmod 8$, so every $\tau \in \mathrm{Aut}(H)$ is an involution.
+
+  We split on $|a|$.
+
+  \smallskip
+  \noindent
+  \emph{Case 1: $|a| = 2$.} Then $v = a^2 = e$, so $\mathrm{conj}_v$ is the
+  identity automorphism of $H$, and the validity condition $\tau^2 =
+  \mathrm{conj}_v$ becomes $\tau^2 = \mathrm{id}$. This is automatic since every
+  $\tau \in \mathrm{Aut}(H)$ is an involution. The four choices
+  $\tau \in \{1, \cdot^3, \cdot^5, \cdot^7\}$ give four extension types
+  $(H, 2, \tau, e)$, matching exactly the four predefined types
+  \[
+    \mathtt{ext\_16\_5} = (C_8, 2, \mathrm{id}, e),\quad
+    \mathtt{ext\_16\_8} = (C_8, 2, \cdot^3, e),\quad
+    \mathtt{ext\_16\_6} = (C_8, 2, \cdot^5, e),\quad
+    \mathtt{ext\_16\_7} = (C_8, 2, \cdot^7, e),
+  \]
+  realised respectively by $C_8 \times C_2$, $C_8 \rtimes_{\mathrm{pow}_3} C_2$,
+  $C_8 \rtimes_{\mathrm{pow}_5} C_2$, and the dihedral group $D_8$. In each
+  sub-case the realisation of $G$ is obtained directly from the inducing data
+  $(a, \iota)$ produced by
+  Lemma~\ref{lem:realise-from-normal-index-2}.
+
+  \smallskip
+  \noindent
+  \emph{Case 2: $|a| = 4$.} Then $v = a^2$ has order $2$, and the only
+  involution in $H = \langle x \rangle \simeq C_8$ is $x^4$, so $v = x^4$.
+  Minimality means no element of $G \setminus H$ has order $2$, otherwise we
+  would be in Case~1. The validity constraint $\tau(v) = v$ is automatic:
+  $\tau(x^4) = x^{4k} = x^4$ for all odd $k$ (since $4k \equiv 4 \pmod 8$).
+  The validity constraint $\tau^2 = \mathrm{conj}_{x^4} = \mathrm{id}$ (as
+  $H$ is abelian) is also automatic. So all four
+  $\tau \in \{1, \cdot^3, \cdot^5, \cdot^7\}$ pass the validity checks, giving
+  candidate extension types $(C_8, 2, \tau, x^4)$. We show that the minimality
+  assumption rules out three of them:
   \begin{itemize}
-  \item \emph{Case $|a| = 2$.} Then $v = e$ and
-  $\tau^2 = \mathrm{conj}_e = \mathrm{id}$, so $\tau \in \mathrm{Aut}(C_8)$ is an
-  involution.  $\mathrm{Aut}(C_8) = (\mathbb{Z}/8\mathbb{Z})^\times =
-  \{1, 3, 5, 7\}$ and every element squares to $1$, so all $4$ are involutions.
-  The resulting extension type is equivalent to one of $\mathtt{ext\_16\_5}$
-  ($\tau = \mathrm{id}$, realised by $C_8 \times C_2$), $\mathtt{ext\_16\_8}$
-  ($\tau : x \mapsto x^3$, realised by $C_8 \rtimes_{\mathrm{pow}_3} C_2$),
-  $\mathtt{ext\_16\_6}$ ($\tau : x \mapsto x^5$, realised by $C_8 \rtimes
-  _{\mathrm{pow}_5} C_2$), or $\mathtt{ext\_16\_7}$ ($\tau : x \mapsto x^7 =
-  x^{-1}$, realised by $D_8$).
-  \item \emph{Case $|a| = 4$.} Then $v = a^2$ has order $2$, so $v = x^4$ where
-  $x$ is a generator of $H \simeq C_8$.  By the analysis in Wild's
-  Case~3, the only surviving extension type up to equivalence is
-  $\mathtt{ext\_16\_9} = (C_8, 2, x \mapsto x^7, x^4)$, realised by the
-  generalised quaternion group $Q_{16}$.
-  \item \emph{Case $|a| = 8$.} If for every $b \in G \setminus H$ we have
-  $|b| \ge 8$, choose such an $a$. The element $a$ and $H$ together generate
-  $G$, but $\langle a \rangle$ has order $8 \neq |G|$, so $a \in H$ would
-  contradict $a \notin H$. The minimality assumption and the structure
-  $\mathrm{Aut}(C_8) = \{1, 3, 5, 7\}$ force this case to coincide with one of
-  the previous cases up to equivalence of extension types
-  (Lemma~\ref{lem:realise-of-mulEquiv} via Fact~3 of Wild).
-  \item \emph{Case $|a| = 16$.} Then $G = \langle a \rangle \simeq C_{16}$,
-  which realises $\mathtt{ext\_16\_1} = (C_8, 2, \mathrm{id}, x)$ via the
-  realisation $\mathtt{realise\_16\_1}$ pulled back along $G \simeq C_{16}$
-  using Lemma~\ref{lem:realise-of-mulEquiv}.
+    \item $\tau = \mathrm{id}$: then $a x = x a$, and $b := x^{-2} a$
+    satisfies $b^2 = x^{-4} a^2 = x^{-4} x^4 = e$, so $b$ is an involution. As
+    $a \notin H$ and $x^{-2} \in H$, $b \notin H$, contradicting minimality.
+    \item $\tau = \cdot^3$: then $a x a^{-1} = x^3$, and $(xa)^2 = x \cdot
+    a x a^{-1} \cdot a^2 = x \cdot x^3 \cdot x^4 = x^8 = e$. Thus $xa$ is an
+    involution in $G \setminus H$, contradicting minimality.
+    \item $\tau = \cdot^5$: then $a x^2 a^{-1} = (a x a^{-1})^2 = x^{10}$, and
+    $(x^2 a)^2 = x^2 \cdot a x^2 a^{-1} \cdot a^2 = x^2 \cdot x^{10} \cdot x^4
+    = x^{16} = e$. Thus $x^2 a$ is an involution in $G \setminus H$,
+    contradicting minimality.
+    \item $\tau = \cdot^7$ (i.e.\ inversion): for every $k$,
+    $(x^k a)^2 = x^k \cdot a x^k a^{-1} \cdot a^2 = x^k \cdot x^{-k} \cdot x^4
+    = x^4 \neq e$, and $(x^k a)^4 = (x^4)^2 = x^8 = e$, so every element of
+    $G \setminus H$ has order $4$. This satisfies the minimality assumption.
   \end{itemize}
+  Hence only $\tau = \cdot^7$ survives in Case~2, yielding the extension type
+  $\mathtt{ext\_16\_9} = (C_8, 2, \cdot^7, x^4)$. The corresponding realising
+  group is the generalised quaternion group $Q_{16}$.
 
-  In every case $G$ realises one of $\mathtt{ext\_16\_1},
-  \mathtt{ext\_16\_5}, \mathtt{ext\_16\_6}, \mathtt{ext\_16\_7},
-  \mathtt{ext\_16\_8}, \mathtt{ext\_16\_9}$.
+  \smallskip
+  \noindent
+  \emph{Case 3: $|a| = 8$.} Then $v = a^2$ has order $4$, so
+  $v \in \{x^2, x^6\}$. The two values are related by $x^6 = (x^2)^3$, and
+  the automorphism $\cdot^3$ sends $x^2$ to $x^6$. The action set
+  $\{\mathrm{id}, \cdot^3, \cdot^5, \cdot^7\}$ is a union of
+  $\mathrm{Aut}(H)$-conjugacy classes (every element is in its own class
+  because $\mathrm{Aut}(H)$ is abelian, but this is enough). Hence by
+  Lemma~\ref{lem:realise-of-mulEquiv} together with
+  \texttt{extension\_families\_same\_isoClasses} we may assume $v = x^2$.
+
+  The validity constraint $\tau(v) = v$ now reads $x^{2k} = x^2$, i.e.\
+  $2(k - 1) \equiv 0 \pmod 8$, i.e.\ $k \equiv 1 \pmod 4$, so
+  $k \in \{1, 5\}$ and $\tau \in \{\mathrm{id}, \cdot^5\}$.
+  Minimality forbids elements of order $\le 4$ in $G \setminus H$, otherwise
+  we would be in Case~1 or Case~2. We rule out each remaining $\tau$:
+  \begin{itemize}
+    \item $\tau = \mathrm{id}$: then $a$ commutes with $H$, and $b := x^{-1}
+    a$ satisfies $b^2 = x^{-2} a^2 = x^{-2} \cdot x^2 = e$. Thus $b$ is an
+    involution in $G \setminus H$, contradicting minimality.
+    \item $\tau = \cdot^5$: then $a x a^{-1} = x^5$, and $(xa)^2 = x \cdot
+    a x a^{-1} \cdot a^2 = x \cdot x^5 \cdot x^2 = x^8 = e$. Thus $xa$ is an
+    involution in $G \setminus H$, contradicting minimality.
+  \end{itemize}
+  No surviving extension type arises in Case~3: any group $G$ falling into
+  this case is already covered by Cases~1, 2, or 4 via the corresponding
+  smaller-order inducing element.
+
+  \smallskip
+  \noindent
+  \emph{Case 4: $|a| = 16$.} Then $\langle a \rangle = G$, so $G \simeq
+  C_{16}$. Note that $a^2$ generates $\langle a \rangle^2 = $ the unique
+  subgroup of $G$ of order $8$, which must be $H$. Thus, writing $x = a^2$,
+  the extension type associated to $a$ is
+  $(C_8, 2, \mathrm{id}, x) = \mathtt{ext\_16\_1}$ (the action is trivial
+  because $G$ is abelian). The group $C_{16}$ comes with the realisation
+  $\mathtt{realise\_16\_1}$ from
+  \texttt{M2rGroup7/SixteenClassification/Blueprints.lean}, and
+  Lemma~\ref{lem:realise-of-mulEquiv} applied to a chosen isomorphism
+  $G \simeq C_{16}$ transfers this to a realisation of $\mathtt{ext\_16\_1}$
+  by $G$.
+
+  \smallskip
+  Combining the four cases, $G$ realises one of $\mathtt{ext\_16\_1}$,
+  $\mathtt{ext\_16\_5}$, $\mathtt{ext\_16\_6}$, $\mathtt{ext\_16\_7}$,
+  $\mathtt{ext\_16\_8}$, or $\mathtt{ext\_16\_9}$, as required.
 \end{proof}
 
 \section{Case analysis for normal \texorpdfstring{$K_8 = C_4 \times C_2$}{K8 = C4 x C2}}
