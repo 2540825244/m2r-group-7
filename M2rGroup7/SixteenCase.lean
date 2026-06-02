@@ -898,4 +898,23 @@ noncomputable def realise_16_13 :
 
 end OrderSixteenBlueprints
 
+theorem realise_ext_type_if_not_iso_to_C2_4
+    {G : Type*} [Group G]
+    (hn : Nat.card G = 16)
+    (h_non_iso : IsEmpty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)) :
+    Nonempty (RealiseExtType G ext_16_1) ∨
+    Nonempty (RealiseExtType G ext_16_2) ∨
+    Nonempty (RealiseExtType G ext_16_3) ∨
+    Nonempty (RealiseExtType G ext_16_4) ∨
+    Nonempty (RealiseExtType G ext_16_5) ∨
+    Nonempty (RealiseExtType G ext_16_6) ∨
+    Nonempty (RealiseExtType G ext_16_7) ∨
+    Nonempty (RealiseExtType G ext_16_8) ∨
+    Nonempty (RealiseExtType G ext_16_9) ∨
+    Nonempty (RealiseExtType G ext_16_10) ∨
+    Nonempty (RealiseExtType G ext_16_11) ∨
+    Nonempty (RealiseExtType G ext_16_12) ∨
+    Nonempty (RealiseExtType G ext_16_13) := by
+  sorry
+
 end OrderSixteen
