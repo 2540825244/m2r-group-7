@@ -538,6 +538,8 @@ def fin2EquivC2 : Fin 2 ≃ CyclicGroup 2 where
   left_inv i := by fin_cases i <;> rfl
   right_inv x := by revert x; decide
 
+section OrderSixteenBlueprints
+
 /-! ## Auxiliary automorphisms used in the order-16 blueprints. -/
 
 /-- The non-trivial action of `C_2` on `C_8` by `x ↦ x^7 = x⁻¹`. -/
@@ -893,5 +895,7 @@ noncomputable def realise_16_13 :
       (fun p : (CyclicGroup 4 × CyclicGroup 2) × Fin 2 => ι p.1 * a ^ (p.2 : ℕ))
       (by decide)
     equiv_apply := fun _ _ => rfl }
+
+end OrderSixteenBlueprints
 
 end OrderSixteen
