@@ -69,7 +69,11 @@ element `a ∈ G` with `a ∉ H` and `a^2 ∈ H`. -/
 lemma exists_inducing_element
     {G : Type*} [Group G] (H : Subgroup G) [H.Normal] (h_index : H.index = 2) :
     ∃ a : G, a ∉ H ∧ a ^ 2 ∈ H := by
-  sorry
+  obtain ⟨a, ha_not, hall⟩ := Subgroup.index_eq_two_iff_exists_notMem_and'.mp h_index
+  refine ⟨a, ha_not, ?_⟩
+  rcases hall a with h | h
+  · simpa [sq] using h
+  · exact (ha_not h).elim
 
 /-- Construct a realisation of an extension type from a normal subgroup of
 index 2 together with an inducing element.
@@ -82,7 +86,115 @@ noncomputable def realise_from_normal_index_two
     (H : Subgroup G) [H.Normal] (h_index : H.index = 2)
     (a : G) (h_a_notMem : a ∉ H) (h_a_sq : a ^ 2 ∈ H) :
     Σ (E : ExtensionType), RealiseExtType G E := by
-  sorry
+  classical
+  have hcoset : ∀ g : G, g ∉ H → g * a⁻¹ ∈ H := by
+    obtain ⟨a₀, _, hall⟩ :=
+      Subgroup.index_eq_two_iff_exists_notMem_and'.mp h_index
+    intro g hg
+    have ha_inv_notMem : a⁻¹ ∉ H := fun ha => h_a_notMem (by simpa using inv_mem ha)
+    rcases hall (g * a⁻¹) with h1 | h1
+    · rcases hall a⁻¹ with h2 | h2
+      · have hmul : (a₀ * a⁻¹)⁻¹ * (a₀ * (g * a⁻¹)) ∈ H :=
+          mul_mem (inv_mem h2) h1
+        have eq1 : (a₀ * a⁻¹)⁻¹ * (a₀ * (g * a⁻¹)) = a * g * a⁻¹ := by group
+        rw [eq1] at hmul
+        have hconj := ‹H.Normal›.conj_mem' _ hmul a
+        have eq2 : a⁻¹ * (a * g * a⁻¹) * a = g := by group
+        rw [eq2] at hconj
+        exact (hg hconj).elim
+      · exact (ha_inv_notMem h2).elim
+    · exact h1
+  let τ : MulAut H :=
+    { toFun := fun h => ⟨a * h.1 * a⁻¹, ‹H.Normal›.conj_mem h.1 h.2 a⟩
+      invFun := fun h => ⟨a⁻¹ * h.1 * a, by
+        have := ‹H.Normal›.conj_mem' h.1 h.2 a
+        simpa using this⟩
+      left_inv := by intro h; ext; simp; group
+      right_inv := by intro h; ext; simp; group
+      map_mul' := by intro x y; ext; simp; group }
+  let v : H := ⟨a ^ 2, h_a_sq⟩
+  have hmap_glue : τ v = v := by
+    ext
+    show a * a ^ 2 * a⁻¹ = a ^ 2
+    group
+  have hpow_n : τ ^ 2 = MulAut.conj v := by
+    ext h
+    show (τ (τ h)).1 = v.1 * h.1 * v.1⁻¹
+    show a * (a * h.1 * a⁻¹) * a⁻¹ = a^2 * h.1 * (a^2)⁻¹
+    rw [pow_two, mul_inv_rev]
+    group
+  let E : ExtensionType :=
+    { N := H, n := 2, act := τ, glue := v,
+      map_glue := hmap_glue, pow_n := hpow_n }
+  refine ⟨E, ?_⟩
+  let toFun : H × Fin 2 → G := fun p => p.1.1 * a ^ (p.2 : ℕ)
+  let invFun : G → H × Fin 2 := fun g =>
+    if hg : g ∈ H then (⟨g, hg⟩, 0)
+    else (⟨g * a⁻¹, hcoset g hg⟩, 1)
+  have left_inv : Function.LeftInverse invFun toFun := by
+    rintro ⟨h, i⟩
+    fin_cases i
+    · show invFun (h.1 * a ^ (0 : ℕ)) = (h, (0 : Fin 2))
+      have hh : h.1 ∈ H := h.2
+      have hsimp : h.1 * a ^ (0 : ℕ) = h.1 := by simp
+      rw [hsimp]
+      show (if hg : h.1 ∈ H then ((⟨h.1, hg⟩ : H), (0 : Fin 2))
+            else (⟨h.1 * a⁻¹, hcoset h.1 hg⟩, 1)) = (h, 0)
+      rw [dif_pos hh]
+    · show invFun (h.1 * a ^ ((1 : Fin 2) : ℕ)) = (h, (1 : Fin 2))
+      have hh_a_notMem : h.1 * a ∉ H := by
+        intro hcontra
+        have hh : h.1⁻¹ ∈ H := inv_mem h.2
+        have h2 : h.1⁻¹ * (h.1 * a) ∈ H := mul_mem hh hcontra
+        have : h.1⁻¹ * (h.1 * a) = a := by group
+        rw [this] at h2
+        exact h_a_notMem h2
+      have hsimp : h.1 * a ^ ((1 : Fin 2) : ℕ) = h.1 * a := by
+        show h.1 * a ^ (1 : ℕ) = h.1 * a
+        rw [pow_one]
+      rw [hsimp]
+      show (if hg : h.1 * a ∈ H then ((⟨h.1 * a, hg⟩ : H), (0 : Fin 2))
+            else (⟨(h.1 * a) * a⁻¹, hcoset (h.1 * a) hg⟩, 1)) = (h, 1)
+      rw [dif_neg hh_a_notMem]
+      ext
+      · show h.1 * a * a⁻¹ = h.1
+        group
+      · rfl
+  have right_inv : Function.RightInverse invFun toFun := by
+    intro g
+    by_cases hg : g ∈ H
+    · show toFun (invFun g) = g
+      have : invFun g = (⟨g, hg⟩, (0 : Fin 2)) := dif_pos hg
+      rw [this]
+      show g * a ^ ((0 : Fin 2) : ℕ) = g
+      simp
+    · show toFun (invFun g) = g
+      have : invFun g = (⟨g * a⁻¹, hcoset g hg⟩, (1 : Fin 2)) := dif_neg hg
+      rw [this]
+      show g * a⁻¹ * a ^ ((1 : Fin 2) : ℕ) = g
+      show g * a⁻¹ * a ^ (1 : ℕ) = g
+      rw [pow_one]
+      group
+  let myEquiv : H × Fin 2 ≃ G :=
+    { toFun := toFun
+      invFun := invFun
+      left_inv := left_inv
+      right_inv := right_inv }
+  exact
+    { a := a
+      ι := H.subtype
+      act_a := by
+        intro x
+        show a * x.1 * a⁻¹ = (τ x).1
+        rfl
+      pow_a_n := by
+        show a ^ 2 = v.1
+        rfl
+      equiv := myEquiv
+      equiv_apply := by
+        intro x i
+        show x.1 * a ^ (i : ℕ) = x.1 * a ^ (i : ℕ)
+        rfl }
 
 /-! ## Case analysis: normal `C_8` -/
 
