@@ -4,6 +4,10 @@ import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
 import «M2rGroup7».UT3
+import «M2rGroup7».CaseA
+import «M2rGroup7».CaseB
+import «M2rGroup7».CaseC
+import «M2rGroup7».OddCaseA
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import Mathlib.SetTheory.Cardinal.Finite
@@ -51,15 +55,6 @@ lemma isMulCommutative_of_mulEquiv {M N : Type*} [Group M] [Group N]
 theorem center_eq_top_iff : Subgroup.center G = ⊤ ↔ IsMulCommutative G := by
   simp [Subgroup.eq_top_iff', isMulCommutative_iff, Subgroup.mem_center_iff, eq_comm]
 
-theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
-(Nonempty (MulEquiv G (CyclicGroup n))) := by
-  apply Nonempty.intro
-  have h_g_card : Nat.card G = n := h
-  have : IsCyclic G := isCyclic_of_prime_card h_g_card
-  refine (mulEquivOfCyclicCardEq ?_)
-  have h_c_card: Nat.card (CyclicGroup n) = n := card_cyclicGroup n
-  rw [h_g_card, h_c_card]
-
 theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
   (h_na : ¬IsMulCommutative G) (h : Nat.card G = p ^ 3) :
   (p = 2 ∧ ((Nonempty (MulEquiv G (DihedralGroup 4))) ∨
@@ -102,7 +97,6 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
 
   have h_i_ne_zero : i ≠ 0 := by
     intro hi0
-
     rw [hi0, pow_zero] at h_z_order_p_i
     obtain ⟨u, hu⟩ := h_z_order_p_i
     apply mul_eq_one.mp at hu
@@ -120,29 +114,22 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
 
   have h_z_card_ne_p2 : Nat.card ↥Z ≠ (p^2) := by
     intro h_z_p2
-
     have : Z.Normal := by
       rw [hZ]
       exact Subgroup.instNormalCenter
-
     have h_z_idx_p : Z.index = p := by
       have h_index_mul_card := Subgroup.index_mul_card Z
       rw [h_z_p2, h] at h_index_mul_card
       have h_p_ne_zero := hn.elim.ne_zero
       nlinarith
-
     have h_g_quot_z_p_card : Nat.card (G ⧸ Z) = p := by
       rw [← h_z_idx_p]
       apply Subgroup.index_eq_card
-
     have : IsCyclic (G ⧸ Z) := by
       exact isCyclic_of_prime_card h_g_quot_z_p_card
-
     have h_ker_subgroup_z : (QuotientGroup.mk' Z).ker ≤ Z := by
       rw [QuotientGroup.ker_mk' Z]
-
     have h_comm := commutative_of_cyclic_center_quotient (QuotientGroup.mk' Z) (h_ker_subgroup_z)
-
     contrapose! h_na
     rw [isMulCommutative_iff]
     intro a b
@@ -182,7 +169,6 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
           rw [MulEquiv.isCyclic iso]
           infer_instance
         sorry
-
       | inr hb =>
         exact hb
 
@@ -195,8 +181,8 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
     apply isMulCommutative_of_commGroup at h_Cp_Cp_comm
     sorry
 
-  have h_comm_sub_z : commutator G ≤ Z := by
-    exact Subgroup.Normal.quotient_commutative_iff_commutator_le.mp h_quotient_z_abelian.is_comm
+  have h_comm_sub_z : commutator G ≤ Z :=
+    Subgroup.Normal.quotient_commutative_iff_commutator_le.mp h_quotient_z_abelian.is_comm
 
   have hcomm_nontrivial : commutator G ≠ ⊥ := by
     intro h
@@ -422,9 +408,13 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
     rwa [h] at this
 
   have hb_order_cases : orderOf b = 1 ∨ orderOf b = p ∨ orderOf b = p ^ 2 ∨ orderOf b = p ^ 3 := by
-    have := (Nat.dvd_prime_pow hn.out).mp hb_order_dvd
-    obtain ⟨i, hi, hib⟩ := this
-    interval_cases i <;> simp_all
+    have hdvd := (Nat.dvd_prime_pow hn.out).mp hb_order_dvd
+    obtain ⟨i, hi, hib⟩ := hdvd
+    interval_cases i
+    · left; simpa using hib
+    · right; left; simpa using hib
+    · right; right; left; simpa using hib
+    · right; right; right; simpa using hib
 
   have hb_order_ne_one : orderOf b ≠ 1 := by
     intro h
@@ -494,70 +484,272 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
     · exact hp2
     · subst hp2
       rcases ha_order with ha_p | ha_p2 <;> rcases hb_order with hb_p | hb_p2
-      · -- Case A: both order 2
+      · -- Case A: both order 2 → D₄
         left
-        sorry
-      · -- Case B: a order 2, b order 4
+        have ha2 : orderOf a = 2 := by linarith
+        have hb2 : orderOf b = 2 := by linarith
+        exact case_A_isom a b ha2 hb2 hab_comm (by linarith)
+      · -- Case B: a order 2, b order 4 → D₄
         left
-        sorry
-      · -- Case B2: a order 4, b order 2
+        have hcard : Nat.card G = 8 := by rw [h]; norm_num
+        exact case_B_isom b a hb_p2 ha_p (fun h => hab_comm h.symm) hcard
+      · -- Case B2: a order 4, b order 2 → D₄
         left
-        sorry
-      · -- Case C: both order 4
+        have hcard : Nat.card G = 8 := by rw [h]; norm_num
+        exact case_B_isom a b ha_p2 hb_p hab_comm hcard
+      · -- Case C: both order 4 → Q₈
         right
-        sorry
+        have hcard : Nat.card G = 8 := by rw [h]; norm_num
+        exact case_C_isom a b ha_p2 hb_p2 hab_comm hcard
   · right
     constructor
     · exact hp2
     · rcases ha_order with ha_p | ha_p2 <;> rcases hb_order with hb_p | hb_p2
-      · -- Case A odd: both order p
+      · -- Case A odd: both order p → UT₃
         left
-        sorry
-      · -- Case B odd: a order p, b order p^2
+        exact case_A_odd_isom p a b ha_p hb_p hab_comm h
+      · -- Case B odd: a order p, b order p² → C_{p²} ⋊ C_p
         right
         sorry
-      · -- Case B2 odd: a order p^2, b order p
+      · -- Case B2 odd: a order p², b order p → C_{p²} ⋊ C_p
         right
         sorry
-      · -- Case C odd: both order p^2
+      · -- Case C odd: both order p² → C_{p²} ⋊ C_p
         right
         sorry
 
-theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [CommGroup G] (h : Nat.card G = p^3) :
+theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [IsMulCommutative G]
+  (h : Nat.card G = p ^ 3) :
   (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
   (Nonempty (MulEquiv G (CyclicGroup (p^2) × CyclicGroup p))) ∨
   (Nonempty (MulEquiv G (CyclicGroup p × CyclicGroup p × CyclicGroup p)))
   := by
-    have : Finite G := by
-      apply Nat.finite_of_card_ne_zero
-      rw [h]
-      have p_ne : p ≠ 0 := Nat.Prime.ne_zero hn.elim
-      exact pow_ne_zero 3 p_ne
-    have h_finite_cycles := CommGroup.equiv_prod_multiplicative_zmod_of_finite G
+  haveI hfin : Finite G := Nat.finite_of_card_ne_zero (h ▸ pow_ne_zero 3 hn.elim.ne_zero)
+  -- Case 1: G is cyclic → G ≅ CyclicGroup (p³)
+  by_cases hc : IsCyclic G
+  · left
+    haveI := hc
+    exact ⟨mulEquivOfCyclicCardEq (h.trans (card_cyclicGroup _).symm)⟩
+  -- G is not cyclic; split on whether G has an element of order p²
+  · by_cases hexp2 : ∃ g : G, orderOf g = p ^ 2
+    · -- Case 2: G has element of order p² → G ≅ C_{p²} × C_p
+      right; left
+      obtain ⟨g, hg⟩ := hexp2
+      -- Step 1: All elements have order dividing p²
+      -- (if some x had order p³ = |G|, it would generate G and make G cyclic)
+      have hexp : ∀ x : G, orderOf x ∣ p ^ 2 := by
+        intro x
+        have hdvd : orderOf x ∣ p ^ 3 := h ▸ orderOf_dvd_natCard x
+        rw [Nat.dvd_prime_pow hn.out] at hdvd
+        obtain ⟨k, hk3, hxk⟩ := hdvd
+        have hk3' : k ≠ 3 := fun hke =>
+          hc (isCyclic_of_orderOf_eq_card x (by rw [hxk, hke]; exact h.symm))
+        rw [hxk]
+        exact Nat.pow_dvd_pow p (by omega)
+      -- Step 2: Set up H = ⟨g⟩ and establish its order and normality
+      let H : Subgroup G := Subgroup.zpowers g
+      have hH : Nat.card H = p ^ 2 := Nat.card_zpowers g ▸ hg
+      haveI hHnorm : H.Normal := inferInstance  -- automatic from CommGroup G
+      -- Step 3: The quotient G/H has order p
+      have hcard_quot : Nat.card (G ⧸ H) = p := by
+        rw [← Subgroup.index_eq_card]
+        have heq : H.index * Nat.card H = Nat.card G := Subgroup.index_mul_card H
+        rw [hH, h] at heq
+        have : H.index * p ^ 2 = p * p ^ 2 := by linarith [show p ^ 3 = p * p ^ 2 by ring]
+        have : p ≠ 0 := hn.elim.ne_zero
+        have : p^2 ≠ 0 := by aesop
+        aesop
+      -- Step 4: Find t₀ outside H
+      obtain ⟨t₀, ht₀⟩ : ∃ t₀ : G, t₀ ∉ H := by
+        by_contra hall
+        push Not at hall
+        rw [← Subgroup.eq_top_iff'] at hall
+        rw [← Subgroup.card_eq_iff_eq_top, hH, h] at hall
+        have : p ≠ 0 := hn.elim.ne_zero
+        have : p ≠ 1 := hn.elim.ne_one
+        subst hcard_quot
+        simp_all only [Nat.card_zpowers, Nat.card_pos, ne_eq, not_false_eq_true, pow_right_inj₀,
+                       Nat.reduceEqDiff, H]
+      -- Step 5: t₀^p ∈ H  (every element of the order-p quotient has exponent p)
+      have ht₀p_mem : t₀ ^ p ∈ H := by
+        have hord : orderOf (QuotientGroup.mk' H t₀) ∣ p :=
+          hcard_quot ▸ orderOf_dvd_natCard _
+        have hpow : (QuotientGroup.mk' H t₀) ^ p = 1 :=
+          orderOf_dvd_iff_pow_eq_one.mp hord
+        rw [← map_pow (QuotientGroup.mk' H)] at hpow
+        exact (QuotientGroup.eq_one_iff _).mp hpow
+      -- Step 6: Extract integer k such that g^k = t₀^p
+      obtain ⟨k, hk⟩ : ∃ k : ℤ, g ^ k = t₀ ^ p :=
+        Subgroup.mem_zpowers_iff.mp ht₀p_mem
+      -- Step 7: p | k  (from t₀^(p²) = 1 and g^k = t₀^p)
+      have ht₀sq : t₀ ^ (p ^ 2) = 1 := orderOf_dvd_iff_pow_eq_one.mp (hexp t₀)
+      have hgkp : g ^ (k * (p : ℤ)) = 1 := by
+        rw [zpow_mul, zpow_natCast, hk]
+        calc (t₀ ^ p) ^ p = t₀ ^ (p * p) := by rw [← pow_mul]
+          _ = t₀ ^ (p ^ 2) := by rw [← sq]
+          _ = 1 := ht₀sq
+      have hp2dvd : (p ^ 2 : ℤ) ∣ k * (p : ℤ) := by
+        have h := orderOf_dvd_iff_zpow_eq_one.mpr hgkp
+        rw [hg] at h; exact_mod_cast h
+      have hpdvdk : (p : ℤ) ∣ k := by
+        have hp : (p : ℤ) ≠ 0 := by exact_mod_cast hn.out.ne_zero
+        exact (mul_dvd_mul_iff_right hp).mp (sq (p : ℤ) ▸ hp2dvd)
+      -- Step 8: Construct t = t₀ · g^(-m) of order p, not in H
+      obtain ⟨m, hm⟩ := hpdvdk
+      let t := t₀ * g ^ (-m)
+      have ht_pow : t ^ p = 1 := by
+        change (t₀ * g ^ (-m : ℤ)) ^ p = 1
+        rw [mul_pow]
+        have h2 : (g ^ (-m : ℤ)) ^ p = g ^ (-k : ℤ) := by
+          rw [← zpow_natCast (g ^ (-m : ℤ)) p, ← zpow_mul]
+          congr 1; rw [neg_mul, mul_comm m (p : ℤ), ← hm]
+        rw [h2, ← hk, ← zpow_add, add_neg_cancel, zpow_zero]
+      have ht_notH : t ∉ H := by
+        change t₀ * g ^ (-m : ℤ) ∉ H
+        intro hmem
+        apply ht₀
+        have hgm : g ^ (m : ℤ) ∈ H := Subgroup.mem_zpowers_iff.mpr ⟨m, rfl⟩
+        have heq : t₀ = t₀ * g ^ (-m : ℤ) * g ^ (m : ℤ) := by
+          simp [mul_assoc]
+        rw [heq]; exact H.mul_mem hmem hgm
+      have ht_ord : orderOf t = p :=
+        orderOf_eq_prime ht_pow (fun heq => ht_notH (heq ▸ H.one_mem))
+      -- Step 9: Direct product G ≅ H × K ≅ CyclicGroup(p²) × CyclicGroup(p)
+      let K : Subgroup G := Subgroup.zpowers t
+      have hK : Nat.card K = p := Nat.card_zpowers t ▸ ht_ord
+      haveI hKnorm : K.Normal := inferInstance
+      have hinf : H ⊓ K = ⊥ := by
+        rw [Subgroup.eq_bot_iff_card]
+        have hdvdK : Nat.card (H ⊓ K : Subgroup G) ∣ Nat.card K :=
+          Subgroup.card_dvd_of_le inf_le_right
+        rw [hK] at hdvdK
+        rcases Nat.Prime.eq_one_or_self_of_dvd hn.out _ hdvdK with h1 | hp
+        · exact h1
+        · exfalso
+          have hHK_eq_K : (H ⊓ K : Subgroup G) = K :=
+            Subgroup.eq_of_le_of_card_ge inf_le_right (Nat.le_of_eq (hp ▸ hK))
+          exact ht_notH (hHK_eq_K ▸ inf_le_left <| Subgroup.mem_zpowers t)
+      have hsup : H ⊔ K = ⊤ := by
+        rw [← Subgroup.coe_eq_univ, Subgroup.normal_mul]
+        apply Subgroup.prod_eq_of_inf_eq_bot_and_card hinf
+        rw [hH, hK, h]; ring
+      exact ⟨(mulEquivProd hHnorm hKnorm hinf hsup).trans
+        ((mulEquivOfCyclicCardEq (hH.trans (card_cyclicGroup _).symm)).prodCongr
+         (mulEquivOfCyclicCardEq (hK.trans (card_cyclicGroup _).symm)))⟩
+    · -- Case 3: no element of order ≥ p², so every element satisfies g^p = 1
+      right; right
+      -- Every element satisfies g^p = 1
+      have hpow : ∀ g : G, g ^ p = 1 := by
+        intro g
+        have hdvd : orderOf g ∣ p ^ 3 := h ▸ orderOf_dvd_natCard g
+        rw [Nat.dvd_prime_pow hn.out] at hdvd
+        obtain ⟨k, hk3, hgk⟩ := hdvd
+        -- k ≠ 3: else orderOf g = card G so G is cyclic, contradicting hc
+        have hk3' : k ≠ 3 :=
+          fun hk3e => hc (isCyclic_of_orderOf_eq_card g (hgk ▸ hk3e ▸ h.symm))
+        -- k ≠ 2: contradicts hexp2
+        have hk2' : k ≠ 2 := fun hk2e => hexp2 ⟨g, hgk ▸ hk2e ▸ rfl⟩
+        -- so k ≤ 1, meaning orderOf g ∣ p
+        have hk1 : k ≤ 1 := by omega
+        have hk1' : p ^ k ∣ p ^ 1 := Nat.pow_dvd_pow p hk1
+        rw [pow_one] at hk1'
+        rw [← hgk] at hk1'
+        exact orderOf_dvd_iff_pow_eq_one.mp hk1'
+      -- Give Additive G a ZMod p-module structure
+      haveI hnezerp : NeZero p := ⟨hn.elim.ne_zero⟩
+      haveI hmod : Module (ZMod p) (Additive G) := AddCommGroup.zmodModule (n := p) fun a => by
+        nth_rewrite 1 [← ofMul_toMul a]
+        rw [← ofMul_pow, hpow (Additive.toMul a)]
+        trivial
+      haveI hfree : Module.Free (ZMod p) (Additive G) := Module.Free.of_divisionRing _ _
+      haveI hfinmod : Module.Finite (ZMod p) (Additive G) := Module.Finite.of_finite
+      -- finrank = 3 from p^finrank = Nat.card (Additive G) = p^3
+      have hfinrank : Module.finrank (ZMod p) (Additive G) = 3 := by
+        have hcardAG : Nat.card (Additive G) = p ^ 3 :=
+          (Nat.card_congr Additive.toMul).trans h
+        have hcard := Module.natCard_eq_pow_finrank (K := ZMod p) (V := Additive G)
+        rw [Nat.card_zmod, hcardAG] at hcard
+        exact Nat.pow_right_injective hn.out.one_lt hcard.symm
+      -- Get a Fin 3 basis and linear equivalence Additive G ≃ₗ[ZMod p] (Fin 3 → ZMod p)
+      let e_lin := (Module.finBasisOfFinrankEq (ZMod p) (Additive G) hfinrank).equivFun
+      -- Direct MulEquiv: G →* (Fin 3 → CyclicGroup p) via e_lin
+      have e_mul : G ≃* (Fin 3 → CyclicGroup p) :=
+        { toFun := fun g i => Multiplicative.ofAdd (e_lin (Additive.ofMul g) i)
+          invFun := fun f => Additive.toMul (e_lin.symm (fun i => Multiplicative.toAdd (f i)))
+          left_inv := fun g => by simp
+          right_inv := fun f => by ext i; simp
+          map_mul' := fun g1 g2 => by
+            ext i
+            simp only [ofMul_mul, LinearEquiv.map_add, Pi.add_apply, toAdd_ofAdd]
+            trivial }
+      have e_fin3 : (Fin 3 → CyclicGroup p) ≃* CyclicGroup p × CyclicGroup p × CyclicGroup p :=
+        { toFun := fun f => (f 0, f 1, f 2)
+          invFun := fun ⟨a, b, c⟩ => Fin.cons a (Fin.cons b (fun _ => c))
+          left_inv := fun f => funext fun i => by
+            fin_cases i <;>
+              simp only [Fin.cons_zero, Fin.reduceFinMk]
+              <;> trivial
+          right_inv := fun ⟨a, b, c⟩ => by
+            simp only [Fin.isValue, Fin.cons_zero, Fin.cons_one, Prod.mk.injEq, true_and]
+            trivial
+          map_mul' := fun f g => rfl }
+      exact ⟨e_mul.trans e_fin3⟩
 
-    obtain ⟨IndexType, h'⟩ := h_finite_cycles
-    obtain ⟨h_index_fin, h''⟩ := h'
-    obtain ⟨order_func, h'''⟩ := h''
-    obtain ⟨h_cycles_nontrivial, h_prod⟩ := h'''
+theorem order_p_cubed_classification {p : ℕ} [hn : Fact p.Prime]
+    (h : Nat.card G = p ^ 3) :
+    (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
+    (Nonempty (MulEquiv G (CyclicGroup (p^2) × CyclicGroup p))) ∨
+    (Nonempty (MulEquiv G (CyclicGroup p × CyclicGroup p × CyclicGroup p))) ∨
+    (p = 2 ∧ Nonempty (MulEquiv G (DihedralGroup 4))) ∨
+    (p = 2 ∧ Nonempty (MulEquiv G (QuaternionGroup 2))) ∨
+    (p ≠ 2 ∧ Nonempty (MulEquiv G (UT3 p))) ∨
+    (p ≠ 2 ∧ Nonempty (MulEquiv G (CyclicGroup (p^2) ⋊[cpSqAction p] CyclicGroup p))) := by
+  by_cases hab : IsMulCommutative G
+  · haveI := hab
+    rcases prime_cubed_and_abelian_classification (G := G) h with h1 | h2 | h3
+    · exact Or.inl h1
+    · exact Or.inr (Or.inl h2)
+    · exact Or.inr (Or.inr (Or.inl h3))
+  · rcases prime_cubed_non_abelian_classification (G := G) hab h with
+      ⟨hp2, hD4 | hQ8⟩ | ⟨hp2, hUT3 | hSemi⟩
+    · exact Or.inr (Or.inr (Or.inr (Or.inl ⟨hp2, hD4⟩)))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨hp2, hQ8⟩))))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨hp2, hUT3⟩)))))
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨hp2, hSemi⟩)))))
 
-    -- have : Nat.card G = Nat.card ((i : IndexType) → Multiplicative (ZMod (order_func i))) := sorry
+theorem order8_classification {G : Type*} [Group G] (h : Nat.card G = 8) :
+    (Nonempty (MulEquiv G (CyclicGroup 8))) ∨
+    (Nonempty (MulEquiv G (CyclicGroup 4 × CyclicGroup 2))) ∨
+    (Nonempty (MulEquiv G (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2))) ∨
+    (Nonempty (MulEquiv G (DihedralGroup 4))) ∨
+    (Nonempty (MulEquiv G (QuaternionGroup 2))) := by
+  haveI : Fact (Nat.Prime 2) := ⟨by decide⟩
+  have h' : Nat.card G = 2 ^ 3 := by rw [h]; norm_num
+  rcases order_p_cubed_classification (G := G) h' with
+    h1 | h2 | h3 | ⟨_, h4⟩ | ⟨_, h5⟩ | ⟨h6, _⟩ | ⟨h6, _⟩
+  · exact Or.inl h1
+  · exact Or.inr (Or.inl h2)
+  · exact Or.inr (Or.inr (Or.inl h3))
+  · exact Or.inr (Or.inr (Or.inr (Or.inl h4)))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr h5)))
+  · exact absurd rfl h6
+  · exact absurd rfl h6
 
-    have order_to_group := fun i : IndexType => Multiplicative (ZMod (order_func i))
-    let ProductGroup := ((i : IndexType) → Multiplicative (ZMod (order_func i)))
-
-    have := Cardinal.mk_pi order_to_group
-
-    have : ∀ i : IndexType, Cardinal.mk (order_to_group i) = order_func i := by
-      sorry
-
-    have : Cardinal.mk ProductGroup = Cardinal.prod fun i ↦ order_func i := by
-      sorry
-
-    -- have := Multiset.map (p^3) Finset.univ
+/-- A group of prime order is isomorphic to the cyclic group of the same order. -/
+theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
+(Nonempty (MulEquiv G (CyclicGroup n))) := by
+  apply Nonempty.intro
+  have h_g_card : Nat.card G = n := h
+  have : IsCyclic G := isCyclic_of_prime_card h_g_card
+  refine (mulEquivOfCyclicCardEq ?_)
+  have h_c_card: Nat.card (CyclicGroup n) = n := card_cyclicGroup n
+  rw [h_g_card, h_c_card]
 
 macro "classify_prime" p:num h:term : tactic => `(tactic|(
   have : Fact (Nat.Prime $p) := ⟨by decide⟩
   use 1
+  haveI hv : ValidIndex $p 1 := by decide
+  use hv
   have hr : MulEquiv (retrieve $p 1) (CyclicGroup $p) := by
     have hr_is_c : retrieve $p 1 = CyclicGroup $p := by rfl
     exact (MulEquiv.refl (CyclicGroup $p))
@@ -567,15 +759,21 @@ macro "classify_prime" p:num h:term : tactic => `(tactic|(
 macro "classify_prime_sq" p:num h:term : tactic => `(tactic|(
   haveI : Fact (Nat.Prime $p) := ⟨by decide⟩
   obtain (hiso | hiso) := p_squared_classification (p := $p) ($h |>.trans (by decide))
-  · exact ⟨1, hiso⟩
-  · exact ⟨2, hiso⟩))
+  · exact ⟨1, by decide , hiso⟩
+  · exact ⟨2, by decide, hiso⟩))
 
-theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
-  (∃ i : Nat, Nonempty (MulEquiv G (retrieve n i)))
- :=
-  match n with
-  | 1 => by
-    use 1
+/-- A group of order at most `maximumOrder` is isomorphic to some group obtained by `retrieve`. -/
+theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
+  ∃ i : Nat, ∃ hv : ValidIndex n i, Nonempty (MulEquiv G (retrieve n i))
+ := by
+  have h1 : n ≥ 1 := NeZero.pos n
+  have h2 : n ≤ maximumOrder := hmax.out
+  interval_cases n
+
+  -- n = 1
+  · use 1
+    haveI hv : ValidIndex 1 1 := by decide
+    use hv
     apply Nonempty.intro
 
     have : Unique (retrieve 1 1) := by
@@ -591,36 +789,57 @@ theorem classification [hp : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
 
     exact MulEquiv.ofUnique
 
-  | 2 => by
-    classify_prime 2 h
+  -- n = 2
+  · classify_prime 2 h
 
-  | 3 => by
-    classify_prime 3 h
+  -- n = 3
+  · classify_prime 3 h
 
-  | 4 => by classify_prime_sq 2 h
+  -- n = 4
+  · classify_prime_sq 2 h
 
-  | 5 => by
-    classify_prime 5 h
+  -- n = 5
+  · classify_prime 5 h
 
-  | 6 => by
-    obtain (hiso | hiso) := order6_classification h
-    · exact ⟨2, hiso⟩
-    · exact ⟨1, hiso⟩
+  -- n = 6
+  · obtain (hiso | hiso) := order6_classification h
+    · exact ⟨2, by decide, hiso⟩
+    · exact ⟨1, by decide, hiso⟩
 
-  | 7 => by
-    classify_prime 7 h
+  -- n = 7
+  · classify_prime 7 h
 
-  | 8 => by
-    sorry
+  -- n = 8
+  · rcases order8_classification h with h1 | h2 | h3 | h4 | h5
+    · exact ⟨1, by decide, h1⟩
+    · exact ⟨2, by decide, h2⟩
+    · exact ⟨5, by decide, h3⟩
+    · exact ⟨3, by decide, h4⟩
+    · exact ⟨4, by decide, h5⟩
 
-  | 9 => by classify_prime_sq 3 h
+  -- n = 9
+  · classify_prime_sq 3 h
 
-  | 10 => by
-    sorry
+  -- n = 10
+  · sorry
 
-  | 11 => by
-    classify_prime 11 h
+  -- n = 11
+  · classify_prime 11 h
 
-  | _ => by
-    have hn := n > maximumOrder
-    sorry
+  -- n = 12
+  · sorry
+
+  -- n = 13
+  · classify_prime 13 h
+
+  -- n = 14
+  · sorry
+
+  -- n = 15
+  · sorry
+
+  -- n = 16
+  · sorry
+
+  -- n = 17
+  · classify_prime 17 h
