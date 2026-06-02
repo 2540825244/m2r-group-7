@@ -214,7 +214,7 @@ theorem semidirectProduct_C3_on_C2C2_iso
   -- Build the two Sylow 3-subgroups for f_1.range and f_2.range.
   have h_fact_eq : ((Nat.card (MulAut (CyclicGroup 2 × CyclicGroup 2))).factorization 3) = 1 := by
     rw [h_aut_card, show (6 : ℕ) = 2 * 3 from rfl]
-    exact factorization_prime_mul_prime_left Nat.prime_two Nat.prime_three (by norm_num)
+    exact factorization_prime_mul_prime_left Nat.prime_three Nat.prime_two (by norm_num)
   let S1 : Sylow 3 (MulAut (CyclicGroup 2 × CyclicGroup 2)) :=
     Sylow.ofCard f_1.range (by rw [hf1_range, h_fact_eq, pow_one])
   let S2 : Sylow 3 (MulAut (CyclicGroup 2 × CyclicGroup 2)) :=
@@ -232,6 +232,7 @@ theorem semidirectProduct_C3_on_C2C2_iso
       have h_mod := card_sylow_modEq_one 3 (MulAut (CyclicGroup 2 × CyclicGroup 2))
       rw [h_idx] at h_dvd
       unfold Nat.ModEq at h_mod
+      rw [Nat.dvd_prime (by norm_num)] at h_dvd
       omega
     exact (Nat.card_eq_one_iff_unique.mp h_card_eq_one).1
   -- f_1.range = f_2.range via Sylow uniqueness.
@@ -266,17 +267,17 @@ set_option maxHeartbeats 400000 in
     6. (Only when q = 3) The semidirect product `(C_2 × C_2) ⋊ C_3 ≃ A_4` with the
        canonical order-3 action on `C_2 × C_2`. -/
 theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
-    (h_ge_3 : q ≥ 3) (h : Nat.card G = 4 * q)
-    : Nonempty (G ≃* CyclicGroup (4 * q))
-      ∨ Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q)
-      ∨ Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
-                         (canonicalC4OnCqAction (by omega : q ≠ 2)))
-      ∨ (∃ h_1_mod_4 : q ≡ 1 [MOD 4],
+    (h_ge_3 : q ≥ 3) (h : Nat.card G = 4 * q) :
+    Nonempty (G ≃* CyclicGroup (4 * q)) ∨
+    Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q) ∨
+    Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
+      (canonicalC4OnCqAction (by omega : q ≠ 2)))
+    ∨ (∃ h_1_mod_4 : q ≡ 1 [MOD 4],
             Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
                             (canonicalC4OnCqAction_r2 h_1_mod_4)))
-      ∨ Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2)
+    ∨ Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2)
                          (canonicalC2C2OnCqAction (by omega : q ≠ 2)))
-      ∨ (∃ _ : q = 3,
+    ∨ (∃ _ : q = 3,
             Nonempty (G ≃* SemidirectProduct (CyclicGroup 2 × CyclicGroup 2) (CyclicGroup 3)
                             canonicalC3OnC2C2Action)) := by
 

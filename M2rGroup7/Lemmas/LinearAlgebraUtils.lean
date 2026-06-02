@@ -223,7 +223,7 @@ end GL2OrderTwo
 noncomputable def GL2F2_isoS3 : GL (Fin 2) (ZMod 2) ≃* DihedralGroup 3 :=
   Classical.choice (by
     have hcard : Nat.card (GL (Fin 2) (ZMod 2)) = 6 := by
-      rw [Nat.card_eq_fintype_card]; native_decide
+      rw [Nat.card_eq_fintype_card]; decide
     rcases order6_classification hcard with h | h
     · -- CyclicGroup 6 is abelian, but GL₂(𝔽₂) is not
       obtain ⟨e⟩ := h
@@ -231,7 +231,7 @@ noncomputable def GL2F2_isoS3 : GL (Fin 2) (ZMod 2) ≃* DihedralGroup 3 :=
         fun a b => e.injective (by
           rw [map_mul e, map_mul e]
           exact @mul_comm (Multiplicative (ZMod 6)) inferInstance (e a) (e b))
-      exact absurd hcomm (by native_decide)
+      exact absurd hcomm (by decide)
     · exact h)
 
 /-- The automorphism group of C_p × C_p is isomorphic to GL(2, 𝔽_p).
