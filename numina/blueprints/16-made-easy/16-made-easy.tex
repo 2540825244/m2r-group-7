@@ -3,6 +3,240 @@
 
 \begin{document}
 
-% Your blueprint will go here.
+\section{Setup}
+
+We follow Wild's paper ``The Groups of Order Sixteen Made Easy'' (Marcel Wild,
+\emph{Amer.\ Math.\ Monthly} \textbf{112} (2005), 20--31). Throughout, $G$ is a
+finite group of order $16$ and is not isomorphic to $(C_2)^4$. The goal is to
+show that $G$ realises one of the $13$ cyclic-extension types
+$\mathtt{ext\_16\_1}, \dots, \mathtt{ext\_16\_13}$ already defined in
+\texttt{M2rGroup7/SixteenClassification/Blueprints.lean}.
+
+We use the following data structures from
+\texttt{M2rGroup7/SixteenClassification/Extensions.lean}:
+
+\begin{itemize}
+\item An \emph{extension type} $E = (N, n, \tau, v)$ packages a group $N$, an
+exponent $n \in \mathbb{N}$, an automorphism $\tau \in \mathrm{Aut}(N)$ fixing
+$v \in N$, with $\tau^n = \mathrm{conj}_v$.
+\item A \emph{realisation} of $E$ by a group $G$ is a tuple
+$(a, \iota)$ where $a \in G$, $\iota : N \hookrightarrow G$ is a monoid
+homomorphism, $a \iota(x) a^{-1} = \iota(\tau(x))$ for all $x \in N$,
+$a^n = \iota(v)$, and the map $(x, i) \mapsto \iota(x) \cdot a^i$ is a bijection
+$N \times \{0, 1, \dots, n-1\} \xrightarrow{\sim} G$.
+\end{itemize}
+
+The thirteen extension types $\mathtt{ext\_16\_i}$ are pre-defined; each one is
+realised by an explicit order-$16$ group in
+\texttt{M2rGroup7/SixteenClassification/Blueprints.lean}.
+
+\section{Transfer along isomorphisms}
+
+\begin{definition}
+  \label{def:realise-transfer}
+  \lean{OrderSixteen.RealiseExtType.transfer}
+  \leanfile{M2rGroup7/SixteenClassification/Lemma3.lean}
+  \leanok
+  Let $G$ and $G'$ be groups, $E$ an extension type, $e : G \simeq G'$ a group
+  isomorphism, and $R : \mathrm{RealiseExtType}~G'~E$. Then the
+  \emph{transferred realisation} $\mathrm{transfer}(e, R)$ is the canonical
+  realisation of $E$ by $G$ obtained by pulling $R$ back along $e$.
+  Concretely, take $a := e^{-1}(R.a)$, $\iota := e^{-1} \circ R.\iota$,
+  and the bijection $(x, i) \mapsto \iota(x) \cdot a^i$ as $R.\mathrm{equiv}$
+  composed with $e^{-1}$.
+\end{definition}
+
+\begin{lemma}
+  \label{lem:realise-of-mulEquiv}
+  \lean{OrderSixteen.realise_of_mulEquiv}
+  \leanfile{M2rGroup7/SixteenClassification/Lemma3.lean}
+  \uses{def:realise-transfer}
+  \leanok
+  If $G \simeq G'$ and $G'$ admits a realisation of an extension type $E$, then
+  so does $G$.
+\end{lemma}
+
+\begin{proof}
+  Immediate from Definition~\ref{def:realise-transfer}.
+\end{proof}
+
+\section{Inducing elements}
+
+\begin{lemma}
+  \label{lem:inducing-element-exists}
+  \lean{OrderSixteen.exists_inducing_element}
+  \leanfile{M2rGroup7/SixteenClassification/Lemma3.lean}
+  Let $G$ be a group and $H \triangleleft G$ a normal subgroup of index $2$.
+  Then there exists $a \in G \setminus H$, and any such $a$ satisfies
+  $a^2 \in H$ and $\mathrm{conj}_a(H) = H$. The map $h \mapsto a h a^{-1}$ is
+  therefore an automorphism of $H$.
+\end{lemma}
+
+\begin{proof}
+  Since $[G : H] = 2 > 1$, $H \neq G$, so some $a \notin H$ exists. The coset
+  $Ha$ has order dividing $[G : H] = 2$ and is non-identity, hence order $2$.
+  Therefore $(Ha)^2 = H$, i.e.\ $a^2 \in H$. Normality of $H$ gives
+  $aHa^{-1} = H$ and the conjugation map $h \mapsto aha^{-1}$ restricts to an
+  automorphism of $H$.
+\end{proof}
+
+\begin{lemma}
+  \label{lem:realise-from-normal-index-2}
+  \lean{OrderSixteen.realise_from_normal_index_two}
+  \leanfile{M2rGroup7/SixteenClassification/Lemma3.lean}
+  \uses{lem:inducing-element-exists}
+  Let $G$ be a finite group, $H \triangleleft G$ a normal subgroup of index $2$,
+  and $a \in G \setminus H$. Set $v := a^2 \in H$ and let
+  $\tau \in \mathrm{Aut}(H)$ be conjugation by $a$. Then the extension type
+  $E := (H, 2, \tau, v)$ is well-defined ($\tau(v) = v$ and $\tau^2 =
+  \mathrm{conj}_v$) and $G$ realises $E$ with inducing element $a$ and
+  embedding $\iota : H \hookrightarrow G$.
+\end{lemma}
+
+\begin{proof}
+  Set $v := a^2$ and $\tau(h) := aha^{-1}$. Then $\tau(v) = a v a^{-1} = a^3
+  a^{-1} = a^2 = v$ and $\tau^2(h) = a^2 h a^{-2} = v h v^{-1} = \mathrm{conj}_v
+  (h)$. The decomposition $G = H \sqcup Ha$ as cosets of $H$ gives the
+  bijection $H \times \{0, 1\} \xrightarrow{\sim} G$,
+  $(h, i) \mapsto h \cdot a^i$, completing the data of a realisation.
+\end{proof}
+
+\section{Case analysis for normal \texorpdfstring{$C_8$}{C8}}
+
+\begin{lemma}
+  \label{lem:realise-with-normal-C8}
+  \lean{OrderSixteen.realise_with_normal_C8}
+  \leanfile{M2rGroup7/SixteenClassification/Lemma3.lean}
+  \uses{lem:realise-from-normal-index-2, lem:realise-of-mulEquiv}
+  Let $G$ be a group of order $16$ with a normal subgroup $H \le G$ such that
+  $H \simeq C_8$. Then $G$ realises one of the extension types
+  $\mathtt{ext\_16\_1}$, $\mathtt{ext\_16\_5}$, $\mathtt{ext\_16\_6}$,
+  $\mathtt{ext\_16\_7}$, $\mathtt{ext\_16\_8}$, or $\mathtt{ext\_16\_9}$.
+\end{lemma}
+
+\begin{proof}
+  Since $|G| = 16$ and $|H| = 8$, the index $[G : H] = 2$.  By
+  Lemma~\ref{lem:inducing-element-exists} there exists an inducing element
+  $a \in G \setminus H$.  Choose one of minimal order; since $a \notin H$ and
+  $|H| = 8$, we have $a^2 \in H$, so the order of $a$ lies in
+  $\{2, 4, 8, 16\}$.  Apply Lemma~\ref{lem:realise-from-normal-index-2} to
+  obtain a realisation of the extension type $(H, 2, \tau, v)$ where
+  $v = a^2$ and $\tau$ is conjugation by $a$ on $H \simeq C_8$.
+
+  \begin{itemize}
+  \item \emph{Case $|a| = 2$.} Then $v = e$ and
+  $\tau^2 = \mathrm{conj}_e = \mathrm{id}$, so $\tau \in \mathrm{Aut}(C_8)$ is an
+  involution.  $\mathrm{Aut}(C_8) = (\mathbb{Z}/8\mathbb{Z})^\times =
+  \{1, 3, 5, 7\}$ and every element squares to $1$, so all $4$ are involutions.
+  The resulting extension type is equivalent to one of $\mathtt{ext\_16\_5}$
+  ($\tau = \mathrm{id}$, realised by $C_8 \times C_2$), $\mathtt{ext\_16\_8}$
+  ($\tau : x \mapsto x^3$, realised by $C_8 \rtimes_{\mathrm{pow}_3} C_2$),
+  $\mathtt{ext\_16\_6}$ ($\tau : x \mapsto x^5$, realised by $C_8 \rtimes
+  _{\mathrm{pow}_5} C_2$), or $\mathtt{ext\_16\_7}$ ($\tau : x \mapsto x^7 =
+  x^{-1}$, realised by $D_8$).
+  \item \emph{Case $|a| = 4$.} Then $v = a^2$ has order $2$, so $v = x^4$ where
+  $x$ is a generator of $H \simeq C_8$.  By the analysis in Wild's
+  Case~3, the only surviving extension type up to equivalence is
+  $\mathtt{ext\_16\_9} = (C_8, 2, x \mapsto x^7, x^4)$, realised by the
+  generalised quaternion group $Q_{16}$.
+  \item \emph{Case $|a| = 8$.} If for every $b \in G \setminus H$ we have
+  $|b| \ge 8$, choose such an $a$. The element $a$ and $H$ together generate
+  $G$, but $\langle a \rangle$ has order $8 \neq |G|$, so $a \in H$ would
+  contradict $a \notin H$. The minimality assumption and the structure
+  $\mathrm{Aut}(C_8) = \{1, 3, 5, 7\}$ force this case to coincide with one of
+  the previous cases up to equivalence of extension types
+  (Lemma~\ref{lem:realise-of-mulEquiv} via Fact~3 of Wild).
+  \item \emph{Case $|a| = 16$.} Then $G = \langle a \rangle \simeq C_{16}$,
+  which realises $\mathtt{ext\_16\_1} = (C_8, 2, \mathrm{id}, x)$ via the
+  realisation $\mathtt{realise\_16\_1}$ pulled back along $G \simeq C_{16}$
+  using Lemma~\ref{lem:realise-of-mulEquiv}.
+  \end{itemize}
+
+  In every case $G$ realises one of $\mathtt{ext\_16\_1},
+  \mathtt{ext\_16\_5}, \mathtt{ext\_16\_6}, \mathtt{ext\_16\_7},
+  \mathtt{ext\_16\_8}, \mathtt{ext\_16\_9}$.
+\end{proof}
+
+\section{Case analysis for normal \texorpdfstring{$K_8 = C_4 \times C_2$}{K8 = C4 x C2}}
+
+\begin{lemma}
+  \label{lem:realise-with-normal-K8}
+  \lean{OrderSixteen.realise_with_normal_K8}
+  \leanfile{M2rGroup7/SixteenClassification/Lemma3.lean}
+  \uses{lem:realise-from-normal-index-2, lem:realise-of-mulEquiv}
+  Let $G$ be a group of order $16$ with a normal subgroup $H \le G$ such that
+  $H \simeq K_8 := C_4 \times C_2$. Then $G$ realises one of the extension
+  types $\mathtt{ext\_16\_2}$, $\mathtt{ext\_16\_3}$, $\mathtt{ext\_16\_4}$,
+  $\mathtt{ext\_16\_10}$, $\mathtt{ext\_16\_11}$, $\mathtt{ext\_16\_12}$, or
+  $\mathtt{ext\_16\_13}$.
+\end{lemma}
+
+\begin{proof}
+  As in the previous case, $[G : H] = 2$ and by
+  Lemma~\ref{lem:inducing-element-exists} there is an inducing element
+  $a \in G \setminus H$ with $a^2 \in H$. Choose $a$ of minimal order; the
+  order lies in $\{2, 4\}$ since $H \simeq K_8$ has exponent $4$ and no element
+  of $G$ outside $H$ can have order $8$ or $16$ in this scenario.
+  Lemma~\ref{lem:realise-from-normal-index-2} produces a realisation of
+  $(H, 2, \tau, v)$ with $\tau \in \mathrm{Aut}(K_8)$ and $v = a^2 \in H$.
+
+  \begin{itemize}
+  \item \emph{Case $|a| = 2$.} Then $v = e$. By Wild's Fact~4,
+  $\mathrm{Aut}(K_8)$ has six elements and the involutions group into
+  conjugacy classes $\{\psi_1\}, \{\psi_2\}, \{\psi_3, \psi_5\},
+  \{\psi_4, \psi_6\}$. Up to equivalence of extension types, the four classes
+  yield $\mathtt{ext\_16\_10}$ ($\tau = \mathrm{id}$, realised by
+  $K_8 \times C_2$), $\mathtt{ext\_16\_11}$ ($\tau = \psi_3$ in the Lean
+  encoding, realised by $C_2 \times D_4$), $\mathtt{ext\_16\_3}$ ($\tau =
+  \psi_5$ in the Lean encoding, realised by $(C_2 \times C_2) \rtimes C_4$),
+  and $\mathtt{ext\_16\_13}$ ($\tau = \psi_6$, realised by $K_8 \rtimes
+  _{\psi_6} C_2$).
+  \item \emph{Case $|a| = 4$.} Then $v = a^2 \in H$ has order $2$. The
+  involutions of $H \simeq K_8$ are $\{x^2, y, x^2 y\}$ in Wild's coordinates.
+  By Wild's Fact~4, $y$ and $x^2 y$ are interchanged by an automorphism, so
+  Lemma~\ref{lem:realise-of-mulEquiv} reduces the analysis to two sub-cases
+  $v = x^2$ and $v = y$.
+    \begin{itemize}
+    \item \emph{Sub-case $v = x^2$.} The element $x^2$ is the unique
+    characteristic non-identity element of $K_8$ (Wild's Fact~1), so any
+    $\tau \in \mathrm{Aut}(K_8)$ fixes $v$. The constraint $\tau^2 =
+    \mathrm{conj}_{x^2} = \mathrm{id}$ (since $K_8$ is abelian) forces $\tau$
+    to be an involution in $\mathrm{Aut}(K_8)$, leading after equivalence
+    reduction to $\mathtt{ext\_16\_4}$ ($\tau = \psi_5$, realised by
+    $C_4 \rtimes C_4$) and $\mathtt{ext\_16\_12}$ ($\tau = \psi_3$, realised
+    by $C_2 \times Q_2$).
+    \item \emph{Sub-case $v = y$.} The constraint $\tau(v) = v$ together with
+    Wild's Fact~4 forces $\tau \in \{\psi_1, \psi_3, \psi_4\}$. After Lemma~1(b)
+    and (c) reductions only $\tau = \psi_1$ survives, giving
+    $\mathtt{ext\_16\_2}$ ($\tau = \mathrm{id}$, $v = y$, realised by $C_4
+    \times C_4$).
+    \end{itemize}
+  \end{itemize}
+
+  In every case $G$ realises one of $\mathtt{ext\_16\_2}, \mathtt{ext\_16\_3},
+  \mathtt{ext\_16\_4}, \mathtt{ext\_16\_10}, \mathtt{ext\_16\_11},
+  \mathtt{ext\_16\_12}, \mathtt{ext\_16\_13}$.
+\end{proof}
+
+\section{Main lemma (Wild's Lemma 3)}
+
+\begin{theorem}
+  \label{thm:realise-ext-type-if-not-iso-to-C2-4}
+  \lean{OrderSixteen.realise_ext_type_if_not_iso_to_C2_4}
+  \leanfile{M2rGroup7/SixteenClassification/Classification.lean}
+  \uses{lem:realise-with-normal-C8, lem:realise-with-normal-K8}
+  Let $G$ be a group of order $16$ that is not isomorphic to $(C_2)^4$. Then
+  $G$ realises one of the extension types $\mathtt{ext\_16\_1}, \dots,
+  \mathtt{ext\_16\_13}$.
+\end{theorem}
+
+\begin{proof}
+  By the Lean lemma \texttt{exists\_normal\_C8\_or\_C4\_C2}, $G$ has either a
+  normal subgroup isomorphic to $C_8$ or a normal subgroup isomorphic to
+  $K_8 = C_4 \times C_2$. The two cases are handled respectively by
+  Lemma~\ref{lem:realise-with-normal-C8} and
+  Lemma~\ref{lem:realise-with-normal-K8}, exhausting the possibilities and
+  yielding one of the thirteen extension types.
+\end{proof}
 
 \end{document}
