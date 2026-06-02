@@ -257,50 +257,193 @@ realised by an explicit order-$16$ group in
 \end{lemma}
 
 \begin{proof}
-  As in the previous case, $[G : H] = 2$ and by
-  Lemma~\ref{lem:inducing-element-exists} there is an inducing element
-  $a \in G \setminus H$ with $a^2 \in H$. Choose $a$ of minimal order; the
-  order lies in $\{2, 4\}$ since $H \simeq K_8$ has exponent $4$ and no element
-  of $G$ outside $H$ can have order $8$ or $16$ in this scenario.
-  Lemma~\ref{lem:realise-from-normal-index-2} produces a realisation of
-  $(H, 2, \tau, v)$ with $\tau \in \mathrm{Aut}(K_8)$ and $v = a^2 \in H$.
+  Write $H = \langle x, y \rangle$ with $|x| = 4$, $|y| = 2$, and $xy = yx$,
+  so that $H = \langle x \rangle \times \langle y \rangle \simeq C_4 \times
+  C_2$. The hypothesis $|G| = 16$ together with $|H| = 8$ gives $[G : H] = 2$,
+  so $H$ is normal of index $2$ and Lagrange yields a partition $G = H \sqcup
+  Ha$ for any $a \in G \setminus H$.
 
+  By Lemma~\ref{lem:inducing-element-exists}, $G \setminus H$ is non-empty and
+  every $b \in G \setminus H$ satisfies $b^2 \in H$, so $|b|$ is even and
+  divides $16$. Hence $|b| \in \{2, 4, 8, 16\}$.
+
+  \smallskip
+  \noindent
+  \emph{Reduction to $|a| \in \{2, 4\}$.} We may assume $G$ has no element of
+  order $8$ (and a fortiori no element of order $16$). Indeed, if some
+  $g \in G$ has order $8$ then $\langle g \rangle$ is a subgroup of $G$ of
+  index $2$, hence normal, and isomorphic to $C_8$. In that situation the
+  theorem
+  \texttt{realise\_ext\_type\_if\_not\_iso\_to\_C2\_4}~(Theorem~\ref{thm:realise-ext-type-if-not-iso-to-C2-4})
+  dispatches via Lemma~\ref{lem:realise-with-normal-C8} rather than the
+  present lemma. Choosing $a$ to be an inducing element of minimal order in
+  $G \setminus H$ therefore gives $|a| \in \{2, 4\}$.
+
+  Set $v := a^2 \in H$ and let $\tau := \mathrm{conj}_a \in \mathrm{Aut}(H)$.
+  By Lemma~\ref{lem:realise-from-normal-index-2}, $G$ realises the extension
+  type $(H, 2, \tau, v)$.
+
+  \smallskip
+  \noindent
+  \emph{Structure of $\mathrm{Aut}(H)$.} $\mathrm{Aut}(K_8) \simeq D_4$ has
+  order $8$. The Lean blueprint uses three named involutions:
+  \[
+    \psi_3 : (x, y) \mapsto (x^{-1}, y), \qquad
+    \psi_5 : (x, y) \mapsto (xy, y), \qquad
+    \psi_6 : (x, y) \mapsto (x^{-1}, x^2 y).
+  \]
+  A short computation shows $\psi_3$ is central in $\mathrm{Aut}(H)$ (it
+  commutes with both $\psi_5$ and $\psi_6$), and the kernel of the natural map
+  $\mathrm{Aut}(H) \to \mathrm{Aut}(H[2]) \simeq S_3$ (where $H[2] = \{e, x^2,
+  y, x^2 y\}$ is the unique Klein four-subgroup) is
+  $\{\mathrm{id}, \psi_3, \psi_5, \psi_3 \psi_5\}$. Consequently the
+  conjugacy classes of involutions in $\mathrm{Aut}(H)$ are
+  \[
+    \{\mathrm{id}\}, \quad \{\psi_3\}, \quad \{\psi_5, \psi_3 \psi_5\},
+    \quad \{\psi_6, \psi_3 \psi_6\},
+  \]
+  giving four conjugacy classes of order-$\le 2$ elements. The element $x^2$
+  is characteristic in $H$ (it is the unique square of an order-$4$ element),
+  so it is fixed by every $\alpha \in \mathrm{Aut}(H)$; the orbit of $y$ under
+  $\mathrm{Aut}(H)$ is $\{y, x^2 y\}$ (with $\psi_6$ interchanging them).
+
+  \smallskip
+  We split on $|a|$.
+
+  \smallskip
+  \noindent
+  \emph{Case 1: $|a| = 2$.} Then $v = a^2 = e$, so the validity condition
+  $\tau^2 = \mathrm{conj}_v = \mathrm{id}$ just says that $\tau$ is an
+  involution (or the identity) in $\mathrm{Aut}(H)$. By the conjugacy-class
+  description above, the four
+  $\mathrm{Aut}(H)$-conjugacy classes of involutions $\cup \{\mathrm{id}\}$
+  give, by Lemma~1(c) (formalised as \texttt{conjugateActEquiv}/
+  \texttt{extension\_families\_same\_isoClasses}), four equivalence classes
+  of extension types $(H, 2, \tau, e)$ with representatives
+  \[
+    \tau = \mathrm{id},\quad \tau = \psi_3,\quad \tau = \psi_5,\quad \tau =
+    \psi_6,
+  \]
+  matching exactly the four predefined types
+  \[
+    \mathtt{ext\_16\_10} = (K_8, 2, \mathrm{id}, e),\quad
+    \mathtt{ext\_16\_11} = (K_8, 2, \psi_3, e),
+  \]
+  \[
+    \mathtt{ext\_16\_3} = (K_8, 2, \psi_5, e),\quad
+    \mathtt{ext\_16\_13} = (K_8, 2, \psi_6, e),
+  \]
+  realised respectively by $K_8 \times C_2$, $C_2 \times D_4$,
+  $(C_2 \times C_2) \rtimes_{c_4} C_4$, and the semidirect product
+  $K_8 \rtimes_{\psi_6} C_2$.
+
+  \smallskip
+  \noindent
+  \emph{Case 2: $|a| = 4$.} Then $v = a^2$ has order $2$ in $H$, so
+  $v \in \{x^2, y, x^2 y\}$. Because $\psi_6$ interchanges $y$ and $x^2 y$,
+  Lemma~\ref{lem:realise-of-mulEquiv} together with
+  \texttt{conjugateActEquiv} reduces the sub-cases $v = y$ and $v = x^2 y$ to
+  each other. We may therefore assume $v \in \{x^2, y\}$.
+
+  \smallskip
+  \noindent
+  \emph{Sub-case 2a: $v = x^2$.} Since $x^2$ is characteristic, every
+  $\alpha \in \mathrm{Aut}(H)$ stabilises $v$, and $\tau^2 = \mathrm{conj}_{x^2}
+  = \mathrm{id}$ (as $H$ is abelian) forces $\tau$ to be the identity or an
+  involution. By Lemma~1(c) we may take $\tau$ to be a representative of one
+  of the four conjugacy classes $\{\mathrm{id}\}, \{\psi_3\}, \{\psi_5\},
+  \{\psi_6\}$. For each $b = x^k y^l a \in G \setminus H$ a direct computation
+  gives
+  \[
+    (x^k y^l a)^2 = x^k y^l \cdot \tau(x^k y^l) \cdot v.
+  \]
   \begin{itemize}
-  \item \emph{Case $|a| = 2$.} Then $v = e$. By Wild's Fact~4,
-  $\mathrm{Aut}(K_8)$ has six elements and the involutions group into
-  conjugacy classes $\{\psi_1\}, \{\psi_2\}, \{\psi_3, \psi_5\},
-  \{\psi_4, \psi_6\}$. Up to equivalence of extension types, the four classes
-  yield $\mathtt{ext\_16\_10}$ ($\tau = \mathrm{id}$, realised by
-  $K_8 \times C_2$), $\mathtt{ext\_16\_11}$ ($\tau = \psi_3$ in the Lean
-  encoding, realised by $C_2 \times D_4$), $\mathtt{ext\_16\_3}$ ($\tau =
-  \psi_5$ in the Lean encoding, realised by $(C_2 \times C_2) \rtimes C_4$),
-  and $\mathtt{ext\_16\_13}$ ($\tau = \psi_6$, realised by $K_8 \rtimes
-  _{\psi_6} C_2$).
-  \item \emph{Case $|a| = 4$.} Then $v = a^2 \in H$ has order $2$. The
-  involutions of $H \simeq K_8$ are $\{x^2, y, x^2 y\}$ in Wild's coordinates.
-  By Wild's Fact~4, $y$ and $x^2 y$ are interchanged by an automorphism, so
-  Lemma~\ref{lem:realise-of-mulEquiv} reduces the analysis to two sub-cases
-  $v = x^2$ and $v = y$.
-    \begin{itemize}
-    \item \emph{Sub-case $v = x^2$.} The element $x^2$ is the unique
-    characteristic non-identity element of $K_8$ (Wild's Fact~1), so any
-    $\tau \in \mathrm{Aut}(K_8)$ fixes $v$. The constraint $\tau^2 =
-    \mathrm{conj}_{x^2} = \mathrm{id}$ (since $K_8$ is abelian) forces $\tau$
-    to be an involution in $\mathrm{Aut}(K_8)$, leading after equivalence
-    reduction to $\mathtt{ext\_16\_4}$ ($\tau = \psi_5$, realised by
-    $C_4 \rtimes C_4$) and $\mathtt{ext\_16\_12}$ ($\tau = \psi_3$, realised
-    by $C_2 \times Q_2$).
-    \item \emph{Sub-case $v = y$.} The constraint $\tau(v) = v$ together with
-    Wild's Fact~4 forces $\tau \in \{\psi_1, \psi_3, \psi_4\}$. After Lemma~1(b)
-    and (c) reductions only $\tau = \psi_1$ survives, giving
-    $\mathtt{ext\_16\_2}$ ($\tau = \mathrm{id}$, $v = y$, realised by $C_4
-    \times C_4$).
-    \end{itemize}
+    \item $\tau = \mathrm{id}$: $\tau(x^k y^l) = x^k y^l$, so $(b)^2 = x^{2k}
+    y^{2l} \cdot x^2 = x^{2k + 2}$. Taking $k = -1, l = 0$ gives $(x^{-1} a)^2
+    = e$, so $x^{-1} a$ is an involution in $G \setminus H$, contradicting
+    minimality.
+    \item $\tau = \psi_3$: $\tau(x^k y^l) = x^{-k} y^l$, so $b \cdot \tau(b) =
+    y^{2l} = e$ and hence $(b)^2 = x^2$ for every $h = x^k y^l$. Thus every
+    element of $G \setminus H$ has order $4$ (since $(b)^4 = x^4 = e$),
+    confirming minimality. The resulting extension type is
+    $\mathtt{ext\_16\_12} = (K_8, 2, \psi_3, x^2)$, realised by
+    $C_2 \times Q_2$.
+    \item $\tau = \psi_5$: $\tau(x^k y^l) = x^k y^{k+l}$, so $b \cdot \tau(b)
+    = x^{2k} y^{2l + k} = x^{2k} y^{k \bmod 2}$, giving
+    $(b)^2 = x^{2k + 2} y^{k \bmod 2}$. This equals $e$ iff $2k + 2 \equiv 0
+    \pmod 4$ (i.e.\ $k$ odd) and $k \equiv 0 \pmod 2$ (i.e.\ $k$ even),
+    which is impossible. Hence every element of $G \setminus H$ has order
+    exactly $4$ and minimality is preserved. The resulting extension type is
+    $\mathtt{ext\_16\_4} = (K_8, 2, \psi_5, x^2)$, realised by $C_4 \rtimes
+    _{\mathrm{inv}} C_4$.
+    \item $\tau = \psi_6$: $\tau(x^k y^l) = x^{-k} (x^2 y)^l = x^{2l - k}
+    y^l$, so $b \cdot \tau(b) = x^{2l} y^{2l} = x^{2l}$, giving $(b)^2 =
+    x^{2l + 2}$. Taking $l = 1, k = 0$ gives $(y a)^2 = e$, so $y a$ is an
+    involution in $G \setminus H$, contradicting minimality.
   \end{itemize}
+  Hence Sub-case~2a yields the two surviving extension types
+  $\mathtt{ext\_16\_4}$ and $\mathtt{ext\_16\_12}$.
 
-  In every case $G$ realises one of $\mathtt{ext\_16\_2}, \mathtt{ext\_16\_3},
-  \mathtt{ext\_16\_4}, \mathtt{ext\_16\_10}, \mathtt{ext\_16\_11},
-  \mathtt{ext\_16\_12}, \mathtt{ext\_16\_13}$.
+  \smallskip
+  \noindent
+  \emph{Sub-case 2b: $v = y$.} The stabiliser of $y$ in $\mathrm{Aut}(H)$ is
+  the kernel of the map $\mathrm{Aut}(H) \to \mathrm{Aut}(H[2])$ described
+  above, namely $V = \{\mathrm{id}, \psi_3, \psi_5, \psi_3 \psi_5\}$. Hence
+  validity $\tau(v) = v$ together with $\tau^2 = \mathrm{conj}_y = \mathrm{id}$
+  restricts $\tau$ to $V$. Lemma~1(c) only allows conjugation by elements of
+  $V$, but $V$ is abelian, so each of the four $\tau \in V$ must be analysed
+  separately. As in Sub-case~2a we use
+  \[
+    (x^k y^l a)^2 = x^k y^l \cdot \tau(x^k y^l) \cdot v.
+  \]
+  \begin{itemize}
+    \item $\tau = \mathrm{id}$: $b \cdot \tau(b) = x^{2k} y^{2l} = x^{2k}$, so
+    $(b)^2 = x^{2k} y$. For $k$ even this is $y$, and for $k$ odd this is
+    $x^2 y$. In all cases $(b)^2 \neq e$, so every element of $G \setminus H$
+    has order $4$ and minimality is preserved. The resulting extension type
+    is $\mathtt{ext\_16\_2} = (K_8, 2, \mathrm{id}, y)$, realised by $C_4
+    \times C_4$.
+    \item $\tau = \psi_5$: by Lemma~1(b) (the cocycle-shift
+    \texttt{extension\_families\_same\_isoClasses}), $(\psi_5, y) \sim (\psi_5,
+    y \cdot h \cdot \psi_5(h))$ for any $h \in H$. Taking $h = x$ gives
+    $y \cdot x \cdot \psi_5(x) = y \cdot x \cdot xy = x^2$, so $(\psi_5, y) \sim
+    (\psi_5, x^2)$, which is $\mathtt{ext\_16\_4}$ and is already covered by
+    Sub-case~2a.
+    \item $\tau = \psi_3 \psi_5$: write $\sigma = \psi_3 \psi_5$, so
+    $\sigma(x^k y^l) = x^{-k} y^{k + l}$ and $b \cdot \sigma(b) = y^{2l + k} =
+    y^{k \bmod 2}$, giving $(b)^2 = y \cdot y^{k \bmod 2}$. Taking $k = 1$
+    gives $(x a)^2 = e$, so $x a$ is an involution in $G \setminus H$,
+    contradicting minimality.
+    \item $\tau = \psi_3$: $b \cdot \tau(b) = y^{2l} = e$, so $(b)^2 = y$ and
+    every element of $G \setminus H$ has order $4$. Minimality is preserved,
+    but the resulting extension type $(K_8, 2, \psi_3, y)$ is not one of the
+    seven $K_8$-based predefined types. However, the group $G$ defined by this
+    extension data is presented by
+    \[
+      \langle X, a \mid X^4 = a^4 = e,\ a X a^{-1} = X^{-1} \rangle,
+    \]
+    after eliminating the redundant generator $y = a^2$ (which lies in
+    $Z(G)$ since $a^2$ commutes with $a$ and with $X$, the latter because
+    $a^2 X a^{-2} = a X^{-1} a^{-1} = X$). This presentation is exactly
+    that of the realising group $C_4 \rtimes_{\mathrm{inv}} C_4$ of
+    $\mathtt{ext\_16\_4}$. Lemma~\ref{lem:realise-of-mulEquiv} applied to the
+    induced isomorphism $G \simeq C_4 \rtimes_{\mathrm{inv}} C_4$ transfers
+    $\mathtt{realise\_16\_4}$ to $G$, so this sub-sub-case also falls under
+    $\mathtt{ext\_16\_4}$.
+  \end{itemize}
+  Hence Sub-case~2b yields the surviving new extension type
+  $\mathtt{ext\_16\_2}$ (with $\tau = \mathrm{id}$), while the remaining
+  $\tau \in V$ are either absorbed into $\mathtt{ext\_16\_4}$ or killed by
+  minimality.
+
+  \smallskip
+  Combining Cases~1 and~2, $G$ realises one of
+  \[
+    \mathtt{ext\_16\_2},\ \mathtt{ext\_16\_3},\ \mathtt{ext\_16\_4},\
+    \mathtt{ext\_16\_10},\ \mathtt{ext\_16\_11},\ \mathtt{ext\_16\_12},\
+    \mathtt{ext\_16\_13},
+  \]
+  as required.
 \end{proof}
 
 \section{Main lemma (Wild's Lemma 3)}
