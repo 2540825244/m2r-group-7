@@ -1,5 +1,6 @@
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
+import «M2rGroup7».SixteenClassification.Blueprints
 import Mathlib
 
 namespace OrderSixteen
@@ -18,18 +19,12 @@ noncomputable def mulEquiv_sup_of_disjoint_comm
   have hH₂_norm : H₂ ≤ Subgroup.normalizer H₁ := fun y hy => by
     rw [Subgroup.mem_normalizer_iff]; intro x; constructor
     · intro hx
-      have : y * x * y⁻¹ = x :=
-        calc y * x * y⁻¹ = x * y * y⁻¹ := by rw [← h_comm x hx y hy]
-          _ = x := by group
+      have : y * x * y⁻¹ = x := by rw [← h_comm x hx y hy]; group
       rwa [this]
     · intro hyx
-      have comm_z : y * x * y⁻¹ * y⁻¹ = y⁻¹ * (y * x * y⁻¹) :=
-        h_comm (y * x * y⁻¹) hyx y⁻¹ (H₂.inv_mem hy)
-      have hxz : x = y * x * y⁻¹ :=
-        calc x = y⁻¹ * (y * x * y⁻¹) * y := by group
-          _ = y * x * y⁻¹ * y⁻¹ * y := by rw [← comm_z]
-          _ = y * x * y⁻¹ := by group
-      rwa [hxz]
+      have heq : y * x * y⁻¹ = x :=
+        mul_right_cancel ((h_comm (y * x * y⁻¹) hyx y⁻¹ (H₂.inv_mem hy)).trans (by group))
+      exact heq ▸ hyx
   let φ : H₁ × H₂ →* ↑(H₁ ⊔ H₂) :=
     { toFun := fun p => ⟨↑p.1 * ↑p.2,
         (H₁ ⊔ H₂).mul_mem (Subgroup.mem_sup_left p.1.2) (Subgroup.mem_sup_right p.2.2)⟩
@@ -98,11 +93,10 @@ lemma mulEquiv_pi_cyclicTwo_of_sq_eq_one {G : Type*} [Group G] [Finite G]
   refine ⟨Fintype.card ι, ⟨e.trans ?_⟩⟩
   refine (MulEquiv.piCongrRight (fun i => ?_)).trans
     (MulEquiv.arrowCongr (Fintype.equivFin ι) (MulEquiv.refl _))
-  rw [hn2 i]
-  exact MulEquiv.refl _
+  rw [hn2 i]; exact MulEquiv.refl _
 
 /-- Wild's Fact 3: `Aut(C₄) ≃ C₂`. -/
-lemma aut_C4_iso_C2 : Nonempty (MulAut (CyclicGroup 4) ≃* CyclicGroup 2) := by
+noncomputable def autC4Equiv : MulAut (CyclicGroup 4) ≃* CyclicGroup 2 := by
   haveI : IsCyclic (ZMod 4)ˣ := ZMod.isCyclic_units_four
   have hcard : Nat.card (ZMod 4)ˣ = Nat.card (CyclicGroup 2) := by
     rw [Nat.card_eq_fintype_card, ZMod.card_units_eq_totient, card_cyclicGroup]
@@ -110,11 +104,12 @@ lemma aut_C4_iso_C2 : Nonempty (MulAut (CyclicGroup 4) ≃* CyclicGroup 2) := by
   have e₁ : MulAut (CyclicGroup 4) ≃* (ZMod 4)ˣ := by
     have := IsCyclic.mulAutMulEquiv (CyclicGroup 4)
     rwa [card_cyclicGroup] at this
-  exact ⟨e₁.trans (mulEquivOfCyclicCardEq hcard)⟩
+  exact e₁.trans (mulEquivOfCyclicCardEq hcard)
+
+lemma aut_C4_iso_C2 : Nonempty (MulAut (CyclicGroup 4) ≃* CyclicGroup 2) := ⟨autC4Equiv⟩
 
 /-- Wild's Fact 3: `Aut(C₈) ≃ C₂ × C₂`. -/
-lemma aut_C8_iso_C2_prod_C2 :
-    Nonempty (MulAut (CyclicGroup 8) ≃* CyclicGroup 2 × CyclicGroup 2) := by
+noncomputable def autC8Equiv : MulAut (CyclicGroup 8) ≃* CyclicGroup 2 × CyclicGroup 2 := by
   haveI h8K : IsKleinFour (ZMod 8)ˣ := by
     apply IsKleinFour.mk
     · rw [Nat.card_eq_fintype_card, ZMod.card_units_eq_totient]; decide
@@ -126,16 +121,10 @@ lemma aut_C8_iso_C2_prod_C2 :
         intro h1
         rw [Monoid.exp_eq_one_iff] at h1
         haveI := h1
-        have h := @Nat.card_unique (ZMod 8)ˣ ⟨1⟩ ‹_›
-        simp [Nat.card_eq_fintype_card, ZMod.card_units_eq_totient] at h
-        exact absurd h (by decide)
-      rcases Nat.prime_two.eq_one_or_self_of_dvd _ hdvd with h1 | h2
-      · exact absurd h1 hne1
-      · exact h2
-  have hexp2 : Monoid.exponent (CyclicGroup 2) = 2 := by
-    show Monoid.exponent (Multiplicative (ZMod 2)) = 2
-    rw [show Monoid.exponent (Multiplicative (ZMod 2)) = AddMonoid.exponent (ZMod 2) from rfl]
-    exact ZMod.exponent 2
+        exact absurd (@Nat.card_unique (ZMod 8)ˣ ⟨1⟩ ‹_›)
+          (by simp only [Nat.card_eq_fintype_card, ZMod.card_units_eq_totient]; decide)
+      have := Nat.le_of_dvd two_pos hdvd; omega
+  have hexp2 : Monoid.exponent (CyclicGroup 2) = 2 := ZMod.exponent 2
   haveI hC2K : IsKleinFour (CyclicGroup 2 × CyclicGroup 2) := by
     apply IsKleinFour.mk
     · simp only [Nat.card_prod, card_cyclicGroup]
@@ -143,18 +132,20 @@ lemma aut_C8_iso_C2_prod_C2 :
   have e₁ : MulAut (CyclicGroup 8) ≃* (ZMod 8)ˣ := by
     have := IsCyclic.mulAutMulEquiv (CyclicGroup 8)
     rwa [card_cyclicGroup] at this
-  exact ⟨e₁.trans IsKleinFour.nonempty_mulEquiv.some⟩
+  exact e₁.trans IsKleinFour.nonempty_mulEquiv.some
 
--- The final bijectivity check enumerates all of `Aut(C₄ × C₂)`, which exceeds the default budget.
+lemma aut_C8_iso_C2_prod_C2 :
+    Nonempty (MulAut (CyclicGroup 8) ≃* CyclicGroup 2 × CyclicGroup 2) := ⟨autC8Equiv⟩
+
 set_option maxHeartbeats 1000000 in
+-- The final bijectivity check enumerates all of `Aut(C₄ × C₂)`, which exceeds the default budget.
 /-- Wild's Fact 4: `Aut(K₈) ≃ D₈`, where `K₈ = C₄ × C₂`.
 
 We exhibit the explicit homomorphism `f : D₄ → Aut(C₄ × C₂)` sending the rotation `r` to the
 order-4 automorphism `ρ` and the reflection `s` to the order-2 automorphism `σ`, then check it is a
 bijection. Since both groups are finite with decidable equality, bijectivity is a single decidable
 computation, which is far cheaper than reasoning about generator images by hand. -/
-lemma aut_C4_prod_C2_iso_D8 :
-    Nonempty (MulAut (CyclicGroup 4 × CyclicGroup 2) ≃* DihedralGroup 4) := by
+noncomputable def autK8Equiv : MulAut (CyclicGroup 4 × CyclicGroup 2) ≃* DihedralGroup 4 := by
   -- ρ (order 4): `(x, y) ↦ (x · c4Half^y, ofAdd((x mod 2) + y))`
   let ρ : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
     { toFun := fun p =>
@@ -187,7 +178,10 @@ lemma aut_C4_prod_C2_iso_D8 :
       map_one' := by decide
       map_mul' := by decide }
   -- f is a bijection between two finite groups of order 8, hence an isomorphism
-  exact ⟨(MulEquiv.ofBijective f (by native_decide)).symm⟩
+  exact (MulEquiv.ofBijective f (by native_decide)).symm
+
+lemma aut_C4_prod_C2_iso_D8 :
+    Nonempty (MulAut (CyclicGroup 4 × CyclicGroup 2) ≃* DihedralGroup 4) := ⟨autK8Equiv⟩
 
 /-- Wild's Fact 5: For any element `v` in a finite group `G`,
     `|class(v)| · |C(v)| = |G|` (orbit-stabilizer for conjugation).
@@ -210,6 +204,30 @@ lemma prime_dvd_card_center {G : Type*} [Group G] [Finite G]
   haveI : IsPGroup p G := IsPGroup.of_card hn
   obtain ⟨k, hk_pos, hk⟩ := IsPGroup.card_center_eq_prime_pow hn hn_pos
   exact hk ▸ dvd_pow_self p hk_pos.ne'
+
+/-- Every automorphism of `C₄` is either the identity or the inverse map. -/
+lemma MulAut.forall_eq_C4 (τ : MulAut (CyclicGroup 4)) :
+    τ = 1 ∨ τ = c4OnC4Inv (Multiplicative.ofAdd 1) := by
+  revert τ; decide
+
+/-- Every automorphism of `C₈` is one of the four explicit maps `x ↦ xᵏ` for `k ∈ {1,3,5,7}`. -/
+lemma MulAut.forall_eq_C8 (τ : MulAut (CyclicGroup 8)) :
+    τ = 1 ∨
+    τ = c2OnC8Pow3 (Multiplicative.ofAdd 1) ∨
+    τ = c2OnC8Pow5 (Multiplicative.ofAdd 1) ∨
+    τ = c2OnC8Pow7 (Multiplicative.ofAdd 1) := by
+  revert τ; native_decide
+
+/-- Every involution in `Aut(K₈)` is conjugate to one of the four representatives
+    `1, ψ₃, ψ₅, ψ₆`. -/
+lemma MulAut.involution_K8_conj_to_rep
+    (τ : MulAut (CyclicGroup 4 × CyclicGroup 2)) (hτ : τ ^ 2 = 1) :
+    ∃ σ : MulAut (CyclicGroup 4 × CyclicGroup 2),
+      σ * τ * σ⁻¹ = 1 ∨
+      σ * τ * σ⁻¹ = psi3 ∨
+      σ * τ * σ⁻¹ = psi5 ∨
+      σ * τ * σ⁻¹ = psi6 := by
+  revert hτ τ; native_decide
 
 end Preliminary
 
