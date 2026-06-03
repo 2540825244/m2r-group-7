@@ -180,7 +180,7 @@ theorem semidirectProduct_C3_on_C2C2_iso
   exact semidirectProduct_iso_if_range_eq instFactPrimeThree
     (by rw [card_cyclicGroup, pow_one]) f_1 f_2 h_range_eq
 
-set_option maxHeartbeats 400000 in
+set_option maxHeartbeats 300000 in
 -- The case split for `4q` exercises several large existentials
 -- (Sylow, semidirect product, `classify_sdp`), pushing past the default.
 /-- Classification of groups `G` of order `4q` for `q ≥ 3` prime. -/
@@ -232,16 +232,17 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
       ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2
     rcases (p_squared_classification (p := 2) h_p_p2) with h_c4 | h_c2_c2
     · -- P ≅ C_4: Aut(P) ≅ C_2, gcd(q, 2) = 1 forces φ trivial
-      simp at h_c4
+      simp only [Nat.reducePow] at h_c4
       have h_aut_card : Nat.card (MulAut ↥(↑P : Subgroup G)) = 2 :=
         (Nat.card_congr ((MulAut.congr h_c4.some).trans
           (Classical.choice (aut_of_cyclic_p2 (p := 2)))).toEquiv).trans (card_cyclicGroup 2)
       have h_phi_triv : φ = 1 := eq_one_of_coprime_card (by
         rw [hK_card, h_aut_card]
         exact h_q_prime.out.coprime_of_ne (by norm_num : (2 : ℕ).Prime) (by omega))
-      exact Or.inl ⟨h_iso_g_p_k.symm.trans
+      have : G ≃* CyclicGroup (4 * q) := h_iso_g_p_k.symm.trans
         ((SemidirectProduct.mulEquivOfTrivialAction h_phi_triv).trans
-          ((h_c4.some.prodCongr eK).trans (CyclicGroup.prodMulEquiv h4q)))⟩
+          ((h_c4.some.prodCongr eK).trans (CyclicGroup.prodMulEquiv h4q)))
+      tauto
     · -- P ≅ C_2 × C_2: Aut(P) ≅ S_3
       have h_aut_dih : Nonempty (MulAut P ≃* DihedralGroup 3) := by
         obtain ⟨e1⟩ := h_c2_c2; obtain ⟨e2⟩ := aut_of_CpCp 2
@@ -251,9 +252,10 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
       by_cases h_q_eq_3 : q = 3
       · subst h_q_eq_3; haveI : Fact (Nat.Prime 3) := instFactPrimeThree
         by_cases h_phi_triv : φ = 1
-        · exact Or.inr (Or.inl ⟨h_iso_g_p_k.symm.trans
+        · have : G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 3 := h_iso_g_p_k.symm.trans
             ((SemidirectProduct.mulEquivOfTrivialAction h_phi_triv).trans
-              ((h_c2_c2.some.prodCongr eK).trans MulEquiv.prodAssoc))⟩)
+              ((h_c2_c2.some.prodCongr eK).trans MulEquiv.prodAssoc))
+          tauto
         · let eP := h_c2_c2.some
           let φ' : CyclicGroup 3 →* MulAut (CyclicGroup 2 × CyclicGroup 2) :=
             ((MulAut.congr eP).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom)
@@ -270,17 +272,20 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
             · exact h3
           obtain ⟨e_phi'_to_canon⟩ := semidirectProduct_C3_on_C2C2_iso φ' canonicalC3OnC2C2Action
             h_range_card canonicalC3OnC2C2Action_range_card
-          exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
-            ⟨rfl, ⟨h_iso_g_p_k.symm.trans (h_sdp_congr.trans e_phi'_to_canon)⟩⟩))))
+          have : G ≃* (CyclicGroup 2 × CyclicGroup 2) ⋊[canonicalC3OnC2C2Action] CyclicGroup 3 :=
+            h_iso_g_p_k.symm.trans (h_sdp_congr.trans e_phi'_to_canon)
+          tauto
       · -- q ≠ 3: gcd(q, 6) = 1 forces φ trivial
         have h_phi_triv : φ = 1 := eq_one_of_coprime_card (by
           rw [hK_card, h_mul_aut_p_card]
           have h_cop2 : Nat.Coprime q 2 := h_q_prime.out.coprime_of_ne (by norm_num) (by omega)
           have h_cop3 : Nat.Coprime q 3 := h_q_prime.out.coprime_of_ne (by norm_num) h_q_eq_3
           simpa using h_cop2.mul_right h_cop3)
-        exact Or.inr (Or.inl ⟨h_iso_g_p_k.symm.trans
+        have : G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q :=
+          h_iso_g_p_k.symm.trans
           ((SemidirectProduct.mulEquivOfTrivialAction h_phi_triv).trans
-            ((h_c2_c2.some.prodCongr eK).trans MulEquiv.prodAssoc))⟩)
+            ((h_c2_c2.some.prodCongr eK).trans MulEquiv.prodAssoc))
+        tauto
   · -- n_q = 1: Sylow q-subgroup Q is normal, complement K has order 4
     let Q : Sylow q G := default
     haveI : Subsingleton (Sylow q G) := (Nat.card_eq_one_iff_unique.mp h_nq_1).1
@@ -339,12 +344,17 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
               _hK4 0 (by simp) = 1 :=
           eq_one_of_range_card_one (by
             rw [sdpCanonicalAction_range_card (p := 2) (q := q), pow_zero])
-        exact Or.inl ⟨h_iso_g_q_k.symm.trans (h_bridge.trans (e.trans
+
+        have : G ≃* CyclicGroup (4 * q) := h_iso_g_q_k.symm.trans (h_bridge.trans (e.trans
           ((SemidirectProduct.mulEquivOfTrivialAction h_triv).trans
-            (MulEquiv.prodComm.trans (CyclicGroup.prodMulEquiv (by simpa using h4q))))))⟩
+            (MulEquiv.prodComm.trans (CyclicGroup.prodMulEquiv (by simpa using h4q))))))
+        tauto
       · -- r = 1: sdpCanonicalAction 1 = canonicalC4OnCqAction by definition
         obtain ⟨e⟩ := hr_iso
-        exact Or.inr (Or.inr (Or.inl ⟨h_iso_g_q_k.symm.trans (h_bridge.trans e)⟩))
+        have : G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
+                         (canonicalC4OnCqAction (by omega : q ≠ 2)) :=
+          h_iso_g_q_k.symm.trans (h_bridge.trans e)
+        tauto
       · -- r = 2: forces q ≡ 1 (mod 4); sdpCanonicalAction 2 = canonicalC4OnCqAction_r2
         have h_vp_ge_2 : 2 ≤ (q - 1).factorization 2 := by
           have h_min_le_vp : min 2 ((q - 1).factorization 2) ≤ (q - 1).factorization 2 :=
@@ -357,14 +367,17 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
             simpa [show (2 : ℕ) ^ 2 = 4 by norm_num] using this
           unfold Nat.ModEq; omega
         obtain ⟨e⟩ := hr_iso
-        exact Or.inr (Or.inr (Or.inr (Or.inl ⟨h_1_mod_4,
-          ⟨h_iso_g_q_k.symm.trans (h_bridge.trans e)⟩⟩)))
+        have : G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
+                            (canonicalC4OnCqAction_r2 h_1_mod_4) :=
+          h_iso_g_q_k.symm.trans (h_bridge.trans e)
+        tauto
     · -- K ≅ C_2 × C_2
       by_cases h_phi_triv : φ = 1
-      · exact Or.inr (Or.inl ⟨h_iso_g_q_k.symm.trans
+      · have : G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup q := h_iso_g_q_k.symm.trans
           ((SemidirectProduct.mulEquivOfTrivialAction h_phi_triv).trans
             ((eQ.prodCongr h_K_C2C2.some).trans
-              (MulEquiv.prodComm.trans MulEquiv.prodAssoc)))⟩)
+              (MulEquiv.prodComm.trans MulEquiv.prodAssoc)))
+        tauto
       · let eK := h_K_C2C2.some
         let φ' : CyclicGroup 2 × CyclicGroup 2 →* MulAut (CyclicGroup q) :=
           ((MulAut.congr eQ).toMonoidHom).comp (φ.comp eK.symm.toMonoidHom)
@@ -397,5 +410,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
             (two_dvd_prime_sub_one (by omega : q ≠ 2))
             (canonicalC2C2OnCqAction (by omega : q ≠ 2)) φ'
             h_canon_ne hφ'_ne h_canon_range h_range_card
-        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl
-          ⟨h_iso_g_q_k.symm.trans (h_sdp_congr.trans e_canon_to_phi'.symm)⟩))))
+        have : G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2)
+                         (canonicalC2C2OnCqAction (by omega : q ≠ 2)) :=
+          h_iso_g_q_k.symm.trans (h_sdp_congr.trans e_canon_to_phi'.symm)
+        tauto
