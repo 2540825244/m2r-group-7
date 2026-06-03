@@ -655,7 +655,14 @@ lemma realise_with_normal_C8
 /-- If `G` is a group of order 16 containing a normal subgroup isomorphic to
 `CyclicGroup 4 × CyclicGroup 2`, then `G` realises one of the seven
 `K_8`-based extension types `ext_16_2`, `ext_16_3`, `ext_16_4`,
-`ext_16_10`, `ext_16_11`, `ext_16_12`, `ext_16_13`. -/
+`ext_16_10`, `ext_16_11`, `ext_16_12`, `ext_16_13`.
+
+The proof picks a coset representative `a ∉ H` of minimum order, then case-splits
+on `orderOf a ∈ {2, 4, 8}`. The `o(a) = 2` branch dispatches on
+`MulAut.involution_K8_conj_to_rep` to obtain a conjugating automorphism `σ`
+sliding the conjugated action `τ_K` into one of `{1, ψ₃, ψ₅, ψ₆}`, then emits
+`ext_16_10`, `ext_16_11`, `ext_16_3`, `ext_16_13` respectively (each with glue
+`(1, 1)` since `a² = 1`). The `o(a) ∈ {4, 8}` branches remain `sorry`. -/
 lemma realise_with_normal_K8
     {G : Type*} [Group G]
     (hn : Nat.card G = 16)
@@ -668,6 +675,108 @@ lemma realise_with_normal_K8
     Nonempty (RealiseExtType G ext_16_11) ∨
     Nonempty (RealiseExtType G ext_16_12) ∨
     Nonempty (RealiseExtType G ext_16_13) := by
-  sorry
+  classical
+  haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [hn]; decide)
+  have h_card_H : Nat.card H = 8 := by
+    rw [Nat.card_congr h_iso.some.toEquiv, Nat.card_prod,
+        card_cyclicGroup, card_cyclicGroup]
+  have h_index : H.index = 2 := by
+    have h := Subgroup.index_mul_card H
+    rw [h_card_H, hn] at h
+    omega
+  obtain ⟨e⟩ := h_iso
+  obtain ⟨a, ha_notMem, ha_sq, ha_min⟩ :=
+    exists_min_order_inducing_element H h_index
+  obtain ⟨τ_H, hmap_H, hpow_H, hconj_H, R_H⟩ :=
+    realise_from_normal_index_two_with_conj H h_index a ha_notMem ha_sq
+  by_cases h_o2 : orderOf a = 2
+  · -- o(a) = 2 branch: a^2 = 1, so glue = 1 in K_8. Dispatch on the four
+    -- conjugacy representatives of τ_K via `MulAut.involution_K8_conj_to_rep`.
+    have h_a_sq_eq : a ^ 2 = 1 := by
+      have := pow_orderOf_eq_one a
+      rw [h_o2] at this
+      exact this
+    have h_a_sq_H_eq : (⟨a ^ 2, ha_sq⟩ : H) = 1 := Subtype.ext h_a_sq_eq
+    have h_glue : e (⟨a ^ 2, ha_sq⟩ : H) = (1 : CyclicGroup 4 × CyclicGroup 2) := by
+      rw [h_a_sq_H_eq]
+      exact map_one e
+    set τ_K : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
+      (e.symm.trans τ_H).trans e with hτ_K_def
+    have T_pow : ∀ k : ℕ, ∀ y : CyclicGroup 4 × CyclicGroup 2,
+        (τ_K ^ k) y = e ((τ_H ^ k) (e.symm y)) := by
+      intro k
+      induction k with
+      | zero =>
+        intro y
+        change y = e (e.symm y)
+        rw [MulEquiv.apply_symm_apply]
+      | succ k ih =>
+        intro y
+        rw [pow_succ', MulAut.mul_apply, ih]
+        change e (τ_H (e.symm (e ((τ_H ^ k) (e.symm y))))) =
+             e ((τ_H ^ (k + 1)) (e.symm y))
+        rw [MulEquiv.symm_apply_apply, pow_succ', MulAut.mul_apply]
+    have hτ_K_sq : τ_K ^ 2 = 1 := by
+      apply MulEquiv.ext
+      intro y
+      rw [T_pow 2 y]
+      have hx := DFunLike.congr_fun hpow_H (e.symm y)
+      change e ((τ_H ^ 2) (e.symm y)) = y
+      rw [hx]
+      change e (MulAut.conj (⟨a ^ 2, ha_sq⟩ : H) (e.symm y)) = y
+      rw [h_a_sq_H_eq, map_one MulAut.conj]
+      change e (e.symm y) = y
+      rw [MulEquiv.apply_symm_apply]
+    obtain ⟨σ, hσ⟩ := MulAut.involution_K8_conj_to_rep τ_K hτ_K_sq
+    set e' : H ≃* CyclicGroup 4 × CyclicGroup 2 := e.trans σ with he'_def
+    have h_glue' : e' (⟨a ^ 2, ha_sq⟩ : H) = (1 : CyclicGroup 4 × CyclicGroup 2) := by
+      change σ (e (⟨a ^ 2, ha_sq⟩ : H)) = 1
+      rw [h_glue]
+      exact map_one σ
+    have h_conj_eq : (e'.symm.trans τ_H).trans e' = σ * τ_K * σ⁻¹ := by
+      apply MulEquiv.ext
+      intro x
+      change σ (e (τ_H (e.symm (σ.symm x)))) = σ (τ_K (σ⁻¹ x))
+      rfl
+    rcases hσ with hσ | hσ | hσ | hσ
+    · -- ψ = 1 → ext_16_10
+      right; right; right; left
+      have act_conj : (e'.symm.trans τ_H).trans e' = ext_16_10.act := by
+        rw [h_conj_eq, hσ]
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_10
+        { hn := rfl
+          φ := e'
+          act_conj := act_conj.symm
+          act_glue := h_glue'.symm }⟩
+    · -- ψ = ψ₃ → ext_16_11
+      right; right; right; right; left
+      have act_conj : (e'.symm.trans τ_H).trans e' = ext_16_11.act := by
+        rw [h_conj_eq, hσ]
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_11
+        { hn := rfl
+          φ := e'
+          act_conj := act_conj.symm
+          act_glue := h_glue'.symm }⟩
+    · -- ψ = ψ₅ → ext_16_3
+      right; left
+      have act_conj : (e'.symm.trans τ_H).trans e' = ext_16_3.act := by
+        rw [h_conj_eq, hσ]
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_3
+        { hn := rfl
+          φ := e'
+          act_conj := act_conj.symm
+          act_glue := h_glue'.symm }⟩
+    · -- ψ = ψ₆ → ext_16_13
+      right; right; right; right; right; right
+      have act_conj : (e'.symm.trans τ_H).trans e' = ext_16_13.act := by
+        rw [h_conj_eq, hσ]
+        rfl
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_13
+        { hn := rfl
+          φ := e'
+          act_conj := act_conj.symm
+          act_glue := h_glue'.symm }⟩
+  · -- o(a) ∈ {4, 8} branches remain.
+    sorry
 
 end OrderSixteen
