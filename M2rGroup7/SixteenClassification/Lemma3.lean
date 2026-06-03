@@ -364,10 +364,8 @@ lemma realise_with_normal_C8
     exists_min_order_inducing_element H h_index
   obtain ⟨τ_H, hmap_H, hpow_H, R_H⟩ :=
     realise_from_normal_index_two H h_index a ha_notMem ha_sq
-  let R_C8 := R_H.transferN e
-  let τ_C8 : MulAut (CyclicGroup 8) := (e.symm.trans τ_H).trans e
   by_cases h_o2 : orderOf a = 2
-  · -- o(a) = 2 case: a² = 1, so v = e ⟨a², _⟩ = 1.
+  · -- o(a) = 2 case: a² = 1, so e ⟨a², _⟩ = 1 in CyclicGroup 8.
     have h_a_sq_eq : a ^ 2 = 1 := by
       have := pow_orderOf_eq_one a
       rw [h_o2] at this
@@ -376,55 +374,36 @@ lemma realise_with_normal_C8
       have hv : (⟨a ^ 2, ha_sq⟩ : H) = 1 := Subtype.ext h_a_sq_eq
       rw [hv]
       exact map_one e
-    rcases MulAut.forall_eq_C8 τ_C8 with hτ | hτ | hτ | hτ
-    · -- τ = 1 → ext_16_5
+    -- Conjugate τ_H over to MulAut (CyclicGroup 8) via e.
+    rcases MulAut.forall_eq_C8 ((e.symm.trans τ_H).trans e) with hτ | hτ | hτ | hτ
+    · -- τ_C8 = 1 → ext_16_5
       right; left
-      refine ⟨RealiseExtType.transfer_along_extEquiv R_C8 realise_16_5 ?_⟩
-      refine
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_5
         { hn := rfl
-          φ := MulEquiv.refl (CyclicGroup 8)
-          act_conj := ?_
-          act_glue := ?_ }
-      · simp only [MulEquiv.symm_refl, MulEquiv.refl_trans, MulEquiv.trans_refl]
-        exact hτ.symm
-      · simp only [MulEquiv.refl_apply]
-        exact h_glue.symm
-    · -- τ = pow3 → ext_16_8
+          φ := e
+          act_conj := hτ.symm
+          act_glue := h_glue.symm }⟩
+    · -- τ_C8 = pow3 → ext_16_8
       right; right; right; right; left
-      refine ⟨RealiseExtType.transfer_along_extEquiv R_C8 realise_16_8 ?_⟩
-      refine
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_8
         { hn := rfl
-          φ := MulEquiv.refl (CyclicGroup 8)
-          act_conj := ?_
-          act_glue := ?_ }
-      · simp only [MulEquiv.symm_refl, MulEquiv.refl_trans, MulEquiv.trans_refl]
-        exact hτ.symm
-      · simp only [MulEquiv.refl_apply]
-        exact h_glue.symm
-    · -- τ = pow5 → ext_16_6
+          φ := e
+          act_conj := hτ.symm
+          act_glue := h_glue.symm }⟩
+    · -- τ_C8 = pow5 → ext_16_6
       right; right; left
-      refine ⟨RealiseExtType.transfer_along_extEquiv R_C8 realise_16_6 ?_⟩
-      refine
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_6
         { hn := rfl
-          φ := MulEquiv.refl (CyclicGroup 8)
-          act_conj := ?_
-          act_glue := ?_ }
-      · simp only [MulEquiv.symm_refl, MulEquiv.refl_trans, MulEquiv.trans_refl]
-        exact hτ.symm
-      · simp only [MulEquiv.refl_apply]
-        exact h_glue.symm
-    · -- τ = pow7 → ext_16_7
+          φ := e
+          act_conj := hτ.symm
+          act_glue := h_glue.symm }⟩
+    · -- τ_C8 = pow7 → ext_16_7
       right; right; right; left
-      refine ⟨RealiseExtType.transfer_along_extEquiv R_C8 realise_16_7 ?_⟩
-      refine
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_7
         { hn := rfl
-          φ := MulEquiv.refl (CyclicGroup 8)
-          act_conj := ?_
-          act_glue := ?_ }
-      · simp only [MulEquiv.symm_refl, MulEquiv.refl_trans, MulEquiv.trans_refl]
-        exact hτ.symm
-      · simp only [MulEquiv.refl_apply]
-        exact h_glue.symm
+          φ := e
+          act_conj := hτ.symm
+          act_glue := h_glue.symm }⟩
   · -- o(a) ∈ {4, 16} cases left as sorry; see milestones.md
     sorry
 
