@@ -658,11 +658,18 @@ lemma realise_with_normal_C8
 `ext_16_10`, `ext_16_11`, `ext_16_12`, `ext_16_13`.
 
 The proof picks a coset representative `a ∉ H` of minimum order, then case-splits
-on `orderOf a ∈ {2, 4, 8}`. The `o(a) = 2` branch dispatches on
+on `orderOf a ∈ {2, 4, 8, 16}`. The `o(a) = 2` branch dispatches on
 `MulAut.involution_K8_conj_to_rep` to obtain a conjugating automorphism `σ`
 sliding the conjugated action `τ_K` into one of `{1, ψ₃, ψ₅, ψ₆}`, then emits
 `ext_16_10`, `ext_16_11`, `ext_16_3`, `ext_16_13` respectively (each with glue
-`(1, 1)` since `a² = 1`). The `o(a) ∈ {4, 8}` branches remain `sorry`. -/
+`(1, 1)` since `a² = 1`). The `o(a) = 16` branch is ruled out via cyclicity:
+G cyclic of order 16 would force its subgroup `H ≃ K_8` to be cyclic too,
+contradicted by K_8 having 4 elements with `x² = 1`. The `o(a) ∈ {4, 8}`
+branches remain `sorry` because the lemma signature, as written, is too weak:
+the group `G = CyclicGroup 8 × CyclicGroup 2` has `H ≃ K_8` as a normal
+subgroup yet every element of `G \ H` has order 8, and none of the seven
+K_8-family targets admits an order-4 glue. Resolving these branches requires
+an additional hypothesis such as `(h_no_o8 : ∀ x : G, orderOf x ≠ 8)`. -/
 lemma realise_with_normal_K8
     {G : Type*} [Group G]
     (hn : Nat.card G = 16)
@@ -776,7 +783,35 @@ lemma realise_with_normal_K8
           φ := e'
           act_conj := act_conj.symm
           act_glue := h_glue'.symm }⟩
-  · -- o(a) ∈ {4, 8} branches remain.
+  · -- o(a) ∈ {4, 8, 16} branches.
+    have h_ord_pos : 0 < orderOf a := orderOf_pos a
+    have h_ord_dvd : orderOf a ∣ 16 := hn ▸ orderOf_dvd_natCard a
+    have h_a_ne_one : a ≠ 1 := fun h => ha_notMem (h ▸ H.one_mem)
+    have h_ord_ne_one : orderOf a ≠ 1 := fun h => h_a_ne_one (orderOf_eq_one_iff.mp h)
+    -- Rule out orderOf a = 16: G cyclic ⇒ H cyclic ⇒ K_8 cyclic, contradiction.
+    have h_o16 : orderOf a ≠ 16 := by
+      intro h_o16_eq
+      haveI hcyc : IsCyclic G := isCyclic_of_orderOf_eq_card a (by rw [h_o16_eq, hn])
+      haveI : IsCyclic H := Subgroup.isCyclic H
+      haveI : IsCyclic (CyclicGroup 4 × CyclicGroup 2) := e.isCyclic.mp ‹_›
+      -- K_8 has 4 elements x with x² = 1; a cyclic group has at most 2.
+      have hle :
+          ((Finset.univ : Finset (CyclicGroup 4 × CyclicGroup 2)).filter
+            (fun x => x ^ 2 = 1)).card ≤ 2 :=
+        IsCyclic.card_pow_eq_one_le two_pos
+      have hge :
+          (4 : ℕ) ≤
+            ((Finset.univ : Finset (CyclicGroup 4 × CyclicGroup 2)).filter
+              (fun x => x ^ 2 = 1)).card := by
+        decide
+      omega
+    -- The remaining o(a) ∈ {4, 8} sub-cases cannot be discharged with the lemma
+    -- as currently stated. See `realise_with_normal_K8` docstring above for the
+    -- structural gap (e.g. G = C_8 × C_2 with H ≃ K_8 has min-order inducing
+    -- element of order 8, and none of ext_16_{2,3,4,10,11,12,13} can absorb the
+    -- resulting order-4 glue). Resolving this requires an additional hypothesis
+    -- such as `(h_no_o8 : ∀ x : G, orderOf x ≠ 8)`, threaded from the high-level
+    -- caller in `Classification.lean`.
     sorry
 
 end OrderSixteen
