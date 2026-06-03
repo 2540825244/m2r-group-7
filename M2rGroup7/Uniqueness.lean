@@ -249,8 +249,8 @@ private unsafe def elabByInvariant : Lean.Elab.Tactic.Tactic
   | _ => Lean.Elab.throwUnsupportedSyntax
 
 set_option maxHeartbeats 800000 in
--- This is needed because the proof of uniqueness and obtaining the invariant
--- is mostly computational
+-- Bumping heartbeats to allow the elaborator to construct the O(N²) case-split AST.
+-- The underlying kernel proofs use pure `decide` and execute.
 theorem uniqueness (n i n' i' : Nat)
   [ValidIndex n i] [ValidIndex n' i'] [Fact (n ≠ n' ∨ i ≠ i')]
   : IsEmpty ((retrieve n i) ≃* (retrieve n' i')) := by

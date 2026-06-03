@@ -206,8 +206,13 @@ instance (n i : Nat) : Decidable (ValidIndex n i) :=
            fun h => ⟨h.n_pos, h.n_range, h.i_pos, h.i_range⟩⟩)
 
 instance (n : Nat) (i : Nat) [hv : ValidIndex n i] : Group (retrieve n i) := by
-  unfold retrieve
-  split <;> try infer_instance
+  unfold retrieve; split <;> try infer_instance
+
+instance (n : Nat) (i : Nat) [hv : ValidIndex n i] : Fintype (retrieve n i) := by
+  unfold retrieve; split <;> try infer_instance
+
+instance (n : Nat) (i : Nat) [hv : ValidIndex n i] : DecidableEq (retrieve n i) := by
+  unfold retrieve; split <;> try infer_instance
 
 theorem retrieve_card (n : Nat) (i : Nat) [hv : ValidIndex n i] : Nat.card (retrieve n i) = n := by
   obtain ⟨hn_pos, hn_range, hi_pos, hi_range⟩ := hv
