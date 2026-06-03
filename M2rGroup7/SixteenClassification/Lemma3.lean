@@ -80,12 +80,18 @@ index 2 together with an inducing element.
 
 Given `H ◁ G` of index 2 and `a ∈ G \ H`, set `v := a^2 ∈ H` and let
 `τ ∈ Aut(H)` be conjugation by `a`. Then `G` realises the extension type
-`(H, 2, τ, v)`. -/
+`(H, 2, τ, v)`. The return type exposes `τ`, the validity proofs, and
+the realisation as a flat `Σ'`, with `N := ↥H` pinned syntactically so
+downstream callers can chain with `RealiseExtType.transferN` without
+losing the connection between `E.N` and `↥H`. -/
 noncomputable def realise_from_normal_index_two
     {G : Type*} [Group G]
     (H : Subgroup G) [H.Normal] (h_index : H.index = 2)
     (a : G) (h_a_notMem : a ∉ H) (h_a_sq : a ^ 2 ∈ H) :
-    Σ (E : ExtensionType), RealiseExtType G E := by
+    Σ' (τ : MulAut H) (hmap : τ (⟨a ^ 2, h_a_sq⟩ : H) = ⟨a ^ 2, h_a_sq⟩)
+       (hpow : τ ^ 2 = MulAut.conj (⟨a ^ 2, h_a_sq⟩ : H)),
+      RealiseExtType G { N := H, n := 2, act := τ, glue := ⟨a ^ 2, h_a_sq⟩,
+                         map_glue := hmap, pow_n := hpow } := by
   classical
   have hcoset : ∀ g : G, g ∉ H → g * a⁻¹ ∈ H := by
     obtain ⟨a₀, _, hall⟩ :=
@@ -123,10 +129,7 @@ noncomputable def realise_from_normal_index_two
     show a * (a * h.1 * a⁻¹) * a⁻¹ = a^2 * h.1 * (a^2)⁻¹
     rw [pow_two, mul_inv_rev]
     group
-  let E : ExtensionType :=
-    { N := H, n := 2, act := τ, glue := v,
-      map_glue := hmap_glue, pow_n := hpow_n }
-  refine ⟨E, ?_⟩
+  refine ⟨τ, hmap_glue, hpow_n, ?_⟩
   let toFun : H × Fin 2 → G := fun p => p.1.1 * a ^ (p.2 : ℕ)
   let invFun : G → H × Fin 2 := fun g =>
     if hg : g ∈ H then (⟨g, hg⟩, 0)
