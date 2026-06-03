@@ -1,0 +1,16 @@
+(Part of a proof of the following theorem in LinearAlgebraUtils.lean)
+
+theorem gl2_order_two_classification (hp2 : p ≠ 2) (A : GL (Fin 2) (ZMod p))
+    (hA : orderOf A = 2) :
+    IsConj A (gl2Diag1NegOne hp2) ∨ IsConj A (gl2DiagNeg1Neg1 : GL (Fin 2) (ZMod p))
+
+...
+
+-- Strategy: since M² = I, M ≠ I, M ≠ -I, the minimal polynomial of M divides
+    -- (X-1)(X+1), which is squarefree (p odd). Both eigenvalues
+    -- ±1 lie in 𝔽_p, so M is diagonalizable over 𝔽_p with eigenvalues {1, -1}.
+    -- Concretely: since M ≠ -I, the matrix M + I ≠ 0, so pick a nonzero column v₊
+    -- of M + I; it satisfies M * v₊ = v₊ (a 1-eigenvector, since (M-I)(M+I) = M²-I = 0).
+    -- Similarly, since M ≠ I, pick a nonzero column v₋ of M - I satisfying M * v₋ = -v₋.
+    -- Since 1 ≠ -1 (p ≠ 2), v₊ and v₋ are linearly independent.
+    -- The matrix P = [v₊ | v₋] ∈ GL₂(𝔽_p) conjugates A to diag(1,-1).
