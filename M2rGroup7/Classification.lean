@@ -1,6 +1,7 @@
 import Mathlib.Logic.Basic
 import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
+import «M2rGroup7».CpSqAction
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
 import «M2rGroup7».UT3
@@ -8,6 +9,7 @@ import «M2rGroup7».CaseA
 import «M2rGroup7».CaseB
 import «M2rGroup7».CaseC
 import «M2rGroup7».OddCaseA
+import «M2rGroup7».OddCaseB
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import Mathlib.SetTheory.Cardinal.Finite
@@ -510,10 +512,10 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
         exact case_A_odd_isom p a b ha_p hb_p hab_comm h
       · -- Case B odd: a order p, b order p² → C_{p²} ⋊ C_p
         right
-        sorry
+        exact case_B2_odd_isom hp2 b a hb_p2 ha_p (fun h => hab_comm h.symm) h
       · -- Case B2 odd: a order p², b order p → C_{p²} ⋊ C_p
         right
-        sorry
+        exact case_B2_odd_isom hp2 a b ha_p2 hb_p hab_comm h
       · -- Case C odd: both order p² → C_{p²} ⋊ C_p
         right
         sorry

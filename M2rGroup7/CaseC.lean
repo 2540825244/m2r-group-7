@@ -1,4 +1,5 @@
 import Mathlib
+import «M2rGroup7».SmallGroupsLibrary
 
 set_option maxHeartbeats 800000
 

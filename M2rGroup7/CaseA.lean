@@ -1,4 +1,5 @@
 import Mathlib
+import «M2rGroup7».SmallGroupsLibrary
 
 /-!
 # Case A: Both generators have order 2 → D₄

@@ -1,4 +1,5 @@
 import Mathlib
+import «M2rGroup7».SmallGroupsLibrary
 
 set_option maxHeartbeats 800000
 
@@ -8,32 +9,6 @@ set_option maxHeartbeats 800000
 This file defines `CyclicGroup`, `cyclicHom`, and the canonical semidirect product
 action `cpSqAction p : CyclicGroup p →* MulAut (CyclicGroup (p ^ 2))`.
 -/
-
-/-- Cyclic group of order n as a multiplicative type. -/
-def CyclicGroup (n : Nat) [NeZero n] := Multiplicative (ZMod n)
-  deriving DecidableEq, Group, IsCyclic, Fintype, DivisionCommMonoid
-
-theorem card_cyclicGroup (n : Nat) [NeZero n] : Nat.card (CyclicGroup n) = n := by
-  delta CyclicGroup
-  rw [Nat.card_congr Multiplicative.toAdd]
-  exact Nat.card_zmod n
-
-/-- Build a monoid hom out of `CyclicGroup n` from an element whose `n`th power is `1`. -/
-def cyclicHom (n : Nat) [NeZero n] {G : Type*} [Group G] (a : G) (h : a ^ n = 1) :
-    CyclicGroup n →* G :=
-  AddMonoidHom.toMultiplicativeLeft <| ZMod.lift n
-    ⟨zmultiplesHom (Additive G) (Additive.ofMul a), by
-      change (n : ℤ) • Additive.ofMul a = 0
-      rw [← ofMul_zpow, zpow_natCast, h, ofMul_one]⟩
-
-instance instNeZeroPrimePow {p : ℕ} [h : Fact p.Prime] {n : ℕ} : NeZero (p ^ n) := by
-  have hp : Nat.Prime p := h.out
-  exact ⟨(pow_pos hp.pos n).ne'⟩
-
-instance instNeZeroPrimeMulPredPrime {p : ℕ} [h : Fact p.Prime] : NeZero (p * (p - 1)) := by
-  have hp : Nat.Prime p := h.out
-  have h2 : 2 ≤ p := hp.two_le
-  exact ⟨Nat.mul_ne_zero (by omega) (by omega)⟩
 
 lemma aut_of_cyclic_p2 {p : ℕ} [h_p_prime : Fact p.Prime] :
     Nonempty (MulAut (CyclicGroup (p ^ 2)) ≃* CyclicGroup (p * (p - 1))) := by
@@ -65,6 +40,7 @@ noncomputable def cpSqAction (p : ℕ) [hp : Fact p.Prime] :
   let h : MulAut (CyclicGroup (p ^ 2)) := iso.symm (gen ^ (p - 1))
   apply cyclicHom p h
   change iso.symm (gen ^ (p - 1)) ^ p = 1
+
   rw [← map_pow, ← iso.symm.map_one]
   congr 1
   change (gen ^ (p - 1)) ^ p = 1
