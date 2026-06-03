@@ -673,6 +673,7 @@ an additional hypothesis such as `(h_no_o8 : ∀ x : G, orderOf x ≠ 8)`. -/
 lemma realise_with_normal_K8
     {G : Type*} [Group G]
     (hn : Nat.card G = 16)
+    (h_no_o8 : ∀ x : G, orderOf x ≠ 8)
     (H : Subgroup G) [H.Normal]
     (h_iso : Nonempty (H ≃* CyclicGroup 4 × CyclicGroup 2)) :
     Nonempty (RealiseExtType G ext_16_2) ∨
@@ -805,13 +806,27 @@ lemma realise_with_normal_K8
               (fun x => x ^ 2 = 1)).card := by
         decide
       omega
-    -- The remaining o(a) ∈ {4, 8} sub-cases cannot be discharged with the lemma
-    -- as currently stated. See `realise_with_normal_K8` docstring above for the
-    -- structural gap (e.g. G = C_8 × C_2 with H ≃ K_8 has min-order inducing
-    -- element of order 8, and none of ext_16_{2,3,4,10,11,12,13} can absorb the
-    -- resulting order-4 glue). Resolving this requires an additional hypothesis
-    -- such as `(h_no_o8 : ∀ x : G, orderOf x ≠ 8)`, threaded from the high-level
-    -- caller in `Classification.lean`.
+    -- Rule out orderOf a = 8 via the threaded hypothesis.
+    have h_o8 : orderOf a ≠ 8 := h_no_o8 a
+    -- Conclude orderOf a = 4.
+    have h_o4 : orderOf a = 4 := by
+      have h16 : (16 : ℕ) = 2 ^ 4 := by decide
+      rw [h16] at h_ord_dvd
+      rcases (Nat.dvd_prime_pow Nat.prime_two (m := 4) (i := orderOf a)).mp h_ord_dvd
+        with ⟨k, hk_le, hk_eq⟩
+      interval_cases k
+      · exact absurd hk_eq h_ord_ne_one
+      · exact absurd hk_eq h_o2
+      · exact hk_eq
+      · exact absurd hk_eq h_o8
+      · exact absurd hk_eq h_o16
+    -- The o(a) = 4 case body remains to be done. Plan: `a^2` has order 2 in H,
+    -- so `e ⟨a², ha_sq⟩` is one of the three order-2 elements of K_8. Use
+    -- `MulAut.involution_K8_conj_to_rep` (τ_K^2 = 1 because K_8 abelian makes
+    -- `MulAut.conj v = 1`) to slide τ_K into a representative ψ. For each (ψ, v)
+    -- pair, compose with an Aut(K_8)-element to align glue with the canonical
+    -- glue of ext_16_{2, 4, 12}. The ψ_6 case yields a min-order contradiction
+    -- via h_contra_helper. See milestones.md for the per-case mapping.
     sorry
 
 end OrderSixteen
