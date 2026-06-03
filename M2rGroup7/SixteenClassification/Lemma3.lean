@@ -335,7 +335,11 @@ case-by-case construction of the per-case `ExtEquiv` witnesses.
 
 /-- If `G` is a group of order 16 containing a normal subgroup isomorphic to
 `CyclicGroup 8`, then `G` realises one of the six `C_8`-based extension types
-`ext_16_1`, `ext_16_5`, `ext_16_6`, `ext_16_7`, `ext_16_8`, `ext_16_9`. -/
+`ext_16_1`, `ext_16_5`, `ext_16_6`, `ext_16_7`, `ext_16_8`, `ext_16_9`.
+
+This proof handles the `orderOf a = 2` branch in full (yielding one of
+`ext_16_{5,6,7,8}` according to the automorphism `τ`), and leaves the
+`orderOf a ∈ {4, 16}` branches as `sorry`. -/
 lemma realise_with_normal_C8
     {G : Type*} [Group G]
     (hn : Nat.card G = 16)
@@ -346,7 +350,83 @@ lemma realise_with_normal_C8
     Nonempty (RealiseExtType G ext_16_7) ∨
     Nonempty (RealiseExtType G ext_16_8) ∨
     Nonempty (RealiseExtType G ext_16_9) := by
-  sorry
+  classical
+  haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [hn]; decide)
+  -- Deduce H.index = 2 from |G|=16 and |H|=|C_8|=8
+  have h_card_H : Nat.card H = 8 := by
+    rw [Nat.card_congr h_iso.some.toEquiv, card_cyclicGroup]
+  have h_index : H.index = 2 := by
+    have h := Subgroup.index_mul_card H
+    rw [h_card_H, hn] at h
+    omega
+  obtain ⟨e⟩ := h_iso
+  obtain ⟨a, ha_notMem, ha_sq, ha_min⟩ :=
+    exists_min_order_inducing_element H h_index
+  obtain ⟨τ_H, hmap_H, hpow_H, R_H⟩ :=
+    realise_from_normal_index_two H h_index a ha_notMem ha_sq
+  let R_C8 := R_H.transferN e
+  let τ_C8 : MulAut (CyclicGroup 8) := (e.symm.trans τ_H).trans e
+  by_cases h_o2 : orderOf a = 2
+  · -- o(a) = 2 case: a² = 1, so v = e ⟨a², _⟩ = 1.
+    have h_a_sq_eq : a ^ 2 = 1 := by
+      have := pow_orderOf_eq_one a
+      rw [h_o2] at this
+      exact this
+    have h_glue : e (⟨a ^ 2, ha_sq⟩ : H) = (1 : CyclicGroup 8) := by
+      have hv : (⟨a ^ 2, ha_sq⟩ : H) = 1 := Subtype.ext h_a_sq_eq
+      rw [hv]
+      exact map_one e
+    rcases MulAut.forall_eq_C8 τ_C8 with hτ | hτ | hτ | hτ
+    · -- τ = 1 → ext_16_5
+      right; left
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_C8 realise_16_5 ?_⟩
+      refine
+        { hn := rfl
+          φ := MulEquiv.refl (CyclicGroup 8)
+          act_conj := ?_
+          act_glue := ?_ }
+      · simp only [MulEquiv.symm_refl, MulEquiv.refl_trans, MulEquiv.trans_refl]
+        exact hτ.symm
+      · simp only [MulEquiv.refl_apply]
+        exact h_glue.symm
+    · -- τ = pow3 → ext_16_8
+      right; right; right; right; left
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_C8 realise_16_8 ?_⟩
+      refine
+        { hn := rfl
+          φ := MulEquiv.refl (CyclicGroup 8)
+          act_conj := ?_
+          act_glue := ?_ }
+      · simp only [MulEquiv.symm_refl, MulEquiv.refl_trans, MulEquiv.trans_refl]
+        exact hτ.symm
+      · simp only [MulEquiv.refl_apply]
+        exact h_glue.symm
+    · -- τ = pow5 → ext_16_6
+      right; right; left
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_C8 realise_16_6 ?_⟩
+      refine
+        { hn := rfl
+          φ := MulEquiv.refl (CyclicGroup 8)
+          act_conj := ?_
+          act_glue := ?_ }
+      · simp only [MulEquiv.symm_refl, MulEquiv.refl_trans, MulEquiv.trans_refl]
+        exact hτ.symm
+      · simp only [MulEquiv.refl_apply]
+        exact h_glue.symm
+    · -- τ = pow7 → ext_16_7
+      right; right; right; left
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_C8 realise_16_7 ?_⟩
+      refine
+        { hn := rfl
+          φ := MulEquiv.refl (CyclicGroup 8)
+          act_conj := ?_
+          act_glue := ?_ }
+      · simp only [MulEquiv.symm_refl, MulEquiv.refl_trans, MulEquiv.trans_refl]
+        exact hτ.symm
+      · simp only [MulEquiv.refl_apply]
+        exact h_glue.symm
+  · -- o(a) ∈ {4, 16} cases left as sorry; see milestones.md
+    sorry
 
 /-! ## Case analysis: normal `K_8 = C_4 × C_2` -/
 
