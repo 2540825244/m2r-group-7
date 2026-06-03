@@ -10,6 +10,7 @@ import «M2rGroup7».CaseB
 import «M2rGroup7».CaseC
 import «M2rGroup7».OddCaseA
 import «M2rGroup7».OddCaseB
+import «M2rGroup7».OddCaseC
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import Mathlib.SetTheory.Cardinal.Finite
@@ -170,7 +171,14 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
           let iso := Classical.choice h_g_quot_z_is_Cp2
           rw [MulEquiv.isCyclic iso]
           infer_instance
-        sorry
+        exfalso
+        apply h_na
+        have h_ker_subgroup_z : (QuotientGroup.mk' Z).ker ≤ Z := by
+          rw [QuotientGroup.ker_mk' Z]
+        have h_comm := commutative_of_cyclic_center_quotient (QuotientGroup.mk' Z) h_ker_subgroup_z
+        rw [isMulCommutative_iff]
+        intro a b
+        exact h_comm a b
       | inr hb =>
         exact hb
 
@@ -178,10 +186,9 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
 
   have h_quotient_z_abelian : IsMulCommutative (G ⧸ Z) := by
     obtain ⟨e⟩ := h_g_quot_z_is_Cp_x_Cp
-    have h_Cp_Cp_comm : CommGroup (CyclicGroup p × CyclicGroup p)
-        := by unfold CyclicGroup; infer_instance
-    apply isMulCommutative_of_commGroup at h_Cp_Cp_comm
-    sorry
+    have h_Cp_Cp_comm : IsMulCommutative (CyclicGroup p × CyclicGroup p) :=
+      ⟨⟨fun a b => mul_comm a b⟩⟩
+    exact isMulCommutative_of_mulEquiv e h_Cp_Cp_comm
 
   have h_comm_sub_z : commutator G ≤ Z :=
     Subgroup.Normal.quotient_commutative_iff_commutator_le.mp h_quotient_z_abelian.is_comm
@@ -518,7 +525,7 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
         exact case_B2_odd_isom hp2 a b ha_p2 hb_p hab_comm h
       · -- Case C odd: both order p² → C_{p²} ⋊ C_p
         right
-        sorry
+        exact case_C_odd_isom hp2 a b ha_p2 hb_p2 hab_comm h
 
 theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [IsMulCommutative G]
   (h : Nat.card G = p ^ 3) :
@@ -736,6 +743,27 @@ theorem order8_classification {G : Type*} [Group G] (h : Nat.card G = 8) :
   · exact Or.inr (Or.inr (Or.inr (Or.inr h5)))
   · exact absurd rfl h6
   · exact absurd rfl h6
+
+theorem order_odd_prime_cubed_classification {p : ℕ} [hn : Fact p.Prime] (hp : p ≠ 2)
+    (h : Nat.card G = p ^ 3) :
+    (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
+    (Nonempty (MulEquiv G (CyclicGroup (p^2) × CyclicGroup p))) ∨
+    (Nonempty (MulEquiv G (CyclicGroup p × CyclicGroup p × CyclicGroup p))) ∨
+    (Nonempty (MulEquiv G (UT3 p))) ∨
+    (Nonempty (MulEquiv G (CyclicGroup (p^2) ⋊[cpSqAction p] CyclicGroup p))) := by
+  rcases order_p_cubed_classification (G := G) h with
+    h1 | h2 | h3 | ⟨h4, _⟩ | ⟨h4, _⟩ | ⟨_, h6⟩ | ⟨_, h7⟩
+  · exact Or.inl h1
+  · exact Or.inr (Or.inl h2)
+  · exact Or.inr (Or.inr (Or.inl h3))
+  · exact absurd h4 hp
+  · exact absurd h4 hp
+  · exact Or.inr (Or.inr (Or.inr (Or.inl h6)))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr h7)))
+
+macro "classify_prime_cubed_odd" p:num h:term : tactic => `(tactic|(
+  haveI : Fact (Nat.Prime $p) := ⟨by decide⟩
+  exact order_odd_prime_cubed_classification (by decide) ($h |>.trans (by norm_num))))
 
 /-- A group of prime order is isomorphic to the cyclic group of the same order. -/
 theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
