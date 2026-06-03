@@ -404,8 +404,17 @@ lemma realise_with_normal_C8
           φ := e
           act_conj := hτ.symm
           act_glue := h_glue.symm }⟩
-  · -- o(a) ∈ {4, 16} cases left as sorry; see milestones.md
-    sorry
+  · by_cases h_o16 : orderOf a = 16
+    · -- o(a) = 16 case: ⟨a⟩ = G, so G is cyclic of order 16, realising ext_16_1.
+      left
+      have hcyc : IsCyclic G := isCyclic_of_orderOf_eq_card a (by rw [h_o16, hn])
+      have iso : G ≃* CyclicGroup 16 := by
+        have h : G ≃* Multiplicative (ZMod (Nat.card G)) := (zmodCyclicMulEquiv hcyc).symm
+        rw [hn] at h
+        exact h
+      exact ⟨RealiseExtType.transfer iso realise_16_1⟩
+    · -- o(a) ∈ {4, 8} cases left as sorry; see milestones.md
+      sorry
 
 /-! ## Case analysis: normal `K_8 = C_4 × C_2` -/
 
