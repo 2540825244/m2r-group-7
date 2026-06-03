@@ -1,9 +1,21 @@
 import Mathlib.GroupTheory.Sylow
+import Mathlib.SetTheory.Cardinal.Finite
 
 /-- A group of order `24` has either `1` or `4` Sylow 3-subgroups. -/
 lemma sylow3_24 {G : Type*} [Group G] (h : Nat.card G = 24) :
     Nat.card (Sylow 3 G) = 1 ∨ Nat.card (Sylow 3 G) = 4 := by
-  sorry
+  haveI : Finite G := by
+    apply Nat.finite_of_card_ne_zero
+    rw [h]
+    simp
+  have h_mod : Nat.card (Sylow 3 G) % 3 = 1 % 3 := card_sylow_modEq_one 3 G
+  let P : Sylow 3 G := default
+  have h_dvd : Nat.card (Sylow 3 G) ∣ Nat.card G :=
+    (Sylow.card_dvd_index P).trans (Subgroup.index_dvd_card _)
+  rw [h] at h_dvd
+  have h_pos : 0 < Nat.card (Sylow 3 G) := Nat.card_pos
+  have h_le : Nat.card (Sylow 3 G) ≤ 24 := Nat.le_of_dvd (by decide) h_dvd
+  interval_cases (Nat.card (Sylow 3 G)) <;> omega
 
 /-- A group of order `24` with a unique Sylow 3-subgroup is isomorphic to some group.
     The precondition is equivalent to having a normal Sylow 3-subgroup. -/
