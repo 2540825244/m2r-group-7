@@ -894,3 +894,45 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
 
   -- n = 17
   · classify_prime 17 h
+
+  -- n = 18
+  · sorry
+
+  -- n = 19
+  · classify_prime 19 h
+
+  -- n = 20
+  · sorry
+
+  -- n = 21
+  · classify_pq 3 7 h
+
+  -- n = 22
+  · classify_pq 2 11 h
+
+  -- n = 23
+  · classify_prime 23 h
+
+  -- n = 24
+  · sorry
+
+  -- n = 25
+  · classify_prime_sq 5 h
+
+  -- n = 26
+  · classify_pq 2 13 h
+
+  -- n = 27
+  · sorry
+
+  -- n = 28
+  · sorry
+
+  -- n = 29
+  · classify_prime 29 h
+
+  -- n = 30
+  · sorry
+
+  -- n = 31
+  · classify_prime 31 h

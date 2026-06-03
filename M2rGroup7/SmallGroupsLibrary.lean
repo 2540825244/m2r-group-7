@@ -8,7 +8,7 @@ import «M2rGroup7».P2qClassification.PqClassification
 import Mathlib.Tactic
 import Mathlib.RingTheory.ZMod.UnitsCyclic
 
-abbrev maximumOrder : Nat := 17
+abbrev maximumOrder : Nat := 31
 
 /-- Alternating group generator -/
 def AlternatingGroup (n : Nat) [NeZero n] := ↥(alternatingGroup (Fin n))
@@ -119,6 +119,8 @@ private instance : Fact (Nat.Prime 2) := ⟨by norm_num⟩
 private instance : Fact (Nat.Prime 3) := ⟨by norm_num⟩
 private instance : Fact (Nat.Prime 5) := ⟨by norm_num⟩
 private instance : Fact (Nat.Prime 7) := ⟨by norm_num⟩
+private instance : Fact (Nat.Prime 11) := ⟨by norm_num⟩
+private instance : Fact (Nat.Prime 13) := ⟨by norm_num⟩
 
 /-- `pqSDP p q` is the canonical non-abelian group of order p * q.
     Expands to `CyclicGroup q ⋊[canonicalCpOnCqAction ...] CyclicGroup p` with
@@ -174,6 +176,24 @@ macro "pqSDP" p:num q:num : term =>
   | 16, 13 => (CyclicGroup 4 × CyclicGroup 2) ⋊[c2OnK8Psi6] CyclicGroup 2
   | 16, 14 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
   | 17, 1 => CyclicGroup 17
+  | 18, 1 => CyclicGroup 18
+  | 19, 1 => CyclicGroup 19
+  | 20, 1 => CyclicGroup 20
+  | 21, 1 => pqSDP 3 7
+  | 21, 2 => CyclicGroup 21
+  | 22, 1 => pqSDP 2 11
+  | 22, 2 => CyclicGroup 22
+  | 23, 1 => CyclicGroup 23
+  | 24, 1 => CyclicGroup 24
+  | 25, 1 => CyclicGroup 25
+  | 25, 2 => CyclicGroup 5 × CyclicGroup 5
+  | 26, 1 => pqSDP 2 13
+  | 26, 2 => CyclicGroup 26
+  | 27, 1 => CyclicGroup 27
+  | 28, 1 => CyclicGroup 28
+  | 29, 1 => CyclicGroup 29
+  | 30, 1 => CyclicGroup 30
+  | 31, 1 => CyclicGroup 31
   | _, _ => PUnit -- Fallback to make retrieve total
 
 @[reducible]
@@ -196,6 +216,20 @@ def num_entries (n : Nat) : Nat :=
   | 15 => 1
   | 16 => 14
   | 17 => 1
+  | 18 => 1 -- It is 5 actually, will fill rest later
+  | 19 => 1
+  | 20 => 1 -- It is 5 actually, will fill rest later
+  | 21 => 2
+  | 22 => 2
+  | 23 => 1
+  | 24 => 1 -- It is 15 actually, will fill rest later
+  | 25 => 2
+  | 26 => 2
+  | 27 => 1 -- It is 5 actually, will fill rest later
+  | 28 => 1 -- It is 4 actually, will fill rest later
+  | 29 => 1
+  | 30 => 1 -- It is 4 actually, will fill rest later
+  | 31 => 1
   | _ => 0
 
 def validIndex (n i : Nat) : Bool :=
