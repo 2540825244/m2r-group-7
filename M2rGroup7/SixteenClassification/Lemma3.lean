@@ -81,7 +81,6 @@ index 2 together with an inducing element.
 Given `H ◁ G` of index 2 and `a ∈ G \ H`, set `v := a^2 ∈ H` and let
 `τ ∈ Aut(H)` be conjugation by `a`. Then `G` realises the extension type
 `(H, 2, τ, v)`. -/
-@[reducible]
 noncomputable def realise_from_normal_index_two
     {G : Type*} [Group G]
     (H : Subgroup G) [H.Normal] (h_index : H.index = 2)
@@ -305,21 +304,35 @@ lemma exists_min_order_inducing_element
   have : b ∈ S := by simp [S, hb]
   exact ha_min b this
 
-/-! ## Case analysis: normal `C_8` -/
+/-! ## Case analysis: normal `C_8`
+
+The plan for `realise_with_normal_C8`:
+
+1. Obtain a minimum-order inducing element `a ∉ H` with `a^2 ∈ H`
+   via `exists_min_order_inducing_element`.
+2. Build `R_H : RealiseExtType G E_H` with `E_H.N = ↥H`
+   via `realise_from_normal_index_two`.
+3. Transfer along `e : ↥H ≃* CyclicGroup 8` (from `h_iso`)
+   using `RealiseExtType.transferN` to land on
+   `R_C8 : RealiseExtType G (E_H.conjN e)`.
+4. Dispatch on the resulting automorphism via `MulAut.forall_eq_C8`
+   into the four cases `{1, c2OnC8Pow3, c2OnC8Pow5, c2OnC8Pow7}`.
+5. For each `τ'`, sub-dispatch on the glue element `v' ∈ CyclicGroup 8`
+   (8 possibilities, restricted by the validity condition `τ' v' = v'`).
+6. For each `(τ', v')` pair, construct an `ExtEquiv` to the matching
+   `ext_16_i` (using `extension_families_same_isoClasses` or
+   `conjugateActEquiv` to bridge glue/action differences) and apply
+   `RealiseExtType.transfer_along_extEquiv`.
+
+The four foundational helpers needed for this plan are now in place
+(`transferN`, `conjN`, `transfer_along_extEquiv`,
+`exists_min_order_inducing_element`). What remains is the explicit
+case-by-case construction of the per-case `ExtEquiv` witnesses.
+-/
 
 /-- If `G` is a group of order 16 containing a normal subgroup isomorphic to
 `CyclicGroup 8`, then `G` realises one of the six `C_8`-based extension types
-`ext_16_1`, `ext_16_5`, `ext_16_6`, `ext_16_7`, `ext_16_8`, `ext_16_9`.
-
-Structural framework: we reduce to a `RealiseExtType G E_C8` where `E_C8.N = CyclicGroup 8`
-and dispatch on `E_C8.act` via `MulAut.forall_eq_C8`. The four resulting branches
-(`τ' ∈ {1, c2OnC8Pow3 (ofAdd 1), c2OnC8Pow5 (ofAdd 1), c2OnC8Pow7 (ofAdd 1)}`)
-each need a further sub-dispatch on the resulting glue element `v' ∈ CyclicGroup 8`
-to match one of the six target extension types.
-
-The minimum-order inducing element is chosen so that for each fixed `τ'` the
-realised group is the canonical one in the blueprint list. The remaining work
-in each branch is to construct an `ExtEquiv` from `E_C8` to the matching `ext_16_i`. -/
+`ext_16_1`, `ext_16_5`, `ext_16_6`, `ext_16_7`, `ext_16_8`, `ext_16_9`. -/
 lemma realise_with_normal_C8
     {G : Type*} [Group G]
     (hn : Nat.card G = 16)
@@ -330,30 +343,7 @@ lemma realise_with_normal_C8
     Nonempty (RealiseExtType G ext_16_7) ∨
     Nonempty (RealiseExtType G ext_16_8) ∨
     Nonempty (RealiseExtType G ext_16_9) := by
-  classical
-  -- 1. `G` is finite and `H` has index 2 in `G`.
-  haveI : Finite G := (Nat.card_ne_zero.mp (by rw [hn]; decide)).2
-  obtain ⟨e⟩ := h_iso
-  have hH_card : Nat.card H = 8 := by
-    rw [Nat.card_congr e.toEquiv, card_cyclicGroup]
-  have h_index : H.index = 2 := by
-    have h_lagrange : Nat.card H * H.index = Nat.card G := H.card_mul_index
-    rw [hH_card, hn] at h_lagrange
-    omega
-  -- 2. Pick a minimum-order inducing element `a ∉ H` with `a^2 ∈ H`.
-  obtain ⟨a, ha_not, ha_sq, _ha_min⟩ := exists_min_order_inducing_element H h_index
-  -- 3. Build a realisation of an extension type `E_H` with `E_H.N = ↥H` by `G`.
-  set pkg := realise_from_normal_index_two H h_index a ha_not ha_sq with hpkg
-  -- 4. Transfer along `e : ↥H ≃* CyclicGroup 8` to get a realisation of `E_C8`
-  --    where `E_C8.N = CyclicGroup 8`.
-  let e' : pkg.1.N ≃* CyclicGroup 8 := e
-  let E_C8 : ExtensionType := pkg.1.conjN e'
-  let _R_C8 : RealiseExtType G E_C8 := pkg.2.transferN e'
-  -- 5. Dispatch on `E_C8.act` via `MulAut.forall_eq_C8`.
-  --    Each branch still needs to construct an `ExtEquiv` matching one of
-  --    `ext_16_{1,5,6,7,8,9}` based on the resulting glue element.
-  rcases MulAut.forall_eq_C8 E_C8.act with _hτ | _hτ | _hτ | _hτ
-  all_goals sorry
+  sorry
 
 /-! ## Case analysis: normal `K_8 = C_4 × C_2` -/
 
