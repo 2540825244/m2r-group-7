@@ -78,18 +78,116 @@ lemma isMulCommutative_of_sq_eq_one {G : Type*} [Group G] (h : ∀ x : G, x ^ 2 
     then `G ≃ Fin n → C₂` for some `n`. -/
 lemma mulEquiv_pi_cyclicTwo_of_sq_eq_one {G : Type*} [Group G] [Finite G]
     (h : ∀ x : G, x ^ 2 = 1) :
-    ∃ n : ℕ, Nonempty (G ≃* (Fin n → CyclicGroup 2)) := sorry
+    ∃ n : ℕ, Nonempty (G ≃* (Fin n → CyclicGroup 2)) := by
+  letI hcomm : IsMulCommutative G := isMulCommutative_of_sq_eq_one h
+  letI : CommGroup G := CommGroup.ofIsMulCommutative
+  obtain ⟨ι, instι, nf, hn, ⟨e⟩⟩ := CommGroup.equiv_prod_multiplicative_zmod_of_finite G
+  -- All nf i = 2, since the group exponent divides 2 and nf i > 1
+  have hn2 : ∀ i : ι, nf i = 2 := fun i => by
+    have hexpG : Monoid.exponent G ∣ 2 := Monoid.exponent_dvd_of_forall_pow_eq_one h
+    have hdvd_i : Monoid.exponent (Multiplicative (ZMod (nf i))) ∣
+        Monoid.exponent ((j : ι) → Multiplicative (ZMod (nf j))) :=
+      MonoidHom.exponent_dvd (f := Pi.evalMonoidHom _ i) (Function.surjective_eval i)
+    have hdvd2 : nf i ∣ 2 := by
+      rw [show Monoid.exponent (Multiplicative (ZMod (nf i))) =
+          AddMonoid.exponent (ZMod (nf i)) from rfl, ZMod.exponent] at hdvd_i
+      exact hdvd_i.trans ((Monoid.exponent_eq_of_mulEquiv e) ▸ hexpG)
+    rcases Nat.prime_two.eq_one_or_self_of_dvd _ hdvd2 with h1 | h2
+    · exact absurd (hn i) (by omega)
+    · exact h2
+  refine ⟨Fintype.card ι, ⟨e.trans ?_⟩⟩
+  refine (MulEquiv.piCongrRight (fun i => ?_)).trans
+    (MulEquiv.arrowCongr (Fintype.equivFin ι) (MulEquiv.refl _))
+  rw [hn2 i]
+  exact MulEquiv.refl _
 
 /-- Wild's Fact 3: `Aut(C₄) ≃ C₂`. -/
-lemma aut_C4_iso_C2 : Nonempty (MulAut (CyclicGroup 4) ≃* CyclicGroup 2) := sorry
+lemma aut_C4_iso_C2 : Nonempty (MulAut (CyclicGroup 4) ≃* CyclicGroup 2) := by
+  haveI : IsCyclic (ZMod 4)ˣ := ZMod.isCyclic_units_four
+  have hcard : Nat.card (ZMod 4)ˣ = Nat.card (CyclicGroup 2) := by
+    rw [Nat.card_eq_fintype_card, ZMod.card_units_eq_totient, card_cyclicGroup]
+    decide
+  have e₁ : MulAut (CyclicGroup 4) ≃* (ZMod 4)ˣ := by
+    have := IsCyclic.mulAutMulEquiv (CyclicGroup 4)
+    rwa [card_cyclicGroup] at this
+  exact ⟨e₁.trans (mulEquivOfCyclicCardEq hcard)⟩
 
 /-- Wild's Fact 3: `Aut(C₈) ≃ C₂ × C₂`. -/
 lemma aut_C8_iso_C2_prod_C2 :
-    Nonempty (MulAut (CyclicGroup 8) ≃* CyclicGroup 2 × CyclicGroup 2) := sorry
+    Nonempty (MulAut (CyclicGroup 8) ≃* CyclicGroup 2 × CyclicGroup 2) := by
+  haveI h8K : IsKleinFour (ZMod 8)ˣ := by
+    apply IsKleinFour.mk
+    · rw [Nat.card_eq_fintype_card, ZMod.card_units_eq_totient]; decide
+    · have hdvd : Monoid.exponent (ZMod 8)ˣ ∣ 2 :=
+        Monoid.exponent_dvd_of_forall_pow_eq_one (by decide)
+      have hpos : 0 < Monoid.exponent (ZMod 8)ˣ :=
+        Monoid.exponent_pos_of_exists 2 two_pos (by decide)
+      have hne1 : Monoid.exponent (ZMod 8)ˣ ≠ 1 := by
+        intro h1
+        rw [Monoid.exp_eq_one_iff] at h1
+        haveI := h1
+        have h := @Nat.card_unique (ZMod 8)ˣ ⟨1⟩ ‹_›
+        simp [Nat.card_eq_fintype_card, ZMod.card_units_eq_totient] at h
+        exact absurd h (by decide)
+      rcases Nat.prime_two.eq_one_or_self_of_dvd _ hdvd with h1 | h2
+      · exact absurd h1 hne1
+      · exact h2
+  have hexp2 : Monoid.exponent (CyclicGroup 2) = 2 := by
+    show Monoid.exponent (Multiplicative (ZMod 2)) = 2
+    rw [show Monoid.exponent (Multiplicative (ZMod 2)) = AddMonoid.exponent (ZMod 2) from rfl]
+    exact ZMod.exponent 2
+  haveI hC2K : IsKleinFour (CyclicGroup 2 × CyclicGroup 2) := by
+    apply IsKleinFour.mk
+    · simp only [Nat.card_prod, card_cyclicGroup]
+    · rw [Monoid.exponent_prod, hexp2]; decide
+  have e₁ : MulAut (CyclicGroup 8) ≃* (ZMod 8)ˣ := by
+    have := IsCyclic.mulAutMulEquiv (CyclicGroup 8)
+    rwa [card_cyclicGroup] at this
+  exact ⟨e₁.trans IsKleinFour.nonempty_mulEquiv.some⟩
 
-/-- Wild's Fact 4: `Aut(K₈) ≃ D₈`, where `K₈ = C₄ × C₂`. -/
+-- The final bijectivity check enumerates all of `Aut(C₄ × C₂)`, which exceeds the default budget.
+set_option maxHeartbeats 1000000 in
+/-- Wild's Fact 4: `Aut(K₈) ≃ D₈`, where `K₈ = C₄ × C₂`.
+
+We exhibit the explicit homomorphism `f : D₄ → Aut(C₄ × C₂)` sending the rotation `r` to the
+order-4 automorphism `ρ` and the reflection `s` to the order-2 automorphism `σ`, then check it is a
+bijection. Since both groups are finite with decidable equality, bijectivity is a single decidable
+computation, which is far cheaper than reasoning about generator images by hand. -/
 lemma aut_C4_prod_C2_iso_D8 :
-    Nonempty (MulAut (CyclicGroup 4 × CyclicGroup 2) ≃* DihedralGroup 4) := sorry
+    Nonempty (MulAut (CyclicGroup 4 × CyclicGroup 2) ≃* DihedralGroup 4) := by
+  -- ρ (order 4): `(x, y) ↦ (x · c4Half^y, ofAdd((x mod 2) + y))`
+  let ρ : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
+    { toFun := fun p =>
+        ⟨p.1 * c4Half ^ (Multiplicative.toAdd p.2).val,
+         Multiplicative.ofAdd (((Multiplicative.toAdd p.1).val : ZMod 2)
+           + Multiplicative.toAdd p.2)⟩
+      invFun := fun p =>
+        ⟨p.1⁻¹ * c4Half ^ (Multiplicative.toAdd p.2).val,
+         Multiplicative.ofAdd (((Multiplicative.toAdd p.1).val : ZMod 2)
+           + Multiplicative.toAdd p.2)⟩
+      left_inv := by decide
+      right_inv := by decide
+      map_mul' := by decide }
+  -- σ (order 2): `(x, y) ↦ (x, ofAdd((x mod 2) + y))`
+  let σ : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
+    { toFun := fun p =>
+        ⟨p.1, Multiplicative.ofAdd (((Multiplicative.toAdd p.1).val : ZMod 2)
+           + Multiplicative.toAdd p.2)⟩
+      invFun := fun p =>
+        ⟨p.1, Multiplicative.ofAdd (((Multiplicative.toAdd p.1).val : ZMod 2)
+           + Multiplicative.toAdd p.2)⟩
+      left_inv := by decide
+      right_inv := by decide
+      map_mul' := by decide }
+  -- f : D₄ → Aut sends `r i ↦ ρ^i` and `sr i ↦ σ · ρ^i`
+  let f : DihedralGroup 4 →* MulAut (CyclicGroup 4 × CyclicGroup 2) :=
+    { toFun := fun d => match d with
+        | DihedralGroup.r i => ρ ^ i.val
+        | DihedralGroup.sr i => σ * ρ ^ i.val
+      map_one' := by decide
+      map_mul' := by decide }
+  -- f is a bijection between two finite groups of order 8, hence an isomorphism
+  exact ⟨(MulEquiv.ofBijective f (by native_decide)).symm⟩
 
 /-- Wild's Fact 5: For any element `v` in a finite group `G`,
     `|class(v)| · |C(v)| = |G|` (orbit-stabilizer for conjugation).
