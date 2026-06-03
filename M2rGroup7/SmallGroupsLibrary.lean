@@ -1,33 +1,19 @@
-import Mathlib.Algebra.Group.Defs
-import Mathlib.Data.ZMod.Basic
 import Mathlib.GroupTheory.SpecificGroups.Dihedral
 import Mathlib.GroupTheory.SpecificGroups.Quaternion
 import Mathlib.GroupTheory.SpecificGroups.Alternating
 import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.GroupTheory.OrderOfElement
+import «M2rGroup7».CyclicGroup
+import «M2rGroup7».P2qClassification.PqClassification
+
+-- CyclicGroup, card_cyclicGroup, cyclicHom live in CyclicGroup.lean.
+-- canonicalCpOnCqAction is imported from PqClassification.
 
 abbrev maximumOrder : Nat := 17
-
-/-- Cyclic group generator -/
-def CyclicGroup (n : Nat) [NeZero n] := Multiplicative (ZMod n)
-  deriving DecidableEq, Group, CommGroup, IsCyclic, Fintype, DivisionCommMonoid
 
 /-- Alternating group generator -/
 def AlternatingGroup (n : Nat) [NeZero n] := ↥(alternatingGroup (Fin n))
   deriving DecidableEq, Group, Fintype
-
-theorem card_cyclicGroup (n : Nat) [NeZero n] : Nat.card (CyclicGroup n) = n := by
-  delta CyclicGroup
-  rw [Nat.card_congr Multiplicative.toAdd]
-  exact Nat.card_zmod n
-
-/-- Build a monoid hom out of `CyclicGroup n` from an element whose `n`th power is `1`. -/
-def cyclicHom (n : Nat) [NeZero n] {G : Type*} [Group G] (a : G) (h : a ^ n = 1) :
-    CyclicGroup n →* G :=
-  AddMonoidHom.toMultiplicativeLeft <| ZMod.lift n
-    ⟨zmultiplesHom (Additive G) (Additive.ofMul a), by
-      change (n : ℤ) • Additive.ofMul a = 0
-      rw [← ofMul_zpow, zpow_natCast, h, ofMul_one]⟩
 
 /-- The non-trivial swap action of `C_4` on `C_2 × C_2`, factoring through `C_4/C_2 = C_2`. -/
 def c4OnC2sqSwap : CyclicGroup 4 →* MulAut (CyclicGroup 2 × CyclicGroup 2) :=
@@ -120,8 +106,22 @@ instance : Group Unit where
   inv _ := ()
   inv_mul_cancel _ := by rfl
 
-@[reducible]
-def retrieve (n : Nat) (i : Nat) : Type :=
+-- Fact instances for the primes used in retrieve's pq semidirect product entries.
+private instance : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+private instance : Fact (Nat.Prime 3) := ⟨by norm_num⟩
+private instance : Fact (Nat.Prime 5) := ⟨by norm_num⟩
+private instance : Fact (Nat.Prime 7) := ⟨by norm_num⟩
+
+/-- `pqSDP p q` is the canonical non-abelian group of order p * q.
+    Expands to `CyclicGroup q ⋊[canonicalCpOnCqAction ...] CyclicGroup p` with
+    all proof obligations discharged by `norm_num`/`decide`. -/
+macro "pqSDP" p:num q:num : term =>
+  `(CyclicGroup $q ⋊[canonicalCpOnCqAction (p := $p) (q := $q)
+      (by norm_num) (by norm_num) (by native_decide)] CyclicGroup $p)
+
+/-- Small groups database. The pq entries (6, 10, 14) use `canonicalCpOnCqAction` — the same
+    function that `pq_classification` outputs — so `classification` needs no bridging. -/
+@[reducible] noncomputable def retrieve (n : Nat) (i : Nat) : Type :=
   match n, i with
   | 1, 1 => Unit
   | 2, 1 => CyclicGroup 2
@@ -129,7 +129,7 @@ def retrieve (n : Nat) (i : Nat) : Type :=
   | 4, 1 => CyclicGroup 4
   | 4, 2 => CyclicGroup 2 × CyclicGroup 2
   | 5, 1 => CyclicGroup 5
-  | 6, 1 => DihedralGroup 3
+  | 6, 1 => pqSDP 2 3
   | 6, 2 => CyclicGroup 6
   | 7, 1 => CyclicGroup 7
   | 8, 1 => CyclicGroup 8
@@ -139,7 +139,7 @@ def retrieve (n : Nat) (i : Nat) : Type :=
   | 8, 5 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
   | 9, 1 => CyclicGroup 9
   | 9, 2 => CyclicGroup 3 × CyclicGroup 3
-  | 10, 1 => DihedralGroup 5
+  | 10, 1 => pqSDP 2 5
   | 10, 2 => CyclicGroup 10
   | 11, 1 => CyclicGroup 11
   | 12, 1 => QuaternionGroup 3
@@ -148,7 +148,7 @@ def retrieve (n : Nat) (i : Nat) : Type :=
   | 12, 4 => DihedralGroup 6
   | 12, 5 => CyclicGroup 6 × CyclicGroup 2
   | 13, 1 => CyclicGroup 13
-  | 14, 1 => DihedralGroup 7
+  | 14, 1 => pqSDP 2 7
   | 14, 2 => CyclicGroup 14
   | 15, 1 => CyclicGroup 15
   | 16, 1 => CyclicGroup 16
@@ -205,7 +205,7 @@ instance (n i : Nat) : Decidable (ValidIndex n i) :=
     exact ⟨fun ⟨a, b, c, d⟩ => ⟨a, b, c, d⟩,
            fun h => ⟨h.n_pos, h.n_range, h.i_pos, h.i_range⟩⟩)
 
-instance (n : Nat) (i : Nat) [hv : ValidIndex n i] : Group (retrieve n i) := by
+noncomputable instance (n : Nat) (i : Nat) [hv : ValidIndex n i] : Group (retrieve n i) := by
   unfold retrieve
   split <;> try infer_instance
 
@@ -216,7 +216,8 @@ theorem retrieve_card (n : Nat) (i : Nat) [hv : ValidIndex n i] : Nat.card (retr
     simp only [num_entries] at hi_range <;>
     interval_cases i <;>
       simp only [retrieve] <;>
-      simp_all only [Fintype.card_prod, Fintype.card_unique, Nat.card_eq_fintype_card,
+      simp_all only [SemidirectProduct.card, card_cyclicGroup, Nat.card_prod,
+        Fintype.card_prod, Fintype.card_unique, Nat.card_eq_fintype_card,
         Nat.ofNat_pos, Nat.one_le_ofNat, Nat.reduceLeDiff, Order.lt_one_iff, Order.lt_two_iff,
         Std.le_refl, gt_iff_lt, zero_le] <;>
       rfl

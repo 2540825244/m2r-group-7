@@ -3,6 +3,8 @@ import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
+import «M2rGroup7».P2qClassification.P2qClassification
+import «M2rGroup7».P2qClassification.PqClassification
 import Mathlib.FieldTheory.Finite.GaloisField
 import Mathlib.Algebra.Module.ZMod
 import Mathlib.LinearAlgebra.Dimension.Free
@@ -411,33 +413,37 @@ theorem prime_cubed_and_abelian_classification {p : ℕ} [hn : Fact p.Prime] [Is
           map_mul' := fun f g => rfl }
       exact ⟨e_mul.trans e_fin3⟩
 
-
-/-- A group of prime order is isomorphic to the cyclic group of the same order. -/
-theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
-(Nonempty (MulEquiv G (CyclicGroup n))) := by
-  apply Nonempty.intro
-  have h_g_card : Nat.card G = n := h
-  have : IsCyclic G := isCyclic_of_prime_card h_g_card
-  refine (mulEquivOfCyclicCardEq ?_)
-  have h_c_card: Nat.card (CyclicGroup n) = n := card_cyclicGroup n
-  rw [h_g_card, h_c_card]
-
 macro "classify_prime" p:num h:term : tactic => `(tactic|(
   have : Fact (Nat.Prime $p) := ⟨by decide⟩
   use 1
   haveI hv : ValidIndex $p 1 := by decide
   use hv
-  have hr : MulEquiv (retrieve $p 1) (CyclicGroup $p) := by
-    have hr_is_c : retrieve $p 1 = CyclicGroup $p := by rfl
-    exact (MulEquiv.refl (CyclicGroup $p))
-  apply prime_classification
-  exact $h))
+  exact prime_classification_of_group $h))
 
 macro "classify_prime_sq" p:num h:term : tactic => `(tactic|(
   haveI : Fact (Nat.Prime $p) := ⟨by decide⟩
   obtain (hiso | hiso) := p_squared_classification (p := $p) ($h |>.trans (by decide))
   · exact ⟨1, by decide , hiso⟩
   · exact ⟨2, by decide, hiso⟩))
+
+-- For n = p*q where BOTH cyclic and non-cyclic groups exist (p ∣ q - 1).
+-- retrieve n 1 uses canonicalCpOnCqAction, same as pq_classification output, so no bridging needed.
+macro "classify_pq" p:num q:num h:term : tactic => `(tactic|(
+  haveI : Fact (Nat.Prime $p) := ⟨by norm_num⟩
+  haveI : Fact (Nat.Prime $q) := ⟨by norm_num⟩
+  rcases pq_classification (p := $p) (q := $q) (by norm_num)
+      ($h.trans (by norm_num)) with ⟨⟨e⟩⟩ | ⟨_, ⟨e⟩⟩
+  · exact ⟨2, by decide, ⟨e⟩⟩
+  · exact ⟨1, by decide, ⟨e⟩⟩))
+
+-- For n = p*q where p ∤ q - 1, so only the cyclic group exists.
+macro "classify_pq_cyclic" p:num q:num h:term : tactic => `(tactic|(
+  haveI : Fact (Nat.Prime $p) := ⟨by norm_num⟩
+  haveI : Fact (Nat.Prime $q) := ⟨by norm_num⟩
+  have ⟨⟨e⟩⟩ : Nonempty (_ ≃* CyclicGroup ($p * $q)) :=
+    (pq_classification (p := $p) (q := $q) (by norm_num) ($h.trans (by norm_num))).resolve_right
+      (fun ⟨hr, _⟩ => absurd hr (by decide))
+  exact ⟨1, by decide, ⟨e⟩⟩))
 
 /-- A group of order at most `maximumOrder` is isomorphic to some group obtained by `retrieve`. -/
 theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
@@ -478,10 +484,8 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   -- n = 5
   · classify_prime 5 h
 
-  -- n = 6
-  · obtain (hiso | hiso) := order6_classification h
-    · exact ⟨2, by decide, hiso⟩
-    · exact ⟨1, by decide, hiso⟩
+  -- n = 6 = 2 * 3
+  · classify_pq 2 3 h
 
   -- n = 7
   · classify_prime 7 h
@@ -492,10 +496,8 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   -- n = 9
   · classify_prime_sq 3 h
 
-  -- n = 10
-  · obtain (hiso | hiso) := order10_classification h
-    · exact ⟨2, by decide, hiso⟩
-    · exact ⟨1, by decide, hiso⟩
+  -- n = 10 = 2 * 5
+  · classify_pq 2 5 h
 
   -- n = 11
   · classify_prime 11 h
@@ -506,14 +508,11 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   -- n = 13
   · classify_prime 13 h
 
-  -- n = 14
-  · obtain (hiso | hiso) := order14_classification h
-    · exact ⟨2, by decide, hiso⟩
-    · exact ⟨1, by decide, hiso⟩
+  -- n = 14 = 2 * 7
+  · classify_pq 2 7 h
 
-  -- n = 15
-  · obtain ⟨hiso⟩ := order15_classification h
-    exact ⟨1, by decide, ⟨hiso⟩⟩
+  -- n = 15 = 3 * 5  (only cyclic: 3 ∤ 4)
+  · classify_pq_cyclic 3 5 h
 
   -- n = 16
   · sorry
