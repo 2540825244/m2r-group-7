@@ -3,6 +3,7 @@ import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
+import «M2rGroup7».SixteenCase
 import Mathlib.FieldTheory.Finite.GaloisField
 import Mathlib.Algebra.Module.ZMod
 import Mathlib.LinearAlgebra.Dimension.Free
