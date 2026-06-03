@@ -4,6 +4,12 @@ import «M2rGroup7».OddCaseB
 import «M2rGroup7».SmallGroupsLibrary
 
 set_option maxHeartbeats 3200000
+set_option linter.style.longLine false
+set_option linter.style.refine false
+set_option linter.style.cases false
+set_option linter.flexible false
+set_option linter.unusedSimpArgs false
+set_option linter.style.setOption false
 
 open scoped commutatorElement
 
@@ -99,8 +105,8 @@ lemma exists_bp_eq_amp (a b : G) (ha : orderOf a = p ^ 2) (hb : orderOf b = p ^ 
     (hab : a * b ≠ b * a) (hcard : Nat.card G = p ^ 3) :
     ∃ m : ℕ, m < p ∧ b ^ p = a ^ (m * p) := by
   obtain ⟨m, hm⟩ : ∃ m : ℕ, b ^ p = a ^ m ∧ m < p ^ 2 := by
-    have h_order : b ^ p ∈ Subgroup.zpowers a := by
-      exact?;
+    have h_order : b ^ p ∈ Subgroup.zpowers a :=
+      bp_mem_zpowers a b ha hcard
     obtain ⟨ m, hm ⟩ := h_order;
     refine' ⟨ Int.toNat ( m % ( p ^ 2 ) ), _, _ ⟩ <;> simp_all +decide [ ← zpow_natCast, Int.emod_nonneg, Int.emod_lt_of_pos ];
     · rw [ max_eq_left ( Int.emod_nonneg _ ( by norm_cast; exact pow_ne_zero 2 hp.1.ne_zero ) ) ] ; rw [ ← hm ] ; rw [ ← zpow_mod_orderOf ] ; simp +decide [ ha ] ;
@@ -131,8 +137,8 @@ theorem case_C_odd_isom (hp_odd : p ≠ 2)
     (a b : G) (ha : orderOf a = p ^ 2) (hb : orderOf b = p ^ 2)
     (hab : a * b ≠ b * a) (hcard : Nat.card G = p ^ 3) :
     Nonempty (G ≃* CyclicGroup (p ^ 2) ⋊[cpSqAction p] CyclicGroup p) := by
-  obtain ⟨m, hm₁, hm₂⟩ : ∃ m : ℕ, m < p ∧ b ^ p = a ^ (m * p) := by
-    exact?;
+  obtain ⟨m, hm₁, hm₂⟩ : ∃ m : ℕ, m < p ∧ b ^ p = a ^ (m * p) :=
+    exists_bp_eq_amp a b ha hb hab hcard
   obtain ⟨b', hb'⟩ : ∃ b' : G, b' ^ p = 1 ∧ a * b' ≠ b' * a ∧ orderOf b' = p := by
     refine' ⟨ b * a ^ ( p ^ 2 - m ), _, _, _ ⟩;
     · rw [ pow_p_mul_odd ];

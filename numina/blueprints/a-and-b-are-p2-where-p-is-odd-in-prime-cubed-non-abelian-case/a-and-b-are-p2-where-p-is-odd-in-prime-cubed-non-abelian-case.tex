@@ -1,8 +1,100 @@
 % Blueprint: a and b are p^2 where p is odd in prime cubed non abelian case.
-% Created by Numina
+% Case C (odd prime): both generators have order p^2.
 
 \begin{document}
 
-% Your blueprint will go here.
+\section{Case C (odd prime): both generators have order \(p^2\)}
+
+Let $G$ be a non-abelian group of order $p^3$ with $p$ an odd prime, and let
+$a, b \in G$ be non-commuting elements of order $p^2$. We show
+\[
+  G \cong C_{p^2} \rtimes_{\varphi} C_p,
+\]
+where $\varphi$ is the standard non-trivial action used in Case B (the
+\texttt{cpSqAction p}).
+
+The strategy is to reduce to Case B2 by replacing $b$ with an element of order
+exactly $p$ that still fails to commute with $a$.
+
+\subsection{Commutator power formula in class-2 subgroups}
+
+Let $z = [a,b]$. From the analysis used in Case A we know that $z$ lies in the
+centre of $G$ and has order $p$ (since $G$ has a centre of order $p$ and any
+non-trivial commutator generates it).
+
+\begin{lemma}[\texttt{pow\_mul\_central\_comm}]
+If $z$ is central, then for all $k, n \in \mathbb{N}$,
+\[
+  (b \cdot a^k)^n = z^{k \cdot \binom{n}{2}} \cdot b^n \cdot a^{kn}.
+\]
+\end{lemma}
+
+This is the standard class-2 commutator identity, proved by induction on $n$
+using $a^m b = z^m b a^m$ (\texttt{comm\_rearrange\_one} from Case A).
+
+\begin{lemma}[\texttt{pow\_p\_mul\_odd}]
+If $p$ is odd, $z$ is central, and $\mathrm{ord}(z) = p$, then for every $k$:
+\[
+  (b \cdot a^k)^p = b^p \cdot a^{kp}.
+\]
+\end{lemma}
+
+Indeed $\binom{p}{2} = p(p-1)/2$ is divisible by $p$ because $p$ is odd (so
+$p-1$ is even), hence $z^{k\binom{p}{2}} = 1$.
+
+\subsection{Locating \(b^p\) inside \(\langle a\rangle\)}
+
+\begin{lemma}[\texttt{bp\_mem\_zpowers}]
+$b^p \in \langle a \rangle$.
+\end{lemma}
+
+\begin{proof}
+$\langle a\rangle$ has index $p$ and is normal (Case B argument), so the
+quotient $G/\langle a\rangle$ has order $p$ and every $p$th power is trivial
+in it.
+\end{proof}
+
+\begin{lemma}[\texttt{exists\_bp\_eq\_amp}]
+There exists $m \in \mathbb{N}$ with $m < p$ and $b^p = a^{m p}$.
+\end{lemma}
+
+\begin{proof}
+By the previous lemma $b^p = a^m$ for some $m < p^2$. Since $b^p \ne 1$ would
+have order $p$, the order of $a^m$ is $p$, which forces $\gcd(p^2, m) = p$ and
+hence $p \mid m$. The case $b^p = 1$ is handled by taking $m = 0$.
+\end{proof}
+
+\subsection{The substitution and reduction to Case B2}
+
+Choose $m$ as above and set
+\[
+  b' \,=\, b \cdot a^{p^2 - m}.
+\]
+
+Using \texttt{pow\_p\_mul\_odd}:
+\[
+  (b')^p = b^p \cdot a^{(p^2 - m) p} = a^{mp} \cdot a^{p^3 - mp} = a^{p^3} = 1,
+\]
+because $\mathrm{ord}(a) = p^2 \mid p^3$. Together with $b' \ne 1$ (because
+$a b \ne b a$ implies $a b' \ne b' a$) this gives $\mathrm{ord}(b') = p$.
+
+Finally, if $a b' = b' a$ then conjugating by $a^{-(p^2-m)}$ recovers
+$a b = b a$, contradicting the hypothesis. Hence $a b' \ne b' a$.
+
+The triple $(a, b')$ now satisfies the hypotheses of Case B2 (odd):
+$\mathrm{ord}(a) = p^2$, $\mathrm{ord}(b') = p$, $a b' \ne b' a$, $|G| = p^3$.
+Applying \texttt{case\_B2\_odd\_isom} yields
+\[
+  G \;\cong\; C_{p^2} \rtimes_{\texttt{cpSqAction}\,p} C_p.
+\]
+
+\begin{theorem}[\texttt{case\_C\_odd\_isom}]
+Let $p$ be an odd prime and $G$ a non-abelian group of order $p^3$. If
+$a, b \in G$ satisfy $\mathrm{ord}(a) = \mathrm{ord}(b) = p^2$ and
+$a b \ne b a$, then
+\[
+  G \cong C_{p^2} \rtimes_{\texttt{cpSqAction}\,p} C_p.
+\]
+\end{theorem}
 
 \end{document}
