@@ -81,6 +81,7 @@ index 2 together with an inducing element.
 Given `H ◁ G` of index 2 and `a ∈ G \ H`, set `v := a^2 ∈ H` and let
 `τ ∈ Aut(H)` be conjugation by `a`. Then `G` realises the extension type
 `(H, 2, τ, v)`. -/
+@[reducible]
 noncomputable def realise_from_normal_index_two
     {G : Type*} [Group G]
     (H : Subgroup G) [H.Normal] (h_index : H.index = 2)
@@ -196,11 +197,129 @@ noncomputable def realise_from_normal_index_two
         show x.1 * a ^ (i : ℕ) = x.1 * a ^ (i : ℕ)
         rfl }
 
+/-! ## Glue: ExtEquiv-based matching helper -/
+
+/-- Transfer a realisation along an `ExtEquiv`: given `R_src : RealiseExtType G E_src`,
+a witness `R_tgt' : RealiseExtType G' E_tgt`, and `eq : ExtEquiv E_src E_tgt`, build
+`RealiseExtType G E_tgt`.
+
+Chains `ExtEquiv.realisingEquiv` (which gives `G ≃* G'`) with `RealiseExtType.transfer`. -/
+noncomputable def RealiseExtType.transfer_along_extEquiv
+    {G G' : Type*} [Group G] [Group G']
+    {E_src E_tgt : ExtensionType}
+    (R_src : RealiseExtType G E_src)
+    (R_tgt' : RealiseExtType G' E_tgt)
+    (eq : ExtEquiv E_src E_tgt) :
+    RealiseExtType G E_tgt :=
+  RealiseExtType.transfer (ExtEquiv.realisingEquiv eq R_src R_tgt') R_tgt'
+
+/-- Conjugate an `ExtensionType` along an isomorphism of its underlying normal group. -/
+def ExtensionType.conjN
+    (E : ExtensionType)
+    {N' : Type*} [Group N']
+    (e : E.N ≃* N') : ExtensionType where
+  N := N'
+  n := E.n
+  act := (e.symm.trans E.act).trans e
+  glue := e E.glue
+  map_glue := by
+    show e (E.act (e.symm (e E.glue))) = e E.glue
+    rw [MulEquiv.symm_apply_apply, E.map_glue]
+  pow_n := by
+    -- Pointwise: ((e.symm.trans E.act).trans e)^n x = e (E.act^n (e.symm x))
+    have T_pow : ∀ k : ℕ, ∀ x : N',
+        (((e.symm.trans E.act).trans e) ^ k) x = e ((E.act ^ k) (e.symm x)) := by
+      intro k
+      induction k with
+      | zero =>
+        intro x
+        show x = e (e.symm x)
+        rw [MulEquiv.apply_symm_apply]
+      | succ k ih =>
+        intro x
+        rw [pow_succ', MulAut.mul_apply, ih]
+        show e (E.act (e.symm (e ((E.act ^ k) (e.symm x))))) =
+             e ((E.act ^ (k + 1)) (e.symm x))
+        rw [MulEquiv.symm_apply_apply, pow_succ', MulAut.mul_apply]
+    ext x
+    rw [T_pow E.n]
+    have hpow := E.pow_n
+    have hx := DFunLike.congr_fun hpow (e.symm x)
+    show e ((E.act ^ E.n) (e.symm x)) = (e E.glue) * x * (e E.glue)⁻¹
+    rw [hx]
+    show e (E.glue * (e.symm x) * E.glue⁻¹) = e E.glue * x * (e E.glue)⁻¹
+    rw [map_mul, map_mul, map_inv, MulEquiv.apply_symm_apply]
+
+/-- Transport a realisation across an isomorphism of the underlying normal group.
+
+If `R : RealiseExtType G E` and `e : E.N ≃* N'`, then `G` realises `E.conjN e`,
+i.e. the extension with `N` replaced by `N'`, `act` conjugated by `e`, and `glue`
+mapped through `e`. The same inducing element `a ∈ G` works; only the embedding
+`ι` is precomposed with `e.symm`. -/
+noncomputable def RealiseExtType.transferN
+    {G : Type*} [Group G]
+    {E : ExtensionType}
+    {N' : Type*} [Group N']
+    (e : E.N ≃* N')
+    (R : RealiseExtType G E) :
+    RealiseExtType G (E.conjN e) where
+  a := R.a
+  ι := R.ι.comp e.symm.toMonoidHom
+  act_a := by
+    intro x
+    show R.a * R.ι (e.symm x) * R.a⁻¹ = R.ι (e.symm (e (E.act (e.symm x))))
+    rw [MulEquiv.symm_apply_apply, R.act_a]
+  pow_a_n := by
+    show R.a ^ E.n = R.ι (e.symm (e E.glue))
+    rw [MulEquiv.symm_apply_apply, R.pow_a_n]
+  equiv := (Equiv.prodCongr e.symm.toEquiv (Equiv.refl _)).trans R.equiv
+  equiv_apply := by
+    intro x i
+    show R.equiv (e.symm x, i) = R.ι (e.symm x) * R.a ^ (i : ℕ)
+    rw [R.equiv_apply]
+
+/-- For a finite group `G` with a normal subgroup `H` of index 2, there exists an
+inducing element `a ∉ H` with `a^2 ∈ H` whose order is minimal among elements of `G \ H`.
+-/
+lemma exists_min_order_inducing_element
+    {G : Type*} [Group G] [Finite G]
+    (H : Subgroup G) [H.Normal] (h_index : H.index = 2) :
+    ∃ a : G, a ∉ H ∧ a ^ 2 ∈ H ∧
+      ∀ b : G, b ∉ H → b ^ 2 ∈ H → orderOf a ≤ orderOf b := by
+  classical
+  haveI : Fintype G := Fintype.ofFinite G
+  -- The set of (order, element) pairs for inducing elements is nonempty and finite.
+  have h_all_sq : ∀ b : G, b ^ 2 ∈ H := by
+    intro b
+    have := Subgroup.pow_index_mem H b
+    rw [h_index] at this
+    exact this
+  obtain ⟨a0, ha0_not, _⟩ := exists_inducing_element H h_index
+  let S : Finset G := (Finset.univ : Finset G).filter (· ∉ H)
+  have hS_nonempty : S.Nonempty := ⟨a0, by simp [S, ha0_not]⟩
+  let f : G → ℕ := fun g => orderOf g
+  obtain ⟨a, ha_mem, ha_min⟩ := S.exists_min_image f hS_nonempty
+  simp only [S, Finset.mem_filter, Finset.mem_univ, true_and] at ha_mem
+  refine ⟨a, ha_mem, h_all_sq a, ?_⟩
+  intro b hb _
+  have : b ∈ S := by simp [S, hb]
+  exact ha_min b this
+
 /-! ## Case analysis: normal `C_8` -/
 
 /-- If `G` is a group of order 16 containing a normal subgroup isomorphic to
 `CyclicGroup 8`, then `G` realises one of the six `C_8`-based extension types
-`ext_16_1`, `ext_16_5`, `ext_16_6`, `ext_16_7`, `ext_16_8`, `ext_16_9`. -/
+`ext_16_1`, `ext_16_5`, `ext_16_6`, `ext_16_7`, `ext_16_8`, `ext_16_9`.
+
+Structural framework: we reduce to a `RealiseExtType G E_C8` where `E_C8.N = CyclicGroup 8`
+and dispatch on `E_C8.act` via `MulAut.forall_eq_C8`. The four resulting branches
+(`τ' ∈ {1, c2OnC8Pow3 (ofAdd 1), c2OnC8Pow5 (ofAdd 1), c2OnC8Pow7 (ofAdd 1)}`)
+each need a further sub-dispatch on the resulting glue element `v' ∈ CyclicGroup 8`
+to match one of the six target extension types.
+
+The minimum-order inducing element is chosen so that for each fixed `τ'` the
+realised group is the canonical one in the blueprint list. The remaining work
+in each branch is to construct an `ExtEquiv` from `E_C8` to the matching `ext_16_i`. -/
 lemma realise_with_normal_C8
     {G : Type*} [Group G]
     (hn : Nat.card G = 16)
@@ -211,7 +330,30 @@ lemma realise_with_normal_C8
     Nonempty (RealiseExtType G ext_16_7) ∨
     Nonempty (RealiseExtType G ext_16_8) ∨
     Nonempty (RealiseExtType G ext_16_9) := by
-  sorry
+  classical
+  -- 1. `G` is finite and `H` has index 2 in `G`.
+  haveI : Finite G := (Nat.card_ne_zero.mp (by rw [hn]; decide)).2
+  obtain ⟨e⟩ := h_iso
+  have hH_card : Nat.card H = 8 := by
+    rw [Nat.card_congr e.toEquiv, card_cyclicGroup]
+  have h_index : H.index = 2 := by
+    have h_lagrange : Nat.card H * H.index = Nat.card G := H.card_mul_index
+    rw [hH_card, hn] at h_lagrange
+    omega
+  -- 2. Pick a minimum-order inducing element `a ∉ H` with `a^2 ∈ H`.
+  obtain ⟨a, ha_not, ha_sq, _ha_min⟩ := exists_min_order_inducing_element H h_index
+  -- 3. Build a realisation of an extension type `E_H` with `E_H.N = ↥H` by `G`.
+  set pkg := realise_from_normal_index_two H h_index a ha_not ha_sq with hpkg
+  -- 4. Transfer along `e : ↥H ≃* CyclicGroup 8` to get a realisation of `E_C8`
+  --    where `E_C8.N = CyclicGroup 8`.
+  let e' : pkg.1.N ≃* CyclicGroup 8 := e
+  let E_C8 : ExtensionType := pkg.1.conjN e'
+  let _R_C8 : RealiseExtType G E_C8 := pkg.2.transferN e'
+  -- 5. Dispatch on `E_C8.act` via `MulAut.forall_eq_C8`.
+  --    Each branch still needs to construct an `ExtEquiv` matching one of
+  --    `ext_16_{1,5,6,7,8,9}` based on the resulting glue element.
+  rcases MulAut.forall_eq_C8 E_C8.act with _hτ | _hτ | _hτ | _hτ
+  all_goals sorry
 
 /-! ## Case analysis: normal `K_8 = C_4 × C_2` -/
 
