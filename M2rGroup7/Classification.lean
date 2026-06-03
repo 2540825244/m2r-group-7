@@ -11,6 +11,9 @@ import «M2rGroup7».CaseC
 import «M2rGroup7».OddCaseA
 import «M2rGroup7».OddCaseB
 import «M2rGroup7».OddCaseC
+import Mathlib.FieldTheory.Finite.GaloisField
+import Mathlib.Algebra.Module.ZMod
+import Mathlib.LinearAlgebra.Dimension.Free
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import Mathlib.SetTheory.Cardinal.Finite
@@ -28,6 +31,7 @@ import Mathlib.GroupTheory.Subgroup.Center
 import Mathlib.GroupTheory.PGroup
 import OrderPQ
 import Mathlib.Algebra.Group.Defs
+
 import Mathlib.GroupTheory.Commutator.Basic
 import Mathlib.Algebra.Group.Equiv.Defs
 import Mathlib.Algebra.Group.Subgroup.ZPowers.Basic
@@ -35,6 +39,8 @@ import Mathlib.Algebra.Group.TypeTags.Basic
 import Mathlib.GroupTheory.Commutator.Basic
 import Mathlib.Data.Bracket
 import Mathlib.Algebra.Group.TypeTags.Basic
+import Paperproof
+import Mathlib.SetTheory.Cardinal.Finite
 
 open scoped commutatorElement
 
@@ -851,7 +857,9 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime_sq 3 h
 
   -- n = 10
-  · sorry
+  · obtain (hiso | hiso) := order10_classification h
+    · exact ⟨2, by decide, hiso⟩
+    · exact ⟨1, by decide, hiso⟩
 
   -- n = 11
   · classify_prime 11 h
@@ -863,10 +871,13 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime 13 h
 
   -- n = 14
-  · sorry
+  · obtain (hiso | hiso) := order14_classification h
+    · exact ⟨2, by decide, hiso⟩
+    · exact ⟨1, by decide, hiso⟩
 
   -- n = 15
-  · sorry
+  · obtain ⟨hiso⟩ := order15_classification h
+    exact ⟨1, by decide, ⟨hiso⟩⟩
 
   -- n = 16
   · sorry
