@@ -24,6 +24,15 @@ import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Data.Nat.Choose.Basic
 import Mathlib.Data.Fintype.BigOperators
 
+-- NOTE: The library lemma
+-- `M2rGroup7.Lemmas.GroupTheoryLemmas.cyclic_subgroup_of_cyclic_group_is_unique`
+-- would normally be imported and used here to avoid duplication. However, the
+-- project currently has two top-level declarations named `prime_classification`
+-- (one in `M2rGroup7.Classification`, one in `M2rGroup7.Lemmas.GroupTheoryLemmas`),
+-- so importing the latter triggers a name collision when the aggregator
+-- `M2rGroup7.lean` is built. Until that collision is resolved (e.g. by
+-- namespacing one of the two declarations), we keep a small local helper below.
+
 namespace ConjugacyClassesOrderQ
 
 open scoped Pointwise
@@ -211,7 +220,14 @@ private lemma exists_cyclic_subgroup_p2_sub_one (p : ℕ) [Fact p.Prime] :
       exact hφ (by simpa using congrArg Subtype.val h)
     rw [hrange, hcard_GFu]
 
-/-- In a finite cyclic group, any two subgroups of the same order are equal. -/
+/-- In a finite cyclic group, any two subgroups of the same order are equal.
+
+This is a local re-statement of
+`M2rGroup7.Lemmas.GroupTheoryLemmas.cyclic_subgroup_of_cyclic_group_is_unique`.
+We keep a local copy because of a pre-existing name collision on
+`prime_classification` between `M2rGroup7.Classification` and
+`M2rGroup7.Lemmas.GroupTheoryLemmas` that blocks importing the latter from
+this file. -/
 private lemma unique_subgroup_of_card_in_cyclic
     {G : Type*} [Group G] [Finite G] [IsCyclic G] {n : ℕ} (hn : 0 < n)
     (H K : Subgroup G) (hH : Nat.card H = n) (hK : Nat.card K = n) : H = K := by
@@ -219,19 +235,15 @@ private lemma unique_subgroup_of_card_in_cyclic
   haveI : Fintype G := Fintype.ofFinite G
   haveI : Fintype H := Fintype.ofFinite _
   haveI : Fintype K := Fintype.ofFinite _
-  -- Both H and K consist of elements x with x^n = 1.
-  set S : Finset G := (Finset.univ : Finset G).filter (fun x => x ^ n = 1) with hSdef
+  set S : Finset G := (Finset.univ : Finset G).filter (fun x => x ^ n = 1)
   have hcardS : S.card ≤ n := IsCyclic.card_pow_eq_one_le hn
-  -- For x ∈ H: x^n = 1.
   have hcardH : Fintype.card H = n := by rw [← Nat.card_eq_fintype_card]; exact hH
   have hcardK : Fintype.card K = n := by rw [← Nat.card_eq_fintype_card]; exact hK
   have hxn (H' : Subgroup G) (hH' : Nat.card H' = n) {x : G} (hx : x ∈ H') :
       x ^ n = 1 := by
     have hpow : (⟨x, hx⟩ : H') ^ n = 1 := by
-      rw [← hH']
-      exact pow_card_eq_one'
-    have hpow2 : ((⟨x, hx⟩ : H')^ n : G) = ((1 : H') : G) := by
-      exact_mod_cast hpow
+      rw [← hH']; exact pow_card_eq_one'
+    have hpow2 : ((⟨x, hx⟩ : H')^ n : G) = ((1 : H') : G) := by exact_mod_cast hpow
     simpa using hpow2
   have hHsub : (H : Set G).toFinset ⊆ S := by
     intro x hx
@@ -244,41 +256,34 @@ private lemma unique_subgroup_of_card_in_cyclic
     simp only [S, Finset.mem_filter, Finset.mem_univ, true_and]
     exact hxn K hK hx
   have hHcard : (H : Set G).toFinset.card = n := by
-    rw [Set.toFinset_card]
-    convert hcardH using 1
+    rw [Set.toFinset_card]; convert hcardH using 1
   have hKcard : (K : Set G).toFinset.card = n := by
-    rw [Set.toFinset_card]
-    convert hcardK using 1
-  -- Both have card n, both ⊆ S which has card ≤ n. So both = S.
-  have hHeqS : (H : Set G).toFinset = S := by
-    apply Finset.eq_of_subset_of_card_le hHsub
-    rw [hHcard]; exact hcardS
-  have hKeqS : (K : Set G).toFinset = S := by
-    apply Finset.eq_of_subset_of_card_le hKsub
-    rw [hKcard]; exact hcardS
+    rw [Set.toFinset_card]; convert hcardK using 1
+  have hHeqS : (H : Set G).toFinset = S :=
+    Finset.eq_of_subset_of_card_le hHsub (by rw [hHcard]; exact hcardS)
+  have hKeqS : (K : Set G).toFinset = S :=
+    Finset.eq_of_subset_of_card_le hKsub (by rw [hKcard]; exact hcardS)
   have hHK : (H : Set G).toFinset = (K : Set G).toFinset := hHeqS.trans hKeqS.symm
   ext x
   have : x ∈ (H : Set G).toFinset ↔ x ∈ (K : Set G).toFinset := by rw [hHK]
   simpa [Set.mem_toFinset] using this
 
-/-- Two subgroups of `G` of the same order, both contained in a cyclic subgroup `S`,
-are equal. -/
+/-- Two subgroups of `G` of the same order, both contained in a cyclic subgroup
+`S`, are equal. -/
 private lemma unique_subgroup_of_card_in_cyclic_le
     {G : Type*} [Group G] [Finite G] {S : Subgroup G} [IsCyclic S]
     {n : ℕ} (hn : 0 < n)
     {H K : Subgroup G} (hH : H ≤ S) (hK : K ≤ S)
     (hHcard : Nat.card H = n) (hKcard : Nat.card K = n) :
     H = K := by
-  -- Move H, K into S as subgroups of S, then apply uniqueness within cyclic S.
   let H' : Subgroup S := H.subgroupOf S
   let K' : Subgroup S := K.subgroupOf S
-  -- Cardinalities
   have hH'card : Nat.card H' = n := by
     have hHfin : Nat.card H = Nat.card H' := by
       apply Nat.card_eq_of_bijective
         (fun (x : H) => (⟨⟨x.1, hH x.2⟩, x.2⟩ : H'))
       refine ⟨fun x y hxy => Subtype.ext (by exact congrArg (·.1.1) hxy), ?_⟩
-      rintro ⟨⟨y, hyS⟩, hy⟩
+      rintro ⟨⟨y, _⟩, hy⟩
       exact ⟨⟨y, hy⟩, rfl⟩
     rw [← hHfin]; exact hHcard
   have hK'card : Nat.card K' = n := by
@@ -286,12 +291,11 @@ private lemma unique_subgroup_of_card_in_cyclic_le
       apply Nat.card_eq_of_bijective
         (fun (x : K) => (⟨⟨x.1, hK x.2⟩, x.2⟩ : K'))
       refine ⟨fun x y hxy => Subtype.ext (by exact congrArg (·.1.1) hxy), ?_⟩
-      rintro ⟨⟨y, hyS⟩, hy⟩
+      rintro ⟨⟨y, _⟩, hy⟩
       exact ⟨⟨y, hy⟩, rfl⟩
     rw [← hKfin]; exact hKcard
   have hHK' : H' = K' :=
     unique_subgroup_of_card_in_cyclic hn H' K' hH'card hK'card
-  -- Lift back
   apply le_antisymm
   · intro x hx
     have hx_in_H' : (⟨x, hH hx⟩ : S) ∈ H' := hx
@@ -1429,28 +1433,950 @@ private lemma exists_conj_into_torusD (p q : ℕ) [Fact p.Prime] (hq : q.Prime)
     exact y.property
   exact hH_to_S₀.trans hS₀_le_D
 
+/-! ### Step B helpers: the swap involution on `Fin q ⊕ Unit`. -/
+
+/-- The involution on `Fin q ⊕ Unit` corresponding to conjugation by the swap
+matrix. It sends `inl 0 ↔ inr ()` and `inl ℓ ↔ inl ℓ⁻¹` for `ℓ ≠ 0` (mod `q`). -/
+private noncomputable def swapIdx (q : ℕ) [hq : Fact q.Prime] :
+    Fin q ⊕ Unit → Fin q ⊕ Unit :=
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  fun ℓ => match ℓ with
+  | Sum.inl ℓ =>
+      if ℓ.val = 0 then Sum.inr ()
+      else Sum.inl ⟨((ℓ.val : ZMod q)⁻¹).val, ZMod.val_lt _⟩
+  | Sum.inr () => Sum.inl ⟨0, hq.out.pos⟩
+
+/-- Helper: zpowers of a conjugate equals conjugation of zpowers. -/
+private lemma zpowers_conj (p : ℕ) [Fact p.Prime] (g x : GLF p) :
+    (Subgroup.zpowers x).map (MulAut.conj g).toMonoidHom =
+      Subgroup.zpowers (g * x * g⁻¹) := by
+  rw [MonoidHom.map_zpowers]
+  rfl
+
+/-- Two cyclic subgroups of the same finite cardinality with one containing
+the other's generator are equal. -/
+private lemma zpowers_eq_of_card_of_mem {G : Type*} [Group G]
+    {x y : G} (n : ℕ) [Finite (Subgroup.zpowers y)]
+    (hx : Nat.card (Subgroup.zpowers x) = n)
+    (hy : Nat.card (Subgroup.zpowers y) = n) (hmem : x ∈ Subgroup.zpowers y) :
+    Subgroup.zpowers x = Subgroup.zpowers y := by
+  have h1 : Subgroup.zpowers x ≤ Subgroup.zpowers y := by
+    rw [Subgroup.zpowers_le]; exact hmem
+  have hcard_eq : Nat.card (Subgroup.zpowers x) = Nat.card (Subgroup.zpowers y) := by
+    rw [hx, hy]
+  exact Subgroup.eq_of_le_of_card_ge h1 (by rw [hcard_eq])
+
+/-- `swapIdx q` is an involution. -/
+private lemma swapIdx_involutive (q : ℕ) [hqf : Fact q.Prime] :
+    Function.Involutive (swapIdx q) := by
+  haveI : NeZero q := ⟨hqf.out.ne_zero⟩
+  intro ℓ
+  rcases ℓ with i | ⟨⟩
+  · by_cases hi : i.val = 0
+    · -- swapIdx (inl 0) = inr (); swapIdx (inr ()) = inl ⟨0, pos⟩.
+      have h1 : swapIdx q (Sum.inl i) = Sum.inr () := by
+        show (if i.val = 0 then Sum.inr () else _) = Sum.inr ()
+        rw [if_pos hi]
+      rw [h1]
+      show Sum.inl (⟨0, hqf.out.pos⟩ : Fin q) = Sum.inl i
+      congr 1
+      apply Fin.ext; simp [hi]
+    · -- inl i with i.val ≠ 0
+      have hi_ne : (i.val : ZMod q) ≠ 0 := by
+        intro h
+        rw [ZMod.natCast_eq_zero_iff] at h
+        have h1 : i.val < q := i.isLt
+        exact hi (Nat.eq_zero_of_dvd_of_lt h h1)
+      have h1 : swapIdx q (Sum.inl i) =
+          Sum.inl ⟨((i.val : ZMod q)⁻¹).val, ZMod.val_lt _⟩ := by
+        show (if i.val = 0 then Sum.inr () else _) = _
+        rw [if_neg hi]
+      rw [h1]
+      -- swapIdx (inl ⟨(i⁻¹).val, _⟩). Need ((i⁻¹).val).val ≠ 0, which means (i⁻¹) ≠ 0.
+      have hinv_ne : ((i.val : ZMod q)⁻¹).val ≠ 0 := by
+        intro hv
+        have hzero : ((i.val : ZMod q)⁻¹) = 0 := by
+          rw [← ZMod.val_eq_zero]; exact hv
+        have hmul_inv : (i.val : ZMod q) * (i.val : ZMod q)⁻¹ = 1 :=
+          ZMod.mul_inv_of_unit _ (Ne.isUnit hi_ne)
+        rw [hzero, mul_zero] at hmul_inv
+        exact one_ne_zero hmul_inv.symm
+      have h2 : swapIdx q (Sum.inl (⟨((i.val : ZMod q)⁻¹).val, ZMod.val_lt _⟩ : Fin q)) =
+          Sum.inl ⟨(((((i.val : ZMod q)⁻¹).val : ZMod q))⁻¹).val, ZMod.val_lt _⟩ := by
+        show (if (⟨((i.val : ZMod q)⁻¹).val, _⟩ : Fin q).val = 0 then Sum.inr () else _) = _
+        rw [if_neg hinv_ne]
+      rw [h2]
+      -- Show: inl ⟨(((i⁻¹).val).cast.inv).val, _⟩ = inl i
+      congr 1
+      apply Fin.ext
+      show (((((i.val : ZMod q)⁻¹).val : ZMod q))⁻¹).val = i.val
+      have step1 : (((((i.val : ZMod q)⁻¹).val : ZMod q))⁻¹) = (i.val : ZMod q) := by
+        rw [ZMod.natCast_val, ZMod.cast_id, inv_inv]
+      rw [step1, ZMod.val_natCast]
+      exact Nat.mod_eq_of_lt i.isLt
+  · -- inr ()
+    show swapIdx q (Sum.inl ⟨0, hqf.out.pos⟩) = Sum.inr ()
+    show (if (⟨0, hqf.out.pos⟩ : Fin q).val = 0 then Sum.inr ()
+          else Sum.inl ⟨(((⟨0, hqf.out.pos⟩ : Fin q).val : ZMod q)⁻¹).val, ZMod.val_lt _⟩)
+          = Sum.inr ()
+    rw [if_pos rfl]
+
+/-- Conjugation by `swapMat` sends `U_param p q a ℓ` to `U_param p q a (swapIdx q ℓ)`. -/
+private lemma U_param_conj_swap (p q : ℕ) [Fact p.Prime] [hqf : Fact q.Prime] (hq2 : 2 < q)
+    (hpq : p ≠ q) (hdvd : q ∣ (p - 1)) (a : (ZMod p)ˣ) (ha : orderOf a = q) (ℓ : Fin q ⊕ Unit) :
+    (U_param p q a ℓ).map (MulAut.conj (swapMat p)).toMonoidHom =
+      U_param p q a (swapIdx q ℓ) := by
+  haveI : NeZero q := ⟨hqf.out.ne_zero⟩
+  haveI : Finite (GLF p) := by
+    haveI : Fintype (GLF p) := by unfold GLF; infer_instance
+    infer_instance
+  rcases ℓ with i | ⟨⟩
+  · -- inl i case
+    show (Subgroup.zpowers (diagEmbed p (a, a ^ i.val))).map (MulAut.conj (swapMat p)).toMonoidHom
+      = U_param p q a (swapIdx q (Sum.inl i))
+    rw [zpowers_conj, swap_conj_diag]
+    -- Now want: zpowers (diag(a^i, a)) = U_param (swapIdx (inl i))
+    by_cases hi : i.val = 0
+    · -- swapIdx (inl 0) = inr (). diag(a^0, a) = diag(1, a) = generator of U_param (inr ()).
+      have hswap : swapIdx q (Sum.inl i) = Sum.inr () := by
+        show (if i.val = 0 then Sum.inr () else _) = Sum.inr ()
+        rw [if_pos hi]
+      rw [hswap]
+      -- U_param (inr ()) = zpowers (diag(1, a))
+      show Subgroup.zpowers (diagEmbed p (a ^ i.val, a)) = Subgroup.zpowers (diagEmbed p (1, a))
+      rw [hi, pow_zero]
+    · -- i.val ≠ 0 case. swapIdx (inl i) = inl ((i⁻¹ : ZMod q).val).
+      have hi_ne : (i.val : ZMod q) ≠ 0 := by
+        intro h
+        rw [ZMod.natCast_eq_zero_iff] at h
+        have h1 : i.val < q := i.isLt
+        have h2 : i.val = 0 := Nat.eq_zero_of_dvd_of_lt h h1
+        exact hi h2
+      -- Define the inverse index ℓ' = ((i.val : ZMod q)⁻¹).val.
+      set ℓ' : Fin q := ⟨((i.val : ZMod q)⁻¹).val, ZMod.val_lt _⟩ with hℓ'def
+      have hswap : swapIdx q (Sum.inl i) = Sum.inl ℓ' := by
+        show (if i.val = 0 then Sum.inr () else _) = Sum.inl ℓ'
+        rw [if_neg hi]
+      rw [hswap]
+      -- Goal: zpowers (diag(a^i, a)) = U_param (inl ℓ') = zpowers (diag(a, a^ℓ')).
+      show Subgroup.zpowers (diagEmbed p (a ^ i.val, a)) =
+            Subgroup.zpowers (diagEmbed p (a, a ^ ℓ'.val))
+      -- Key idea: i.val * ℓ'.val ≡ 1 mod q. So (diag(a, a^ℓ'))^i.val = diag(a^i, a^(i*ℓ')).
+      -- And a^(i.val * ℓ'.val) = a^1 since order q.
+      -- We want: zpowers (diag(a^i, a)) = zpowers (diag(a, a^ℓ')).
+      -- Key: a^(ℓ'.val * i.val) = a in (ZMod p)ˣ.
+      have hl_eq : ((ℓ'.val : ZMod q)) = (i.val : ZMod q)⁻¹ := by
+        rw [hℓ'def]
+        show ((((i.val : ZMod q)⁻¹).val : ZMod q)) = (i.val : ZMod q)⁻¹
+        rw [ZMod.natCast_val]; exact ZMod.cast_id q _
+      have hmul_inv : (i.val : ZMod q) * (i.val : ZMod q)⁻¹ = 1 :=
+        ZMod.mul_inv_of_unit _ (Ne.isUnit hi_ne)
+      have hpowa : a ^ (ℓ'.val * i.val) = a := by
+        -- The point: (ℓ'.val * i.val : ZMod q) = (1 : ZMod q).
+        have hcast : ((ℓ'.val * i.val : ℕ) : ZMod q) = ((1 : ℕ) : ZMod q) := by
+          push_cast
+          rw [hl_eq, mul_comm]; exact hmul_inv
+        have hmodeq : (ℓ'.val * i.val) ≡ 1 [MOD q] :=
+          (ZMod.natCast_eq_natCast_iff _ _ _).mp hcast
+        have ha_q : a ^ q = 1 := by rw [← ha]; exact pow_orderOf_eq_one a
+        have := pow_eq_pow_of_modEq hmodeq ha_q
+        simpa using this
+      -- Compute: (diag(a, a^ℓ'))^i = diag(a^i, a^(ℓ'*i)) = diag(a^i, a).
+      have hpow_eq : (diagEmbed p (a, a ^ ℓ'.val)) ^ i.val = diagEmbed p (a ^ i.val, a) := by
+        rw [← map_pow]
+        congr 1
+        show ((a, a ^ ℓ'.val) ^ i.val) = (a ^ i.val, a)
+        rw [Prod.pow_def]
+        refine Prod.mk.injEq .. |>.mpr ⟨rfl, ?_⟩
+        rw [← pow_mul]; exact hpowa
+      -- Now both subgroups equal because zpowers (g^i) = zpowers g when gcd(i, ord g) = 1.
+      -- But more simply: we have diag(a^i, a) = (diag(a, a^ℓ'))^i, so it's in zpowers.
+      -- For equality, use that diag(a, a^ℓ') is also in zpowers diag(a^i, a) — but this
+      -- requires same argument. Simpler: use cardinality + one-direction containment.
+      apply zpowers_eq_of_card_of_mem q
+      · -- card of zpowers (diag(a^i, a)) = q via orderOf
+        rw [Nat.card_zpowers, orderOf_diagEmbed]
+        -- orderOf (a^i.val) = q (since q prime, q ∤ i.val).
+        have hi_ne_nat : ¬ (q ∣ i.val) := by
+          intro h
+          have h1 : i.val < q := i.isLt
+          exact hi (Nat.eq_zero_of_dvd_of_lt h h1)
+        have hord_ai : orderOf (a ^ i.val) = q := by
+          rw [orderOf_pow a, ha]
+          have hgcd : Nat.gcd q i.val = 1 := hqf.out.coprime_iff_not_dvd.mpr hi_ne_nat
+          rw [hgcd]; exact Nat.div_one _
+        rw [hord_ai, ha, Nat.lcm_self]
+      · -- card of zpowers (diag(a, a^ℓ')) = q
+        have h := U_param_card p q hqf.out a ha (Sum.inl ℓ')
+        change Nat.card (Subgroup.zpowers (diagEmbed p (a, a ^ ℓ'.val))) = q at h
+        exact h
+      · -- diag(a^i, a) ∈ zpowers (diag(a, a^ℓ'))
+        rw [← hpow_eq]
+        exact ⟨(i.val : ℤ), by simp [zpow_natCast]⟩
+  · -- inr () case
+    show (Subgroup.zpowers (diagEmbed p (1, a))).map (MulAut.conj (swapMat p)).toMonoidHom
+      = U_param p q a (swapIdx q (Sum.inr ()))
+    rw [zpowers_conj, swap_conj_diag]
+    -- Goal: zpowers (diag(a, 1)) = U_param (inl ⟨0, _⟩) = zpowers (diag(a, a^0)) = zpowers (diag(a, 1)).
+    show Subgroup.zpowers (diagEmbed p (a, 1)) =
+         Subgroup.zpowers (diagEmbed p (a, a ^ (⟨0, hqf.out.pos⟩ : Fin q).val))
+    simp
+
+/-- Every order-`q` subgroup of `torusD p` equals some `U_param p q a ℓ`. -/
+private lemma every_torusD_order_q_eq_Uparam (p q : ℕ) [Fact p.Prime] [hqf : Fact q.Prime]
+    (a : (ZMod p)ˣ) (ha : orderOf a = q)
+    {H : Subgroup (GLF p)} (hH : H ≤ torusD p) (hHcard : Nat.card H = q) :
+    ∃ ℓ : Fin q ⊕ Unit, H = U_param p q a ℓ := by
+  classical
+  haveI : Finite (GLF p) := by
+    haveI : Fintype (GLF p) := by unfold GLF; infer_instance
+    infer_instance
+  haveI : Finite H := Nat.finite_of_card_ne_zero (by rw [hHcard]; exact hqf.out.ne_zero)
+  haveI : Fintype H := Fintype.ofFinite _
+  -- Get a generator m of H with order q.
+  obtain ⟨m₀, hm₀⟩ := exists_prime_orderOf_dvd_card (G := H) q
+    (by rw [Fintype.card_eq_nat_card]; rw [hHcard])
+  let m : GLF p := m₀
+  have hm_order : orderOf m = q := by
+    have := orderOf_injective H.subtype Subtype.val_injective m₀
+    simp only [Subgroup.coe_subtype] at this
+    rw [show (m : GLF p) = (m₀ : GLF p) from rfl, this]; exact hm₀
+  -- H = zpowers m.
+  have hm_in_H : m ∈ H := m₀.property
+  have hH_eq : H = Subgroup.zpowers m := by
+    have hm₀_ne : (m₀ : H) ≠ 1 := by
+      intro h
+      have h1 : orderOf (m₀ : H) = 1 := by rw [h]; exact orderOf_one
+      rw [hm₀] at h1
+      have := hqf.out.one_lt; omega
+    have htop : Subgroup.zpowers (m₀ : H) = ⊤ :=
+      zpowers_eq_top_of_prime_card hHcard hm₀_ne
+    apply le_antisymm
+    · intro x hx
+      have hxH : (⟨x, hx⟩ : H) ∈ Subgroup.zpowers (m₀ : H) := by rw [htop]; trivial
+      rcases Subgroup.mem_zpowers_iff.mp hxH with ⟨k, hk⟩
+      have hk' : (m₀ : GLF p) ^ k = x := by
+        have := congrArg (·.val) hk
+        simp at this; exact this
+      exact ⟨k, hk'⟩
+    · rw [Subgroup.zpowers_le]; exact hm_in_H
+  -- m ∈ torusD, so m = diagEmbed p (a^i, a^j) by orderOf_q_torusD_eq.
+  have hmD : m ∈ torusD p := hH hm_in_H
+  obtain ⟨i, j, hm_eq, hij⟩ := orderOf_q_torusD_eq p q hqf.out a ha m hmD hm_order
+  -- Choose ℓ based on i, j.
+  haveI : NeZero q := ⟨hqf.out.ne_zero⟩
+  -- Case 1: q ∣ i. Then i.mod = 0, so by hij j is not divisible by q. Use inr ().
+  -- We need H = zpowers (diag(a^i, a^j)). Show H = U_param p q a (inr ()) = zpowers (diag(1, a)).
+  -- More precisely: We want to convert (a^i, a^j) to (1, a) up to ℓ in {inl ℓ, inr ()}.
+  -- We have card H = q. Each U_param has card q.
+  -- For surjection: if i ≡ 0 mod q, then a^i = 1, so m = diag(1, a^j). j not divisible.
+  --   Then orderOf (a^j) = q. So a^j = a^k for some k coprime to q. We need diag(1, a^j) ∈ zpowers (diag(1, a))?
+  --   No, we need zpowers diag(1, a^j) = zpowers diag(1, a). This holds because diag(1, a^j) generates
+  --   same subgroup as diag(1, a^j) and both have order q.
+  --   Idea: diag(1, a^j) ∈ zpowers diag(1, a) trivially: it's (diag(1, a))^j. And both have order q.
+  -- For case i not divisible: use inl. Specifically: ℓ = ((a^j orderdvd... )
+  by_cases hqi : q ∣ i
+  · -- q ∣ i case. Then a^i = 1, m = diag(1, a^j), j not divisible by q.
+    have hai : a ^ i = 1 := by
+      rw [← ha] at hqi
+      exact orderOf_dvd_iff_pow_eq_one.mp hqi
+    have hqj : ¬ q ∣ j := fun h => hij ⟨hqi, h⟩
+    -- choose ℓ = inr ()
+    refine ⟨Sum.inr (), ?_⟩
+    -- U_param p q a (inr ()) = zpowers (diag(1, a)) and H = zpowers (diag(1, a^j))
+    change H = Subgroup.zpowers (diagEmbed p (1, a))
+    rw [hH_eq]
+    -- m = diag(a^i, a^j) = diag(1, a^j). Show zpowers (diag(1, a^j)) = zpowers (diag(1, a)).
+    have hm_eq' : m = diagEmbed p (1, a ^ j) := by rw [hm_eq, hai]
+    rw [hm_eq']
+    -- Apply zpowers_eq_of_card_of_mem.
+    apply zpowers_eq_of_card_of_mem q
+    · rw [Nat.card_zpowers, orderOf_diagEmbed, orderOf_one]
+      have hord_aj : orderOf (a ^ j) = q := by
+        rw [orderOf_pow a, ha]
+        have hgcd : Nat.gcd q j = 1 := hqf.out.coprime_iff_not_dvd.mpr hqj
+        rw [hgcd]; exact Nat.div_one _
+      rw [hord_aj]; simp
+    · rw [Nat.card_zpowers, orderOf_diagEmbed, orderOf_one, ha]; simp
+    · -- diag(1, a^j) ∈ zpowers (diag(1, a))
+      refine ⟨(j : ℤ), ?_⟩
+      simp only [zpow_natCast, ← map_pow]
+      congr 1
+      show ((1 : (ZMod p)ˣ), a) ^ j = (1, a ^ j)
+      rw [Prod.pow_def]; simp
+  · -- q ∤ i case. Use inl (a^j / a^i mod q), i.e., the index ℓ where a^j = (a^i)^ℓ.
+    -- m = diag(a^i, a^j). Want zpowers m = zpowers (diag(a, a^ℓ)).
+    -- Let i' = i mod q. Since q∤i, i' ≠ 0 and i' ∈ Fin q.
+    -- Since orderOf (a^i) = q, a^i generates ⟨a⟩, so a^i = a^k for some k coprime to q.
+    -- Then m^(k'with k*k'=1) = diag(a, a^(j*k')).
+    -- Actually simpler: choose ℓ such that a^ℓ = a^(j*i⁻¹) where i⁻¹ is the inverse mod q.
+    -- We need m = (diag(a, a^ℓ))^i (mod q). Let me just use ZMod q.
+    have hi_ne : (i : ZMod q) ≠ 0 := by
+      intro h
+      rw [ZMod.natCast_eq_zero_iff] at h
+      exact hqi h
+    set i' : (ZMod q)ˣ := Units.mk0 (i : ZMod q) hi_ne with hi'_def
+    -- ℓ = (i'⁻¹ * j : ZMod q).val, taken mod q to get a Fin q.
+    let ℓval : ℕ := ((((i'⁻¹ : (ZMod q)ˣ) : ZMod q) * (j : ZMod q)).val)
+    have hℓval_lt : ℓval < q := ZMod.val_lt _
+    refine ⟨Sum.inl ⟨ℓval, hℓval_lt⟩, ?_⟩
+    change H = Subgroup.zpowers (diagEmbed p (a, a ^ (⟨ℓval, hℓval_lt⟩ : Fin q).val))
+    rw [hH_eq, hm_eq]
+    -- Now want: zpowers (diag(a^i, a^j)) = zpowers (diag(a, a^ℓval)).
+    -- Key: (a^i, a^j) = (a, a^ℓval)^i ?  Then a^(ℓval * i) = a^j.
+    -- We have ℓval ≡ i⁻¹ * j mod q, so ℓval * i ≡ j mod q, so a^(ℓval * i) = a^j.
+    apply zpowers_eq_of_card_of_mem q
+    · rw [Nat.card_zpowers, orderOf_diagEmbed]
+      have hord_ai : orderOf (a ^ i) = q := by
+        rw [orderOf_pow a, ha]
+        have hgcd : Nat.gcd q i = 1 := hqf.out.coprime_iff_not_dvd.mpr hqi
+        rw [hgcd]; exact Nat.div_one _
+      have hord_aj_dvd : orderOf (a ^ j) ∣ q := ha ▸ orderOf_pow_dvd j
+      rw [hord_ai]
+      rcases (Nat.dvd_prime hqf.out).mp hord_aj_dvd with h1 | h1
+      · rw [h1]; simp
+      · rw [h1]; simp
+    · -- Use U_param_card
+      have h := U_param_card p q hqf.out a ha (Sum.inl ⟨ℓval, hℓval_lt⟩)
+      change Nat.card (Subgroup.zpowers (diagEmbed p (a, a ^ (⟨ℓval, hℓval_lt⟩ : Fin q).val))) = q at h
+      exact h
+    · -- diag(a^i, a^j) ∈ zpowers (diag(a, a^ℓval)).
+      -- We claim (diag(a, a^ℓval))^i = diag(a^i, a^(i * ℓval)) = diag(a^i, a^j).
+      have hmodeq : (i * ℓval) ≡ j [MOD q] := by
+        -- (i * ℓval : ZMod q) = i * (i'⁻¹ * j) = j (using i = i')
+        have h_in_zmod : ((i * ℓval : ℕ) : ZMod q) = ((j : ℕ) : ZMod q) := by
+          push_cast
+          show (i : ZMod q) * (((((i'⁻¹ : (ZMod q)ˣ) : ZMod q) * (j : ZMod q))).val : ZMod q)
+            = (j : ZMod q)
+          rw [ZMod.natCast_val, ZMod.cast_id]
+          -- Now (i) * (i'⁻¹ * j) = j since i = i'.
+          have : (i : ZMod q) = (i' : ZMod q) := rfl
+          rw [this]
+          rw [← mul_assoc]
+          rw [Units.mul_inv]
+          ring
+        exact (ZMod.natCast_eq_natCast_iff _ _ _).mp h_in_zmod
+      have hpow_a : a ^ (i * ℓval) = a ^ j := by
+        have ha_q : a ^ q = 1 := by rw [← ha]; exact pow_orderOf_eq_one a
+        exact pow_eq_pow_of_modEq hmodeq ha_q
+      refine ⟨(i : ℤ), ?_⟩
+      simp only [zpow_natCast, ← map_pow]
+      congr 1
+      show ((a, a ^ (⟨ℓval, hℓval_lt⟩ : Fin q).val)) ^ i = (a ^ i, a ^ j)
+      rw [Prod.pow_def]
+      refine Prod.mk.injEq .. |>.mpr ⟨rfl, ?_⟩
+      simp only
+      rw [← pow_mul, mul_comm]
+      exact hpow_a
+
+/-- The equivalence relation on `Fin q ⊕ Unit` whose orbits correspond to
+GLF-conjugacy classes of `U_param`. -/
+private def swapOrbitSetoid (q : ℕ) [Fact q.Prime] : Setoid (Fin q ⊕ Unit) where
+  r ℓ ℓ' := ℓ = ℓ' ∨ ℓ = swapIdx q ℓ'
+  iseqv := {
+    refl := fun _ => Or.inl rfl
+    symm := by
+      intro ℓ ℓ' h
+      rcases h with h | h
+      · exact Or.inl h.symm
+      · right
+        have := congrArg (swapIdx q) h
+        rw [swapIdx_involutive q ℓ'] at this
+        exact this.symm
+    trans := by
+      intro a b c hab hbc
+      rcases hab with hab | hab
+      · rcases hbc with hbc | hbc
+        · left; rw [hab, hbc]
+        · right; rw [hab, hbc]
+      · rcases hbc with hbc | hbc
+        · right; rw [← hbc, hab]
+        · left
+          rw [hab, hbc, swapIdx_involutive q c]
+  }
+
+/-- `U_param a` is injective in `ℓ` when `a` has order `q`. -/
+private lemma U_param_injective (p q : ℕ) [Fact p.Prime] [hqf : Fact q.Prime]
+    (a : (ZMod p)ˣ) (ha : orderOf a = q)
+    {ℓ ℓ' : Fin q ⊕ Unit} (h : U_param p q a ℓ = U_param p q a ℓ') :
+    ℓ = ℓ' := by
+  have hq1 := hqf.out.one_lt
+  -- Helper: from H = zpowers x = zpowers y, x ∈ zpowers y, so y^k = x for some k.
+  -- Apply diagEmbed_injective: (a, b)^k = (a', b').
+  rcases ℓ with i | ⟨⟩ <;> rcases ℓ' with i' | ⟨⟩
+  · -- inl i, inl i'. Need i = i'.
+    change Subgroup.zpowers (diagEmbed p (a, a ^ i.val)) =
+           Subgroup.zpowers (diagEmbed p (a, a ^ i'.val)) at h
+    have hmem : diagEmbed p (a, a ^ i.val) ∈
+                Subgroup.zpowers (diagEmbed p (a, a ^ i'.val)) := by
+      rw [← h]; exact Subgroup.mem_zpowers _
+    rcases hmem with ⟨k, hk⟩
+    have hk' : ((a, a ^ i'.val) : (ZMod p)ˣ × (ZMod p)ˣ) ^ k = (a, a ^ i.val) := by
+      apply diagEmbed_injective p; rw [map_zpow]; exact hk
+    rw [Prod.pow_def] at hk'
+    have hk_left : (a : (ZMod p)ˣ) ^ k = a := (Prod.mk.injEq ..).mp hk' |>.1
+    have hk_right : (a ^ i'.val : (ZMod p)ˣ) ^ k = a ^ i.val := (Prod.mk.injEq ..).mp hk' |>.2
+    -- From hk_left: a^(k-1) = 1, so q ∣ k - 1.
+    have hk_minus_one : a ^ (k - 1) = 1 := by
+      rw [show k - 1 = k + (-1) from rfl, zpow_add, zpow_neg_one, hk_left]; group
+    have hq_dvd_km1 : (q : ℤ) ∣ (k - 1) := by
+      have := orderOf_dvd_iff_zpow_eq_one.mpr hk_minus_one
+      rw [ha] at this; exact_mod_cast this
+    -- From hk_right: a^(i'*k - i) = 1, so q ∣ i' * k - i.
+    have hk_right' : a ^ ((i'.val : ℤ) * k - i.val) = 1 := by
+      rw [show (i'.val : ℤ) * k - i.val = (i'.val : ℤ) * k + (-(i.val : ℤ)) from by ring]
+      rw [zpow_add, zpow_neg]
+      have step : a ^ ((i'.val : ℤ) * k) = a ^ (i.val : ℤ) := by
+        rw [zpow_mul]
+        rw [show a ^ (i'.val : ℤ) = a ^ i'.val from by simp [zpow_natCast]]
+        rw [hk_right]
+        simp [zpow_natCast]
+      rw [step, mul_inv_cancel]
+    have hq_dvd_prod : (q : ℤ) ∣ ((i'.val : ℤ) * k - i.val) := by
+      have := orderOf_dvd_iff_zpow_eq_one.mpr hk_right'
+      rw [ha] at this; exact_mod_cast this
+    -- (i' * k - i) = i' * (k - 1) + (i' - i). So q ∣ i' - i.
+    have hq_dvd_diff : (q : ℤ) ∣ (i'.val : ℤ) - i.val := by
+      have hdvd_im1 : (q : ℤ) ∣ (i'.val : ℤ) * (k - 1) := Dvd.dvd.mul_left hq_dvd_km1 _
+      have : (i'.val : ℤ) * k - i.val = (i'.val : ℤ) * (k - 1) + ((i'.val : ℤ) - i.val) := by ring
+      have h2 := dvd_sub hq_dvd_prod hdvd_im1
+      rw [this] at h2
+      simpa using h2
+    -- Conclude i = i'.
+    have hi_eq : i.val = i'.val := by
+      have hi_lt : i.val < q := i.isLt
+      have hi'_lt : i'.val < q := i'.isLt
+      have habs : |((i'.val : ℤ) - i.val)| < q := by
+        have h1 : ((i'.val : ℤ) - i.val) ≥ -(q : ℤ) := by
+          have : (i.val : ℤ) ≤ (q : ℤ) - 1 := by omega
+          linarith
+        have h2 : ((i'.val : ℤ) - i.val) ≤ q - 1 := by
+          have : (i'.val : ℤ) ≤ (q : ℤ) - 1 := by omega
+          linarith
+        rw [abs_lt]; omega
+      have : (i'.val : ℤ) - i.val = 0 := by
+        rcases hq_dvd_diff with ⟨c, hc⟩
+        by_contra hne
+        have hc_ne : c ≠ 0 := by
+          rintro rfl; simp at hc; exact hne hc
+        have habs_c : 1 ≤ |c| := by
+          rcases Int.lt_or_lt_of_ne hc_ne with h | h
+          · have : c ≤ -1 := by omega
+            rw [abs_of_nonpos (by omega)]; omega
+          · rw [abs_of_pos h]; omega
+        have hq_pos : (0 : ℤ) < q := by exact_mod_cast hqf.out.pos
+        have : (q : ℤ) ≤ |((i'.val : ℤ) - i.val)| := by
+          rw [hc, abs_mul, abs_of_pos hq_pos]
+          calc (q : ℤ) = q * 1 := by ring
+            _ ≤ q * |c| := by nlinarith
+        linarith
+      have : (i'.val : ℤ) = i.val := by linarith
+      omega
+    congr 1
+    apply Fin.ext; exact hi_eq
+  · -- inl i, inr (). Contradicts: diag(a, ai) ∈ zpowers diag(1, a) gives 1 = a^k.
+    exfalso
+    change Subgroup.zpowers (diagEmbed p (a, a ^ i.val)) =
+           Subgroup.zpowers (diagEmbed p (1, a)) at h
+    have hmem : diagEmbed p (a, a ^ i.val) ∈ Subgroup.zpowers (diagEmbed p (1, a)) := by
+      rw [← h]; exact Subgroup.mem_zpowers _
+    rcases hmem with ⟨k, hk⟩
+    have hk' : ((1 : (ZMod p)ˣ), a) ^ k = (a, a ^ i.val) := by
+      apply diagEmbed_injective p; rw [map_zpow]; exact hk
+    rw [Prod.pow_def] at hk'
+    have hk_left : (1 : (ZMod p)ˣ) ^ k = a := (Prod.mk.injEq ..).mp hk' |>.1
+    rw [one_zpow] at hk_left
+    rw [← hk_left, orderOf_one] at ha
+    omega
+  · -- inr (), inl i'. Symmetric: diag(1, a) ∈ zpowers diag(a, a^i') gives a^k = 1, then a = 1 via second.
+    exfalso
+    change Subgroup.zpowers (diagEmbed p (1, a)) =
+           Subgroup.zpowers (diagEmbed p (a, a ^ i'.val)) at h
+    have hmem : diagEmbed p (1, a) ∈ Subgroup.zpowers (diagEmbed p (a, a ^ i'.val)) := by
+      rw [← h]; exact Subgroup.mem_zpowers _
+    rcases hmem with ⟨k, hk⟩
+    have hk' : ((a, a ^ i'.val) : (ZMod p)ˣ × (ZMod p)ˣ) ^ k = (1, a) := by
+      apply diagEmbed_injective p; rw [map_zpow]; exact hk
+    rw [Prod.pow_def] at hk'
+    have hk_left : (a : (ZMod p)ˣ) ^ k = 1 := (Prod.mk.injEq ..).mp hk' |>.1
+    have hk_right : (a ^ i'.val : (ZMod p)ˣ) ^ k = a := (Prod.mk.injEq ..).mp hk' |>.2
+    -- a^k = 1 → q ∣ k.
+    have hq_dvd_k : (q : ℤ) ∣ k := by
+      have := orderOf_dvd_iff_zpow_eq_one.mpr hk_left
+      rw [ha] at this; exact_mod_cast this
+    -- a^(i' * k) = a^1, so q ∣ i'*k - 1.
+    have h_pow : a ^ ((i'.val : ℤ) * k - 1) = 1 := by
+      rw [show (i'.val : ℤ) * k - 1 = (i'.val : ℤ) * k + (-1) from by ring]
+      rw [zpow_add, zpow_neg_one]
+      have h1 : a ^ ((i'.val : ℤ) * k) = a := by
+        rw [zpow_mul]
+        rw [show a ^ (i'.val : ℤ) = a ^ i'.val from by simp [zpow_natCast]]
+        rw [hk_right]
+      rw [h1, mul_inv_cancel]
+    have hq_dvd_minus_one : (q : ℤ) ∣ ((i'.val : ℤ) * k - 1) := by
+      have := orderOf_dvd_iff_zpow_eq_one.mpr h_pow
+      rw [ha] at this; exact_mod_cast this
+    -- q ∣ k → q ∣ i'*k. Combined: q ∣ 1.
+    have hq_dvd_prod : (q : ℤ) ∣ (i'.val : ℤ) * k := Dvd.dvd.mul_left hq_dvd_k _
+    have hq_dvd_one : (q : ℤ) ∣ 1 := by
+      have := dvd_sub hq_dvd_prod hq_dvd_minus_one
+      simpa using this
+    have : (q : ℤ) ≤ 1 := Int.le_of_dvd (by norm_num) hq_dvd_one
+    have : q ≤ 1 := by exact_mod_cast this
+    omega
+  · rfl
+
+/-- Two `U_param a ℓ` and `U_param a ℓ'` are GLF-conjugate iff their indices
+are related by the swap involution. -/
+private lemma Uparam_conj_iff_swap (p q : ℕ) [Fact p.Prime] [hqf : Fact q.Prime]
+    (hq2 : 2 < q) (hpq : p ≠ q) (hdvd : q ∣ (p - 1)) (a : (ZMod p)ˣ) (ha : orderOf a = q)
+    (ℓ ℓ' : Fin q ⊕ Unit) :
+    Subgroup.IsConjGp (U_param p q a ℓ) (U_param p q a ℓ') ↔
+      (swapOrbitSetoid q).r ℓ ℓ' := by
+  constructor
+  · rintro ⟨g, hg⟩
+    have hcard_ℓ := U_param_card p q hqf.out a ha ℓ
+    have hcard_ℓ' := U_param_card p q hqf.out a ha ℓ'
+    have hle_ℓ := U_param_le_torusD p q a ℓ
+    have hle_ℓ' := U_param_le_torusD p q a ℓ'
+    have hcase := conj_diag_subgroup_either_eq_or_swap p hqf.out hq2
+      hle_ℓ hle_ℓ' hcard_ℓ hcard_ℓ' hg
+    rcases hcase with heq | heq
+    · -- U_param ℓ = U_param ℓ'.
+      left; exact U_param_injective p q a ha heq
+    · -- heq : U_param ℓ' = (U_param ℓ).map (conj σ).
+      -- Rewrite RHS with U_param_conj_swap to get U_param (swapIdx ℓ).
+      right
+      rw [U_param_conj_swap p q hq2 hpq hdvd a ha ℓ] at heq
+      -- heq : U_param ℓ' = U_param (swapIdx ℓ).
+      have h_inj : ℓ' = swapIdx q ℓ := U_param_injective p q a ha heq
+      rw [h_inj, swapIdx_involutive]
+  · intro h
+    rcases h with h | h
+    · subst h; exact Subgroup.IsConjGp.refl _
+    · refine ⟨swapMat p, ?_⟩
+      rw [h, U_param_conj_swap p q hq2 hpq hdvd a ha (swapIdx q ℓ'), swapIdx_involutive]
+
+/-- The number of GLF-conjugacy classes of order-q subgroups equals the number
+of orbits of `swapIdx` on `Fin q ⊕ Unit`. -/
+private lemma numConjClasses_eq_swapOrbits (p q : ℕ) [Fact p.Prime] [hqf : Fact q.Prime]
+    (hq2 : 2 < q) (hpq : p ≠ q) (hdvd : q ∣ (p - 1)) :
+    numConjClassesOfOrder (GLF p) q = Nat.card (Quotient (swapOrbitSetoid q)) := by
+  classical
+  haveI : Fact q.Prime := hqf
+  unfold numConjClassesOfOrder
+  -- Get a base unit a of order q.
+  obtain ⟨a, ha⟩ := exists_unit_order_q p q hqf.out hpq hdvd
+  -- Build the Equiv between Quotient swapOrbitSetoid and Quotient ((subgroupConjSetoid).comap _).
+  set S := subgroupsOfOrder (GLF p) q
+  -- Map: ℓ ↦ ⟨U_param a ℓ, _⟩ : S
+  let toS : Fin q ⊕ Unit → S := fun ℓ => ⟨U_param p q a ℓ, U_param_card p q hqf.out a ha ℓ⟩
+  -- Quotient map: S → Quotient ((conjSetoid).comap _)
+  let proj : S → Quotient ((subgroupConjSetoid (GLF p)).comap (fun H : S => (H : Subgroup (GLF p)))) :=
+    Quotient.mk _
+  -- Composite: Fin q ⊕ Unit → Quotient.
+  -- This composite respects swapOrbitSetoid.
+  let f : Fin q ⊕ Unit → Quotient ((subgroupConjSetoid (GLF p)).comap
+      (fun H : S => (H : Subgroup (GLF p)))) := proj ∘ toS
+  have hresp : ∀ ℓ ℓ', (swapOrbitSetoid q).r ℓ ℓ' → f ℓ = f ℓ' := by
+    intro ℓ ℓ' h
+    -- Need: ⟦U_param ℓ⟧ = ⟦U_param ℓ'⟧. By Uparam_conj_iff_swap.
+    apply Quotient.sound
+    show Subgroup.IsConjGp (U_param p q a ℓ) (U_param p q a ℓ')
+    exact (Uparam_conj_iff_swap p q hq2 hpq hdvd a ha ℓ ℓ').mpr h
+  -- Lift f to Quotient swapOrbitSetoid.
+  let fLift : Quotient (swapOrbitSetoid q) → Quotient ((subgroupConjSetoid (GLF p)).comap
+      (fun H : S => (H : Subgroup (GLF p)))) :=
+    Quotient.lift f hresp
+  -- Show fLift is bijective.
+  have hbij : Function.Bijective fLift := by
+    refine ⟨?_, ?_⟩
+    · -- Injective.
+      intro x y hxy
+      induction x using Quotient.ind with | _ ℓ =>
+      induction y using Quotient.ind with | _ ℓ' =>
+      apply Quotient.sound
+      -- hxy : f ℓ = f ℓ'. Need swapOrbitSetoid.r ℓ ℓ'.
+      have : Quotient.mk _ (toS ℓ) = Quotient.mk _ (toS ℓ') := hxy
+      have hconj : Subgroup.IsConjGp (U_param p q a ℓ) (U_param p q a ℓ') := Quotient.exact this
+      exact (Uparam_conj_iff_swap p q hq2 hpq hdvd a ha ℓ ℓ').mp hconj
+    · -- Surjective: every order-q subgroup is conjugate to a U_param ℓ.
+      intro x
+      induction x using Quotient.ind with | _ H =>
+      obtain ⟨H_sub, hH⟩ := H
+      change Nat.card H_sub = q at hH
+      -- Get g such that H.map (conj g) ≤ torusD.
+      obtain ⟨g, hg⟩ := exists_conj_into_torusD p q hqf.out hq2 hpq hdvd hH
+      -- Apply every_torusD_order_q_eq_Uparam.
+      have hcard_map : Nat.card (H_sub.map (MulAut.conj g).toMonoidHom) = q := by
+        have hequiv : H_sub ≃* H_sub.map (MulAut.conj g).toMonoidHom :=
+          Subgroup.equivMapOfInjective H_sub _ (MulAut.conj g).injective
+        have := Nat.card_eq_of_bijective hequiv hequiv.bijective
+        omega
+      obtain ⟨ℓ, hℓ⟩ := every_torusD_order_q_eq_Uparam p q a ha hg hcard_map
+      -- ⟦U_param ℓ⟧ = ⟦H_sub⟧ in conj quotient (because H_sub is conjugate to its conj).
+      refine ⟨Quotient.mk _ ℓ, ?_⟩
+      change Quotient.mk _ (toS ℓ) = Quotient.mk _ ⟨H_sub, hH⟩
+      apply Quotient.sound
+      -- Need: IsConjGp (U_param ℓ) H_sub.
+      show Subgroup.IsConjGp (U_param p q a ℓ) H_sub
+      -- We have hℓ : H_sub.map (conj g) = U_param ℓ.
+      -- So U_param ℓ = H_sub.map (conj g), i.e., H_sub is conjugate to U_param ℓ.
+      -- We want IsConjGp (U_param ℓ) H_sub, i.e., H_sub = (U_param ℓ).map (conj h) for some h.
+      -- Use conj g⁻¹: (U_param ℓ).map (conj g⁻¹) = H_sub.
+      refine ⟨g⁻¹, ?_⟩
+      rw [← hℓ]
+      rw [Subgroup.map_map]
+      have : ((MulAut.conj g⁻¹).toMonoidHom).comp ((MulAut.conj g).toMonoidHom) =
+             MonoidHom.id _ := by
+        ext x; simp [MulAut.conj_apply, mul_assoc]
+      rw [this, Subgroup.map_id]
+  -- Conclude via cardinality of equiv.
+  have hequiv : Quotient (swapOrbitSetoid q) ≃
+      Quotient ((subgroupConjSetoid (GLF p)).comap (fun H : S => (H : Subgroup (GLF p)))) :=
+    Equiv.ofBijective fLift hbij
+  exact (Nat.card_eq_of_bijective fLift hbij).symm
+
+/-- For `q > 2` prime, fixed points of `swapIdx` on `Fin q ⊕ Unit` are exactly
+`inl 1` and `inl (q-1)`. -/
+private lemma swapIdx_fixedPoints (q : ℕ) [hqf : Fact q.Prime] (hq2 : 2 < q) :
+    ∀ ℓ : Fin q ⊕ Unit, swapIdx q ℓ = ℓ ↔
+      ℓ = Sum.inl ⟨1, by have := hqf.out.one_lt; omega⟩ ∨
+      ℓ = Sum.inl ⟨q - 1, by have := hqf.out.one_lt; omega⟩ := by
+  haveI : NeZero q := ⟨hqf.out.ne_zero⟩
+  intro ℓ
+  rcases ℓ with i | ⟨⟩
+  · -- inl i case
+    by_cases hi : i.val = 0
+    · -- i.val = 0 → swapIdx (inl 0) = inr (). Never equal to inl _.
+      simp only [Sum.inl.injEq]
+      have h1 : swapIdx q (Sum.inl i) = Sum.inr () := by
+        change (if i.val = 0 then Sum.inr () else _) = Sum.inr ()
+        rw [if_pos hi]
+      constructor
+      · intro h; rw [h1] at h; exact absurd h (by simp)
+      · intro h
+        rcases h with h | h
+        · -- i = ⟨1, _⟩. Then i.val = 1 ≠ 0.
+          have hi1 : i.val = 1 := by rw [h]
+          omega
+        · -- i = ⟨q-1, _⟩. Then i.val = q - 1 ≠ 0 since q > 2.
+          have hi1 : i.val = q - 1 := by rw [h]
+          omega
+    · -- i.val ≠ 0
+      have hi_ne : (i.val : ZMod q) ≠ 0 := by
+        intro h
+        rw [ZMod.natCast_eq_zero_iff] at h
+        have h1 : i.val < q := i.isLt
+        exact hi (Nat.eq_zero_of_dvd_of_lt h h1)
+      have h1 : swapIdx q (Sum.inl i) =
+          Sum.inl ⟨((i.val : ZMod q)⁻¹).val, ZMod.val_lt _⟩ := by
+        change (if i.val = 0 then Sum.inr () else _) = _
+        rw [if_neg hi]
+      rw [h1]
+      -- swapIdx (inl i) = inl i iff ((i⁻¹).val) = i.val iff i⁻¹ = i iff i^2 = 1.
+      -- For Fin q with q prime, units of ZMod q have order dividing q-1. i^2 = 1 → i = ±1.
+      haveI : Fact q.Prime := hqf
+      haveI : Fact (1 < q) := ⟨hqf.out.one_lt⟩
+      -- Helper for `(-1 : ZMod q).val = q - 1`.
+      have hneg_one_val : (-1 : ZMod q).val = q - 1 := by
+        rw [ZMod.neg_val]
+        simp [show (1 : ZMod q) ≠ 0 from one_ne_zero, ZMod.val_one]
+      have hone_val : (1 : ZMod q).val = 1 := ZMod.val_one q
+      constructor
+      · intro heq
+        have hval_eq : ((i.val : ZMod q)⁻¹).val = i.val := by
+          have hsum := Sum.inl.inj heq
+          exact (Fin.ext_iff.mp hsum)
+        -- From hval_eq: ((i⁻¹).val : ZMod q) = i, so i⁻¹ = i.
+        have hinv_eq : (i.val : ZMod q)⁻¹ = (i.val : ZMod q) := by
+          have : (((((i.val : ZMod q)⁻¹).val : ℕ) : ZMod q)) = (i.val : ZMod q) := by
+            rw [hval_eq]
+          rw [ZMod.natCast_val, ZMod.cast_id] at this
+          exact this
+        -- i^2 = 1.
+        have hsq : (i.val : ZMod q)^2 = 1 := by
+          have h1 := ZMod.mul_inv_of_unit (i.val : ZMod q) (Ne.isUnit hi_ne)
+          rw [hinv_eq] at h1
+          rw [sq]; exact h1
+        -- (i - 1)(i + 1) = 0 in ZMod q.
+        have hfactor : ((i.val : ZMod q) - 1) * ((i.val : ZMod q) + 1) = 0 := by
+          have : ((i.val : ZMod q) - 1) * ((i.val : ZMod q) + 1) =
+                 (i.val : ZMod q)^2 - 1 := by ring
+          rw [this, hsq]; ring
+        rcases mul_eq_zero.mp hfactor with h | h
+        · -- (i - 1) = 0 → i = 1.
+          have hi_eq_one : (i.val : ZMod q) = 1 := by
+            have : (i.val : ZMod q) - 1 + 1 = 0 + 1 := by rw [h]
+            simpa using this
+          have hcast : (i.val : ZMod q).val = (1 : ZMod q).val := by rw [hi_eq_one]
+          rw [ZMod.val_natCast] at hcast
+          rw [Nat.mod_eq_of_lt i.isLt, hone_val] at hcast
+          left
+          congr 1
+          exact Fin.ext hcast
+        · -- (i + 1) = 0 → i = -1.
+          have hi_eq_neg_one : (i.val : ZMod q) = -1 := by
+            have : (i.val : ZMod q) + 1 + (-1) = 0 + (-1) := by rw [h]
+            simpa using this
+          have hcast : (i.val : ZMod q).val = (-1 : ZMod q).val := by rw [hi_eq_neg_one]
+          rw [ZMod.val_natCast] at hcast
+          rw [Nat.mod_eq_of_lt i.isLt, hneg_one_val] at hcast
+          right
+          congr 1
+          exact Fin.ext hcast
+      · intro h
+        rcases h with h | h
+        · -- ℓ = inl 1, swapIdx ℓ = inl ((1 : ZMod q)⁻¹).val = inl 1.
+          have hi1 : i.val = 1 := Fin.val_eq_of_eq (Sum.inl.inj h)
+          have h_inv : ((i.val : ZMod q)⁻¹).val = i.val := by
+            rw [hi1, Nat.cast_one, inv_one, hone_val]
+          congr 1
+          exact Fin.ext h_inv
+        · -- ℓ = inl (q-1), swapIdx ℓ = inl ((q-1 : ZMod q)⁻¹).val = inl (q-1).
+          have hi1 : i.val = q - 1 := Fin.val_eq_of_eq (Sum.inl.inj h)
+          have hcast_neg : ((q - 1 : ℕ) : ZMod q) = -1 := by
+            have hqpos : 1 ≤ q := hqf.out.one_lt.le
+            have : ((q - 1 : ℕ) : ZMod q) = ((q : ℕ) : ZMod q) - ((1 : ℕ) : ZMod q) := by
+              rw [Nat.cast_sub hqpos]
+            rw [this, ZMod.natCast_self]
+            simp
+          have h_inv : ((i.val : ZMod q)⁻¹).val = i.val := by
+            rw [hi1, hcast_neg]
+            rw [show (-1 : ZMod q)⁻¹ = -1 from by simp]
+            rw [hneg_one_val]
+          congr 1
+          exact Fin.ext h_inv
+  · -- inr () case: swapIdx (inr ()) = inl 0 ≠ inr (). Also ℓ ≠ inl _.
+    constructor
+    · intro h
+      change Sum.inl (⟨0, hqf.out.pos⟩ : Fin q) = Sum.inr () at h
+      exact absurd h (by simp)
+    · intro h
+      rcases h with h | h <;> exact absurd h (by simp)
+
+/-- For odd `q` (in particular prime > 2), the orbits of `swapIdx` on `Fin q ⊕ Unit`
+have a specific structure useful for counting. -/
+private lemma swapIdx_orbit_count (q : ℕ) [hqf : Fact q.Prime] (hq2 : 2 < q) :
+    Nat.card (Quotient (swapOrbitSetoid q)) = (q + 3) / 2 := by
+  classical
+  -- q is odd since q > 2 is prime.
+  have hq_odd : ¬ 2 ∣ q := by
+    intro h2
+    have hq_eq : 2 = q := (hqf.out.eq_one_or_self_of_dvd 2 h2).resolve_left (by norm_num)
+    omega
+  -- The setoid is decidable.
+  haveI : DecidableEq (Fin q ⊕ Unit) := instDecidableEqSum
+  haveI : DecidableRel (swapOrbitSetoid q).r :=
+    fun a b => decidable_of_iff (a = b ∨ a = swapIdx q b) Iff.rfl
+  haveI : Fintype (Quotient (swapOrbitSetoid q)) := Quotient.fintype _
+  rw [Nat.card_eq_fintype_card]
+  -- Build a function: every orbit is identified by its canonical representative.
+  -- Use sum_card_fiberwise: |α| = Σ orbits (orbit size).
+  -- Orbit sizes: 1 (fixed) or 2 (non-fixed). Fixed points = 2.
+  set f : Fin q ⊕ Unit → Quotient (swapOrbitSetoid q) := Quotient.mk _ with hf_def
+  -- |Fin q ⊕ Unit| = q + 1.
+  have hcard_dom : Fintype.card (Fin q ⊕ Unit) = q + 1 := by
+    rw [Fintype.card_sum, Fintype.card_fin, Fintype.card_unit]
+  -- Σ orbits (fiber.card) = q + 1.
+  have hsum : ∑ o : Quotient (swapOrbitSetoid q),
+      (Finset.univ.filter (fun ℓ : Fin q ⊕ Unit => f ℓ = o)).card = q + 1 := by
+    rw [← hcard_dom, ← Finset.card_univ]
+    exact (Finset.card_eq_sum_card_fiberwise (f := f) (t := Finset.univ)
+      (H := fun x _ => Finset.mem_univ _)).symm
+  -- Each fiber has size 1 or 2: 1 if fixed (orbit rep is fixed), else 2.
+  -- More precisely: the fiber over ⟦ℓ⟧ has size 1 if ℓ = swapIdx ℓ else 2.
+  have hfib_size : ∀ ℓ : Fin q ⊕ Unit,
+      (Finset.univ.filter (fun x : Fin q ⊕ Unit => f x = f ℓ)).card =
+      if ℓ = swapIdx q ℓ then 1 else 2 := by
+    intro ℓ
+    by_cases hfix : ℓ = swapIdx q ℓ
+    · -- fiber is {ℓ}
+      rw [if_pos hfix]
+      have : (Finset.univ.filter (fun x : Fin q ⊕ Unit => f x = f ℓ)) = {ℓ} := by
+        ext x
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+                   Finset.mem_singleton]
+        constructor
+        · intro h
+          -- f x = f ℓ → x ~ ℓ → x = ℓ ∨ x = swapIdx ℓ → x = ℓ (using hfix).
+          have hr : (swapOrbitSetoid q).r x ℓ := Quotient.exact h
+          rcases hr with hr | hr
+          · exact hr
+          · rw [hr, ← hfix]
+        · intro h; rw [h]
+      rw [this, Finset.card_singleton]
+    · -- fiber is {ℓ, swapIdx ℓ}
+      rw [if_neg hfix]
+      have hne : ℓ ≠ swapIdx q ℓ := hfix
+      have : (Finset.univ.filter (fun x : Fin q ⊕ Unit => f x = f ℓ)) =
+             {ℓ, swapIdx q ℓ} := by
+        ext x
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+                   Finset.mem_insert, Finset.mem_singleton]
+        constructor
+        · intro h
+          have hr : (swapOrbitSetoid q).r x ℓ := Quotient.exact h
+          rcases hr with hr | hr
+          · left; exact hr
+          · right; exact hr
+        · rintro (rfl | rfl)
+          · rfl
+          · apply Quotient.sound
+            right; rfl
+      rw [this]
+      rw [Finset.card_insert_of_notMem (by simp [hne])]
+      simp
+  -- Use this to rewrite hsum.
+  -- The fiber over ⟦ℓ⟧ is the same as the fiber over ⟦ℓ'⟧ if ⟦ℓ⟧ = ⟦ℓ'⟧.
+  -- So we can characterize fibers by their orbit reps.
+  -- Σ orbits (1 if fixed orbit else 2) = q + 1.
+  have hfix_card_orbit : ∀ o : Quotient (swapOrbitSetoid q),
+      (Finset.univ.filter (fun ℓ : Fin q ⊕ Unit => f ℓ = o)).card =
+      if (o.out = swapIdx q o.out) then 1 else 2 := by
+    intro o
+    have heq : f o.out = o := Quotient.out_eq o
+    have h := hfib_size o.out
+    rw [heq] at h
+    exact h
+  rw [Finset.sum_congr rfl (fun o _ => hfix_card_orbit o)] at hsum
+  -- So: Σ orbits (1 if fixed else 2) = q + 1.
+  -- The fixed orbits in `Quotient swapOrbitSetoid` ↔ fixed points of swapIdx.
+  -- Specifically: bijection {ℓ : ℓ = swapIdx ℓ} ≃ {o : o.out = swapIdx o.out}.
+  -- And we know fixed points are exactly inl 1 and inl (q-1), so 2 of them.
+  have hcard_fixed_pts : Fintype.card { ℓ : Fin q ⊕ Unit // ℓ = swapIdx q ℓ } = 2 := by
+    haveI : Fintype { ℓ : Fin q ⊕ Unit // ℓ = swapIdx q ℓ } := Subtype.fintype _
+    have hone : (Sum.inl ⟨1, by have := hqf.out.one_lt; omega⟩ : Fin q ⊕ Unit) ≠
+                (Sum.inl ⟨q - 1, by have := hqf.out.one_lt; omega⟩) := by
+      intro h
+      have : (1 : ℕ) = q - 1 := Fin.val_eq_of_eq (Sum.inl.inj h)
+      omega
+    -- The fixed points are exactly inl 1 and inl (q-1).
+    rw [Fintype.card_subtype]
+    have hfilter : (Finset.univ.filter (fun ℓ : Fin q ⊕ Unit => ℓ = swapIdx q ℓ)) =
+        {Sum.inl ⟨1, by have := hqf.out.one_lt; omega⟩,
+         Sum.inl ⟨q - 1, by have := hqf.out.one_lt; omega⟩} := by
+      ext ℓ
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+                 Finset.mem_insert, Finset.mem_singleton]
+      constructor
+      · intro h
+        have h' : swapIdx q ℓ = ℓ := h.symm
+        exact (swapIdx_fixedPoints q hq2 ℓ).mp h'
+      · rintro (h | h)
+        · rw [h]
+          exact ((swapIdx_fixedPoints q hq2 _).mpr (Or.inl rfl)).symm
+        · rw [h]
+          exact ((swapIdx_fixedPoints q hq2 _).mpr (Or.inr rfl)).symm
+    rw [hfilter]
+    rw [Finset.card_insert_of_notMem (by simp [hone])]
+    simp
+  -- Build the bijection {ℓ : ℓ = swapIdx ℓ} ≃ {o : Quotient // o.out = swapIdx o.out}.
+  -- Since we used Quotient.out, this might be annoying. Let me just bound things.
+  -- Actually let me skip the bijection and just observe:
+  -- The set of orbits = (number of size-1 orbits) + (number of size-2 orbits).
+  -- |α| = #(size-1 orbits) * 1 + #(size-2 orbits) * 2.
+  -- Each size-1 orbit corresponds to exactly one fixed point.
+  -- So #(size-1 orbits) = 2 (the fixed points).
+  -- Thus q + 1 = 2 + 2*#(size-2 orbits), so #size-2 orbits = (q-1)/2.
+  -- Total orbits = 2 + (q-1)/2 = (q+3)/2 (using q odd).
+  -- Now we encode this.
+  set fixOrbits := Finset.univ.filter (fun o : Quotient (swapOrbitSetoid q) =>
+    o.out = swapIdx q o.out) with hfixOrbits_def
+  set nonFixOrbits := Finset.univ.filter (fun o : Quotient (swapOrbitSetoid q) =>
+    o.out ≠ swapIdx q o.out) with hnonFixOrbits_def
+  have hsplit : (Finset.univ : Finset (Quotient (swapOrbitSetoid q))) =
+                fixOrbits ∪ nonFixOrbits := by
+    ext o
+    simp [fixOrbits, nonFixOrbits]
+    tauto
+  have hdisj : Disjoint fixOrbits nonFixOrbits := by
+    simp [Finset.disjoint_filter, fixOrbits, nonFixOrbits]
+  have hcard_split : Fintype.card (Quotient (swapOrbitSetoid q)) =
+                     fixOrbits.card + nonFixOrbits.card := by
+    rw [← Finset.card_univ, hsplit, Finset.card_union_of_disjoint hdisj]
+  -- Rewrite hsum using the split.
+  have hsum_split : ∑ o : Quotient (swapOrbitSetoid q),
+      (if (o.out = swapIdx q o.out) then (1 : ℕ) else 2) =
+      fixOrbits.card * 1 + nonFixOrbits.card * 2 := by
+    rw [show (Finset.univ : Finset (Quotient (swapOrbitSetoid q))) =
+            fixOrbits ∪ nonFixOrbits from hsplit]
+    rw [Finset.sum_union hdisj]
+    congr 1
+    · rw [Finset.sum_ite_of_true (fun o ho => by
+        simp [fixOrbits] at ho; exact ho), Finset.sum_const, Nat.smul_one_eq_cast]
+      simp
+    · rw [Finset.sum_ite_of_false (fun o ho => by
+        simp [nonFixOrbits] at ho; exact ho)]
+      rw [Finset.sum_const]
+      ring
+  rw [hsum_split] at hsum
+  -- |fix orbits| = 2.
+  have hfix_orbits_card : fixOrbits.card = 2 := by
+    -- Bijection between fixOrbits and {ℓ : ℓ = swapIdx ℓ}: send fixed orbit o to o.out.
+    -- Inverse: send ℓ to ⟦ℓ⟧.
+    have hequiv : fixOrbits ≃ { ℓ : Fin q ⊕ Unit // ℓ = swapIdx q ℓ } := by
+      refine ⟨fun o => ⟨o.1.out, by
+        have h2 : o.1 ∈ fixOrbits := o.2
+        simp only [hfixOrbits_def, Finset.mem_filter, Finset.mem_univ, true_and] at h2
+        exact h2⟩,
+              fun ⟨ℓ, hℓ⟩ => ⟨Quotient.mk _ ℓ, ?_⟩, ?_, ?_⟩
+      · simp [fixOrbits]
+        -- ⟦ℓ⟧.out = swapIdx ⟦ℓ⟧.out.
+        -- ⟦ℓ⟧.out ~ ℓ, so ⟦ℓ⟧.out = ℓ ∨ ⟦ℓ⟧.out = swapIdx ℓ.
+        have hQ : Quotient.mk (swapOrbitSetoid q) (Quotient.out
+          (Quotient.mk (swapOrbitSetoid q) ℓ)) =
+          Quotient.mk (swapOrbitSetoid q) ℓ := Quotient.out_eq _
+        have hr := Quotient.exact hQ
+        rcases hr with hr | hr
+        · rw [hr]; exact hℓ
+        · rw [hr]; rw [swapIdx_involutive]; exact hℓ.symm
+      · -- left inverse: applied to o gives o.
+        intro o
+        ext
+        simp only
+        exact Quotient.out_eq _
+      · -- right inverse
+        intro ⟨ℓ, hℓ⟩
+        ext
+        simp only
+        -- Goal: ((⟦ℓ⟧.out : Fin q ⊕ Unit) = ℓ).
+        -- ⟦ℓ⟧.out ~ ℓ, so out = ℓ ∨ out = swapIdx ℓ = ℓ (using hℓ).
+        have hQ : Quotient.mk (swapOrbitSetoid q) (Quotient.out
+          (Quotient.mk (swapOrbitSetoid q) ℓ)) =
+          Quotient.mk (swapOrbitSetoid q) ℓ := Quotient.out_eq _
+        have hr := Quotient.exact hQ
+        rcases hr with hr | hr
+        · exact hr
+        · rw [hr]; exact hℓ.symm
+    rw [show fixOrbits.card = Fintype.card fixOrbits from (Fintype.card_coe _).symm]
+    rw [Fintype.card_congr hequiv]
+    exact hcard_fixed_pts
+  rw [hfix_orbits_card] at hsum
+  -- hsum : 2 * 1 + nonFixOrbits.card * 2 = q + 1
+  -- i.e., nonFixOrbits.card = (q - 1)/2.
+  have hnonfix_card : nonFixOrbits.card * 2 = q - 1 := by omega
+  -- Use that q is odd: q - 1 = 2k.
+  -- (q + 3)/2 = (q - 1 + 4)/2 = (q-1)/2 + 2.
+  rw [hcard_split, hfix_orbits_card]
+  -- Goal: 2 + nonFixOrbits.card = (q + 3) / 2
+  have hq_odd_nat : Odd q := hqf.out.odd_of_ne_two (by omega)
+  obtain ⟨k, hk⟩ := hq_odd_nat
+  -- q = 2k + 1.  Then nonFixOrbits.card = k, and (q+3)/2 = k+2.
+  have hk_pos : k ≥ 1 := by omega
+  have hnonfix_eq_k : nonFixOrbits.card = k := by omega
+  have h_target : (q + 3) / 2 = k + 2 := by omega
+  rw [hnonfix_eq_k, h_target]
+  omega
+
 /-- Case `q ∣ p-1`: there are exactly `(q+3)/2` conjugacy classes of
-subgroups of order `q` in `GL_2(F_p)`.
-
-Proof outline (informal): pick `a ∈ (ZMod p)ˣ` of order `q`. The order-q
-subgroups of `torusD p` are exactly the `q+1` cyclic groups
-`U_ℓ = ⟨diag(a, a^ℓ)⟩` for `ℓ ∈ Fin q` and `U_∞ = ⟨diag(1, a)⟩`. By the
-Sylow argument (analogous to `case_q_dvd_p_plus_one`), every order-q
-subgroup of `GLF p` is conjugate to some `U_ℓ`. Using
-`conj_diag_subgroup_either_eq_or_swap` plus `swap_conj_diag`, two
-`U_ℓ`-subgroups are `GLF`-conjugate iff `σ`-conjugate, where `σ = swapMat`
-acts as `inl 0 ↔ inr ()` and `inl ℓ ↔ inl (ℓ⁻¹ mod q)` for `ℓ ≠ 0`. The
-involution has 3 fixed orbits (`inl 1`, `inl (q-1)`, the pair
-`{inl 0, inr ()}`) and `(q-3)/2` size-2 orbits among `inl ℓ` with `ℓ ∉ {0, 1, -1}`,
-totalling `3 + (q-3)/2 = (q+3)/2`.
-
-This proof is left as a `sorry`; the helpers `U_param`, `U_param_card`,
-`U_param_le_torusD`, `exists_natpow_of_orderDvd`, `orderOf_q_torusD_eq`,
-and `exists_conj_into_torusD` provide partial scaffolding. -/
+subgroups of order `q` in `GL_2(F_p)`. -/
 lemma case_q_dvd_p_minus_one (p q : ℕ) [Fact p.Prime] (hq : q.Prime)
     (hq2 : 2 < q) (hpq : p ≠ q) (hdvd : q ∣ (p - 1)) :
     numConjClassesOfOrder (GLF p) q = (q + 3) / 2 := by
-  sorry
+  haveI : Fact q.Prime := ⟨hq⟩
+  rw [numConjClasses_eq_swapOrbits p q hq2 hpq hdvd]
+  exact swapIdx_orbit_count q hq2
 
 /-! ### Main theorem. -/
 
