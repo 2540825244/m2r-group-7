@@ -5,15 +5,23 @@ import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.GroupTheory.OrderOfElement
 import «M2rGroup7».CyclicGroup
 import «M2rGroup7».P2qClassification.PqClassification
-
--- CyclicGroup, card_cyclicGroup, cyclicHom live in CyclicGroup.lean.
--- canonicalCpOnCqAction is imported from PqClassification.
+import Mathlib.Tactic
+import Mathlib.RingTheory.ZMod.UnitsCyclic
 
 abbrev maximumOrder : Nat := 17
 
 /-- Alternating group generator -/
 def AlternatingGroup (n : Nat) [NeZero n] := ↥(alternatingGroup (Fin n))
   deriving DecidableEq, Group, Fintype
+
+instance {p : ℕ} [h : Fact p.Prime] {n : ℕ} : NeZero (p ^ n) := by
+  have hp : Nat.Prime p := h.out
+  exact ⟨(pow_pos hp.pos n).ne'⟩
+
+instance {p : ℕ} [h : Fact p.Prime] : NeZero (p * (p - 1)) := by
+  have hp : Nat.Prime p := h.out
+  have h2 : 2 ≤ p := hp.two_le
+  exact ⟨Nat.mul_ne_zero (by omega) (by omega)⟩
 
 /-- The non-trivial swap action of `C_4` on `C_2 × C_2`, factoring through `C_4/C_2 = C_2`. -/
 def c4OnC2sqSwap : CyclicGroup 4 →* MulAut (CyclicGroup 2 × CyclicGroup 2) :=
