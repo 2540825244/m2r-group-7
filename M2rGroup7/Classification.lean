@@ -815,6 +815,56 @@ macro "classify_pq_cyclic" p:num q:num h:term : tactic => `(tactic|(
       (fun ⟨hr, _⟩ => absurd hr (by native_decide))
   exact ⟨1, by decide, ⟨e⟩⟩))
 
+theorem order12_classification {G : Type*} [Group G] (h : Nat.card G = 12) :
+    Nonempty (G ≃* retrieve 12 1) ∨
+    Nonempty (G ≃* retrieve 12 2) ∨
+    Nonempty (G ≃* retrieve 12 3) ∨
+    Nonempty (G ≃* retrieve 12 4) ∨
+    Nonempty (G ≃* retrieve 12 5) := by
+  haveI : Fact (Nat.Prime 3) := ⟨by norm_num⟩
+  rcases classification_4q (q := 3) (h_ge_3 := by norm_num)
+      (h := h.trans (by norm_num)) with
+    h1 | h2 | h3 | ⟨h1mod4, _⟩ | h5 | ⟨_, h6⟩
+  · exact Or.inl h1
+  · exact Or.inr (Or.inl h2)
+  · exact Or.inr (Or.inr (Or.inl h3))
+  · exact absurd h1mod4 (by decide)
+  · exact Or.inr (Or.inr (Or.inr (Or.inl h5)))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr h6)))
+
+theorem order20_classification {G : Type*} [Group G] (h : Nat.card G = 20) :
+    Nonempty (G ≃* retrieve 20 1) ∨
+    Nonempty (G ≃* retrieve 20 2) ∨
+    Nonempty (G ≃* retrieve 20 3) ∨
+    Nonempty (G ≃* retrieve 20 4) ∨
+    Nonempty (G ≃* retrieve 20 5) := by
+  haveI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
+  rcases classification_4q (q := 5) (h_ge_3 := by norm_num)
+      (h := h.trans (by norm_num)) with
+    h1 | h2 | h3 | ⟨_, h4⟩ | h5 | ⟨h5eq3, _⟩
+  · exact Or.inl h1
+  · exact Or.inr (Or.inl h2)
+  · exact Or.inr (Or.inr (Or.inl h3))
+  · exact Or.inr (Or.inr (Or.inr (Or.inl h4)))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr h5)))
+  · exact absurd h5eq3 (by decide)
+
+theorem order28_classification {G : Type*} [Group G] (h : Nat.card G = 28) :
+    Nonempty (G ≃* retrieve 28 1) ∨
+    Nonempty (G ≃* retrieve 28 2) ∨
+    Nonempty (G ≃* retrieve 28 3) ∨
+    Nonempty (G ≃* retrieve 28 4) := by
+  haveI : Fact (Nat.Prime 7) := ⟨by norm_num⟩
+  rcases classification_4q (q := 7) (h_ge_3 := by norm_num)
+      (h := h.trans (by norm_num)) with
+    h1 | h2 | h3 | ⟨h1mod4, _⟩ | h5 | ⟨h7eq3, _⟩
+  · exact Or.inl h1
+  · exact Or.inr (Or.inl h2)
+  · exact Or.inr (Or.inr (Or.inl h3))
+  · exact absurd h1mod4 (by decide)
+  · exact Or.inr (Or.inr (Or.inr h5))
+  · exact absurd h7eq3 (by decide)
+
 /-- A group of order at most `maximumOrder` is isomorphic to some group obtained by `retrieve`. -/
 theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
   ∃ i : Nat, ∃ hv : ValidIndex n i, Nonempty (MulEquiv G (retrieve n i))
@@ -878,7 +928,12 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime 11 h
 
   -- n = 12
-  · sorry
+  · rcases order12_classification h with h1 | h2 | h3 | h4 | h5
+    · exact ⟨1, by decide, h1⟩
+    · exact ⟨2, by decide, h2⟩
+    · exact ⟨3, by decide, h3⟩
+    · exact ⟨4, by decide, h4⟩
+    · exact ⟨5, by decide, h5⟩
 
   -- n = 13
   · classify_prime 13 h
@@ -902,7 +957,12 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime 19 h
 
   -- n = 20
-  · sorry
+  · rcases order20_classification h with h1 | h2 | h3 | h4 | h5
+    · exact ⟨1, by decide, h1⟩
+    · exact ⟨2, by decide, h2⟩
+    · exact ⟨3, by decide, h3⟩
+    · exact ⟨4, by decide, h4⟩
+    · exact ⟨5, by decide, h5⟩
 
   -- n = 21
   · classify_pq 3 7 h
@@ -926,7 +986,11 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · sorry
 
   -- n = 28
-  · sorry
+  · rcases order28_classification h with h1 | h2 | h3 | h4
+    · exact ⟨1, by decide, h1⟩
+    · exact ⟨2, by decide, h2⟩
+    · exact ⟨3, by decide, h3⟩
+    · exact ⟨4, by decide, h4⟩
 
   -- n = 29
   · classify_prime 29 h

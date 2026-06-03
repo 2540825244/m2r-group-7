@@ -5,8 +5,13 @@ import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.GroupTheory.OrderOfElement
 import «M2rGroup7».CyclicGroup
 import «M2rGroup7».P2qClassification.PqClassification
+import «M2rGroup7».P2qClassification.FourQClassification
 import Mathlib.Tactic
 import Mathlib.RingTheory.ZMod.UnitsCyclic
+
+-- The generic Group (retrieve n i) instance uses split + infer_instance across ~70 arms;
+-- importing FourQClassification enlarges the instance environment enough to push past 200k.
+set_option maxHeartbeats 400000
 
 abbrev maximumOrder : Nat := 31
 
@@ -152,11 +157,11 @@ macro "pqSDP" p:num q:num : term =>
   | 10, 1 => pqSDP 2 5
   | 10, 2 => CyclicGroup 10
   | 11, 1 => CyclicGroup 11
-  | 12, 1 => QuaternionGroup 3
-  | 12, 2 => CyclicGroup 12
-  | 12, 3 => AlternatingGroup 4
-  | 12, 4 => DihedralGroup 6
-  | 12, 5 => CyclicGroup 6 × CyclicGroup 2
+  | 12, 1 => CyclicGroup 12
+  | 12, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 3
+  | 12, 3 => CyclicGroup 3 ⋊[canonicalC4OnCqAction (q := 3) (by norm_num)] CyclicGroup 4
+  | 12, 4 => CyclicGroup 3 ⋊[canonicalC2C2OnCqAction (q := 3) (by norm_num)] (CyclicGroup 2 × CyclicGroup 2)
+  | 12, 5 => (CyclicGroup 2 × CyclicGroup 2) ⋊[canonicalC3OnC2C2Action] CyclicGroup 3
   | 13, 1 => CyclicGroup 13
   | 14, 1 => pqSDP 2 7
   | 14, 2 => CyclicGroup 14
@@ -179,6 +184,10 @@ macro "pqSDP" p:num q:num : term =>
   | 18, 1 => CyclicGroup 18
   | 19, 1 => CyclicGroup 19
   | 20, 1 => CyclicGroup 20
+  | 20, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 5
+  | 20, 3 => CyclicGroup 5 ⋊[canonicalC4OnCqAction (q := 5) (by norm_num)] CyclicGroup 4
+  | 20, 4 => CyclicGroup 5 ⋊[canonicalC4OnCqAction_r2 (q := 5) (by norm_num)] CyclicGroup 4
+  | 20, 5 => CyclicGroup 5 ⋊[canonicalC2C2OnCqAction (q := 5) (by norm_num)] (CyclicGroup 2 × CyclicGroup 2)
   | 21, 1 => pqSDP 3 7
   | 21, 2 => CyclicGroup 21
   | 22, 1 => pqSDP 2 11
@@ -191,6 +200,9 @@ macro "pqSDP" p:num q:num : term =>
   | 26, 2 => CyclicGroup 26
   | 27, 1 => CyclicGroup 27
   | 28, 1 => CyclicGroup 28
+  | 28, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 7
+  | 28, 3 => CyclicGroup 7 ⋊[canonicalC4OnCqAction (q := 7) (by norm_num)] CyclicGroup 4
+  | 28, 4 => CyclicGroup 7 ⋊[canonicalC2C2OnCqAction (q := 7) (by norm_num)] (CyclicGroup 2 × CyclicGroup 2)
   | 29, 1 => CyclicGroup 29
   | 30, 1 => CyclicGroup 30
   | 31, 1 => CyclicGroup 31
@@ -218,7 +230,7 @@ def num_entries (n : Nat) : Nat :=
   | 17 => 1
   | 18 => 1 -- It is 5 actually, will fill rest later
   | 19 => 1
-  | 20 => 1 -- It is 5 actually, will fill rest later
+  | 20 => 5
   | 21 => 2
   | 22 => 2
   | 23 => 1
@@ -226,7 +238,7 @@ def num_entries (n : Nat) : Nat :=
   | 25 => 2
   | 26 => 2
   | 27 => 1 -- It is 5 actually, will fill rest later
-  | 28 => 1 -- It is 4 actually, will fill rest later
+  | 28 => 4
   | 29 => 1
   | 30 => 1 -- It is 4 actually, will fill rest later
   | 31 => 1
@@ -248,8 +260,7 @@ instance (n i : Nat) : Decidable (ValidIndex n i) :=
            fun h => ⟨h.n_pos, h.n_range, h.i_pos, h.i_range⟩⟩)
 
 noncomputable instance (n : Nat) (i : Nat) [hv : ValidIndex n i] : Group (retrieve n i) := by
-  unfold retrieve
-  split <;> try infer_instance
+  unfold retrieve; split <;> try infer_instance
 
 theorem retrieve_card (n : Nat) (i : Nat) [hv : ValidIndex n i] : Nat.card (retrieve n i) = n := by
   obtain ⟨hn_pos, hn_range, hi_pos, hi_range⟩ := hv
