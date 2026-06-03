@@ -3,7 +3,7 @@ import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.Logic.Basic
 import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
-import «M2rGroup7».SmallGroupsLibrary
+import «M2rGroup7».CyclicGroup
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import Mathlib.Algebra.GroupWithZero.Basic
@@ -186,7 +186,10 @@ theorem MonoidHom.card_range_dvd_gcd {G G' : Type*} [Group G] [Group G'] (f : G 
       Nat.card ↥f.range ∣ Nat.gcd (Nat.card G) (Nat.card G') :=
     Nat.dvd_gcd (Subgroup.card_range_dvd f) (Subgroup.card_subgroup_dvd_card f.range)
 
-theorem prime_classification [hn : Fact n.Prime] [Group G] (h : Nat.card G = n) :
+/-- A group of prime order is isomorphic to the cyclic group of the same order.
+This is `prime_classification` from `M2rGroup7.Classification`, kept here under
+a distinct name so both modules can coexist in the same build. -/
+theorem prime_classification_of_group [hn : Fact n.Prime] [Group G] (h : Nat.card G = n) :
 (Nonempty (G ≃* CyclicGroup n)) := by
   apply Nonempty.intro
   have h_g_card : Nat.card G = n := h

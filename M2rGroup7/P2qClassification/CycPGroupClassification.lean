@@ -67,6 +67,7 @@ lemma canonicalAutElement_orderOf
     orderOf (canonicalAutElement p q n r hpq hq_odd hn hr) = p ^ r :=
   (canonicalAutElement_exists p q n r hpq hq_odd hn hr).choose_spec
 
+
 /-- For each r ≤ min(m, d) where d = v_p(q-1), the canonical action
     φ_r : C_{p^m} →* Aut(C_{q^n}) with image of order p^r. -/
 noncomputable def canonicalAction
@@ -445,8 +446,29 @@ theorem classify_Cqn_rtimes_Cpm_exists
     Nat.card_pos rfl f.range _ h
     (canonicalAction_range_card p q n m r hpq hq_odd hn hr)
 
-/-- Abstract-group variant of `classify_Cqn_rtimes_Cpm`: works for any cyclic groups
-    N, K with the right cardinalities, avoiding transport to canonical CyclicGroup types. -/
+/-- The canonical action on abstract cyclic groups N, K: conjugates `canonicalAction p q n m r`
+    through the unique isos N ≃* CyclicGroup (q^n) and K ≃* CyclicGroup (p^m).
+    This lets `classify_sdp` output an iso back to `N ⋊ K` rather than to the concrete
+    CyclicGroup types, eliminating transport bridges at call sites. -/
+noncomputable def sdpCanonicalAction
+    {N K : Type*} [Group N] [Group K] [IsCyclic N] [IsCyclic K]
+    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (hpq : p ≠ q) (hq_odd : q ≠ 2)
+    (m n : ℕ) (hn : 0 < n)
+    (hN : Nat.card N = q ^ n) (hK : Nat.card K = p ^ m)
+    (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
+    K →* MulAut N :=
+  letI : Finite N := Nat.finite_of_card_ne_zero (hN ▸ pow_ne_zero n hq.out.ne_zero)
+  letI : Finite K := Nat.finite_of_card_ne_zero (hK ▸ pow_ne_zero m hp.out.ne_zero)
+  let eN : N ≃* CyclicGroup (q ^ n) := mulEquivOfCyclicCardEq (by rw [hN, card_cyclicGroup])
+  let eK : K ≃* CyclicGroup (p ^ m) := mulEquivOfCyclicCardEq (by rw [hK, card_cyclicGroup])
+  (MulAut.congr eN.symm).toMonoidHom.comp
+    ((canonicalAction p q n m hpq hq_odd hn r hr).comp eK.toMonoidHom)
+
+/-- Abstract-group variant of `classify_Cqn_rtimes_Cpm`: classifies any semidirect product
+    N ⋊ K of cyclic groups with |N| = q^n and |K| = p^m up to isomorphism, giving a unique
+    r such that N ⋊ φ ≃* N ⋊ sdpCanonicalAction r. The output stays in N and K — no
+    transport to CyclicGroup types at call sites. -/
 theorem classify_sdp
     {N K : Type*} [Group N] [Group K] [IsCyclic N] [IsCyclic K]
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
@@ -456,8 +478,8 @@ theorem classify_sdp
     (φ : K →* MulAut N) :
     ∃! r : Fin (min m ((q - 1).factorization p) + 1),
       Nonempty (SemidirectProduct N K φ ≃*
-               SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-                 (canonicalAction p q n m hpq hq_odd hn ↑r (Nat.lt_succ_iff.mp r.isLt))) := by
+               SemidirectProduct N K
+                 (sdpCanonicalAction hpq hq_odd m n hn hN hK ↑r (Nat.lt_succ_iff.mp r.isLt))) := by
   haveI : Finite N := Nat.finite_of_card_ne_zero (by
     rw [hN]; exact pow_ne_zero n hq.out.ne_zero)
   haveI : Finite K := Nat.finite_of_card_ne_zero (by
@@ -469,7 +491,79 @@ theorem classify_sdp
   have h_bridge : SemidirectProduct N K φ ≃*
       SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m)) f :=
     SemidirectProduct.congr' (φ₁ := φ) (fn := eN) (fg := eK)
+  have h_bridge_back : ∀ r' : Fin (min m ((q - 1).factorization p) + 1),
+      SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+        (canonicalAction p q n m hpq hq_odd hn ↑r' (Nat.lt_succ_iff.mp r'.isLt)) ≃*
+      SemidirectProduct N K
+        (sdpCanonicalAction hpq hq_odd m n hn hN hK ↑r' (Nat.lt_succ_iff.mp r'.isLt)) :=
+    fun r' => SemidirectProduct.congr'
+      (φ₁ := canonicalAction p q n m hpq hq_odd hn ↑r' (Nat.lt_succ_iff.mp r'.isLt))
+      (fn := eN.symm) (fg := eK.symm)
   obtain ⟨r, hr_iso, hr_uniq⟩ := classify_Cqn_rtimes_Cpm hpq hq_odd m n hm hn f
-  refine ⟨r, ⟨h_bridge.trans hr_iso.some⟩, ?_⟩
+  refine ⟨r, ⟨h_bridge.trans (hr_iso.some.trans (h_bridge_back r))⟩, ?_⟩
   intro r' hr'_iso
-  exact hr_uniq r' ⟨h_bridge.symm.trans hr'_iso.some⟩
+  exact hr_uniq r' ⟨h_bridge.symm.trans (hr'_iso.some.trans (h_bridge_back r').symm)⟩
+
+/-- Canonical iso: `CyclicGroup (q^n) ⋊ canonicalAction r ≃* N ⋊ sdpCanonicalAction r`
+    for any cyclic N, K with the right cardinalities. The proof is a single `SemidirectProduct.congr'`
+    call; definitional equality of the output action follows from proof irrelevance on
+    the `mulEquivOfCyclicCardEq` arguments inside `sdpCanonicalAction`. -/
+noncomputable def sdpCanonicalAction_iso_canonicalAction
+    {N K : Type*} [Group N] [Group K] [IsCyclic N] [IsCyclic K]
+    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (hpq : p ≠ q) (hq_odd : q ≠ 2)
+    (m n : ℕ) (hn : 0 < n)
+    (hN : Nat.card N = q ^ n) (hK : Nat.card K = p ^ m)
+    (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
+    SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+        (canonicalAction p q n m hpq hq_odd hn r hr) ≃*
+    SemidirectProduct N K
+        (sdpCanonicalAction hpq hq_odd m n hn hN hK r hr) :=
+  letI : Finite N := Nat.finite_of_card_ne_zero (hN ▸ pow_ne_zero n hq.out.ne_zero)
+  letI : Finite K := Nat.finite_of_card_ne_zero (hK ▸ pow_ne_zero m hp.out.ne_zero)
+  let eN : N ≃* CyclicGroup (q ^ n) := mulEquivOfCyclicCardEq (by rw [hN, card_cyclicGroup])
+  let eK : K ≃* CyclicGroup (p ^ m) := mulEquivOfCyclicCardEq (by rw [hK, card_cyclicGroup])
+  SemidirectProduct.congr' (φ₁ := canonicalAction p q n m hpq hq_odd hn r hr)
+    (fn := eN.symm) (fg := eK.symm)
+
+/-- The range of `sdpCanonicalAction r` has cardinality `p^r`, matching `canonicalAction r`. -/
+lemma sdpCanonicalAction_range_card
+    {N K : Type*} [Group N] [Group K] [IsCyclic N] [IsCyclic K]
+    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (hpq : p ≠ q) (hq_odd : q ≠ 2)
+    (m n : ℕ) (hn : 0 < n)
+    (hN : Nat.card N = q ^ n) (hK : Nat.card K = p ^ m)
+    (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
+    Nat.card (sdpCanonicalAction hpq hq_odd m n hn hN hK r hr).range = p ^ r := by
+  letI : Finite N := Nat.finite_of_card_ne_zero (hN ▸ pow_ne_zero n hq.out.ne_zero)
+  letI : Finite K := Nat.finite_of_card_ne_zero (hK ▸ pow_ne_zero m hp.out.ne_zero)
+  let eN : N ≃* CyclicGroup (q ^ n) := mulEquivOfCyclicCardEq (by rw [hN, card_cyclicGroup])
+  let eK : K ≃* CyclicGroup (p ^ m) := mulEquivOfCyclicCardEq (by rw [hK, card_cyclicGroup])
+  -- sdpCanonicalAction = (MulAut.congr eN.symm) ∘ (canonicalAction r) ∘ eK  [definitionally]
+  have h1 : ((canonicalAction p q n m hpq hq_odd hn r hr).comp eK.toMonoidHom).range =
+      (canonicalAction p q n m hpq hq_odd hn r hr).range := by
+    ext x; simp only [MonoidHom.mem_range, MonoidHom.comp_apply]
+    exact ⟨fun ⟨k, hk⟩ => ⟨eK k, hk⟩, fun ⟨y, hy⟩ => ⟨eK.symm y, by simp [hy]⟩⟩
+  show Nat.card (((MulAut.congr eN.symm).toMonoidHom.comp
+      ((canonicalAction p q n m hpq hq_odd hn r hr).comp eK.toMonoidHom))).range = p ^ r
+  rw [MonoidHom.range_comp, h1]
+  exact Nat.card_congr
+    (Subgroup.equivMapOfInjective (canonicalAction p q n m hpq hq_odd hn r hr).range
+      (MulAut.congr eN.symm).toMonoidHom (MulAut.congr eN.symm).injective).symm.toEquiv |>.trans
+    (canonicalAction_range_card p q n m r hpq hq_odd hn hr)
+
+/-- Transport `sdpCanonicalAction r` across isos `N₁ ≃* N₂` and `K₁ ≃* K₂`:
+    `N₁ ⋊ sdpCanonicalAction r ≃* N₂ ⋊ sdpCanonicalAction r`. -/
+noncomputable def sdpCanonicalAction_transport
+    {N₁ N₂ K₁ K₂ : Type*} [Group N₁] [Group N₂] [Group K₁] [Group K₂]
+    [IsCyclic N₁] [IsCyclic N₂] [IsCyclic K₁] [IsCyclic K₂]
+    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (hpq : p ≠ q) (hq_odd : q ≠ 2)
+    (m n : ℕ) (hn : 0 < n)
+    (hN₁ : Nat.card N₁ = q ^ n) (hK₁ : Nat.card K₁ = p ^ m)
+    (hN₂ : Nat.card N₂ = q ^ n) (hK₂ : Nat.card K₂ = p ^ m)
+    (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
+    SemidirectProduct N₁ K₁ (sdpCanonicalAction hpq hq_odd m n hn hN₁ hK₁ r hr) ≃*
+    SemidirectProduct N₂ K₂ (sdpCanonicalAction hpq hq_odd m n hn hN₂ hK₂ r hr) :=
+  (sdpCanonicalAction_iso_canonicalAction hpq hq_odd m n hn hN₁ hK₁ r hr).symm.trans
+    (sdpCanonicalAction_iso_canonicalAction hpq hq_odd m n hn hN₂ hK₂ r hr)
