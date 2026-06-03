@@ -170,16 +170,83 @@ macro "by_single_group" : tactic => `(tactic | (
   omega
 ))
 
-set_option linter.style.nativeDecide false in
--- To speed up computation of non-isomorphism
-macro "by_invariant" i:ident i':ident inv:term : tactic => `(tactic | (
-  simp only [num_entries] at *
-  interval_cases $i <;> interval_cases $i' <;>
-    first
-    | omega
-    | simp only [retrieve]
-      exact not_iso_by $inv (by native_decide)
-))
+-- Meta-level mirror of num_entries; must stay in sync with SmallGroupsLibrary.num_entries.
+private def numEntriesMeta : Nat → Nat
+  | 4 | 6 | 9 | 10 | 14 => 2
+  | 8 | 12 => 5
+  | 16 => 14
+  | _ => 1
+
+-- Convert a reduced Lean expression (Nat/Bool/nested Prod literal) to term syntax.
+private partial def exprLiteralToSyntax (e : Lean.Expr) : Lean.MetaM (Lean.TSyntax `term) := do
+  let e ← Lean.Meta.whnf e
+  if let .lit (.natVal n) := e then return Lean.Syntax.mkNumLit (toString n)
+  if e == Lean.mkConst ``Bool.true  then return ← `(true)
+  if e == Lean.mkConst ``Bool.false then return ← `(false)
+  -- Prod.mk.{u v} α β a b  →  four applications
+  if let .app (.app (.app (.app f _) _) aExpr) bExpr := e then
+    if f.isAppOf ``Prod.mk then
+      let aSt ← exprLiteralToSyntax aExpr
+      let bSt ← exprLiteralToSyntax bExpr
+      return ← `(($aSt, $bSt))
+  Lean.throwError "exprLiteralToSyntax: cannot convert {e}"
+
+-- Evaluate a closed term `e : α` via native compilation (elab-time only).
+-- Handles Nat, Bool, and nested Prod types; never appears in the proof term.
+private unsafe def evalToLiteral (αExpr : Lean.Expr) (e : Lean.Expr) : Lean.MetaM Lean.Expr := do
+  let α ← Lean.Meta.whnf αExpr
+  if α == Lean.mkConst ``Nat then
+    return Lean.mkNatLit (← Lean.Meta.evalExpr Nat (Lean.mkConst ``Nat) e)
+  else if α == Lean.mkConst ``Bool then
+    let v ← Lean.Meta.evalExpr Bool (Lean.mkConst ``Bool) e
+    return if v then Lean.mkConst ``Bool.true else Lean.mkConst ``Bool.false
+  else if let .app (.app (.const ``Prod _) αA) αB := α then
+    let fstLit ← evalToLiteral αA (← Lean.Meta.mkAppM ``Prod.fst #[e])
+    let sndLit ← evalToLiteral αB (← Lean.Meta.mkAppM ``Prod.snd #[e])
+    let lvlA ← Lean.Meta.getLevel αA
+    let lvlB ← Lean.Meta.getLevel αB
+    return Lean.mkApp4 (Lean.mkConst ``Prod.mk [lvlA, lvlB]) αA αB fstLit sndLit
+  else
+    Lean.throwError "evalToLiteral: unsupported invariant type {α}"
+
+syntax (name := byInvariant) "by_invariant" num ident ident term : tactic
+
+-- Registered via @[tactic] so it can be `unsafe` (needed for evalToLiteral / evalExpr).
+-- The generated proof terms use only `decide`, which is fully kernel-verified.
+@[tactic byInvariant]
+private unsafe def elabByInvariant : Lean.Elab.Tactic.Tactic
+  | `(tactic| by_invariant $nStx $i $i' $inv) => do
+    let nVal    := nStx.getNat
+    let nGroups := numEntriesMeta nVal
+    -- Elaborate inv once to extract the return type α from GroupInvariant α.
+    let invExpr ← Lean.Elab.Tactic.elabTerm inv none
+    let αExpr := (← Lean.Meta.whnf (← Lean.Meta.inferType invExpr)).getAppArgs[0]!
+    -- Phase 1: for each group k, compute inv.eval (retrieve n k) at elaboration time,
+    -- then inject `have hG_k : ... = <literal> := by decide`.
+    -- `decide` is fully kernel-verified; evalToLiteral only guides which literal to expect.
+    let mut cacheIdents : Array Lean.Ident := #[]
+    for k in List.range nGroups do
+      let k1Stx := Lean.Syntax.mkNumLit (toString (k + 1))
+      let hName := Lean.mkIdent (Lean.Name.mkSimple s!"hG_{k + 1}")
+      cacheIdents := cacheIdents.push hName
+      let invEvalNK ← Lean.Elab.Tactic.elabTerm (← `(($inv).eval (retrieve $nStx $k1Stx))) none
+      let valStx    ← exprLiteralToSyntax (← evalToLiteral αExpr invEvalNK)
+      Lean.Elab.Tactic.evalTactic (← `(tactic|
+        have $hName : ($inv).eval (retrieve $nStx $k1Stx) = $valStx := by decide))
+    -- Phase 2: build simp lemma list from the cached idents.
+    let simpArgs ← cacheIdents.mapM fun h => `(Lean.Parser.Tactic.simpLemma| $h:ident)
+    -- Phase 3: case-split then close.
+    --   · omega closes i = i' subgoals (hi_neq in context)
+    --   · otherwise: simp rewrites both sides to cached literals, decide compares them
+    Lean.Elab.Tactic.evalTactic (← `(tactic|
+      simp only [num_entries] at * <;>
+      interval_cases $i <;> interval_cases $i' <;>
+      first
+      | omega
+      | (apply not_iso_by $inv
+         simp only [$simpArgs,*]
+         decide)))
+  | _ => Lean.Elab.throwUnsupportedSyntax
 
 set_option maxHeartbeats 800000 in
 -- This is needed because the proof of uniqueness and obtaining the invariant
@@ -205,40 +272,35 @@ theorem uniqueness (n i n' i' : Nat)
     · -- n = 3
       by_single_group
     · -- n = 4: C4 vs C2×C2; C4 has element with x^2≠1, C2×C2 does not
-      by_invariant i i' (hasPowerNotOneInv 2)
+      by_invariant 4 i i' (hasPowerNotOneInv 2)
     · -- n = 5
       by_single_group
     · -- n = 6: C6 vs D3; C6 is abelian, D3 is not
-      by_invariant i i' isAbelianInv
+      by_invariant 6 i i' isAbelianInv
     · -- n = 7
       by_single_group
     · -- n = 8
-      by_invariant i i'
-        isAbelianInv ⊗
-        (hasPowerNotOneInv 4) ⊗
-        (hasPowerNotOneInv 2) ⊗
-        (numElementsOfOrderInv 2)
+      by_invariant 8 i i'
+        (isAbelianInv ⊗ (hasPowerNotOneInv 4) ⊗ (hasPowerNotOneInv 2) ⊗ (numElementsOfOrderInv 2))
     · -- n = 9: C9 vs C3×C3; C9 has element with x^3≠1, C3×C3 does not
-      by_invariant i i' (hasPowerNotOneInv 3)
+      by_invariant 9 i i' (hasPowerNotOneInv 3)
     · -- n = 10: C10 vs D5; C10 is abelian, D5 is not
-      by_invariant i i' isAbelianInv
+      by_invariant 10 i i' isAbelianInv
     · -- n = 11
       by_single_group
     · -- n = 12
-      by_invariant i i' isAbelianInv ⊗ (numElementsOfOrderInv 2) ⊗ (numElementsOfOrderInv 4)
+      by_invariant 12 i i'
+        (isAbelianInv ⊗ (numElementsOfOrderInv 2) ⊗ (numElementsOfOrderInv 4))
     · -- n = 13
       by_single_group
     · -- n = 14
-      by_invariant i i' isAbelianInv
+      by_invariant 14 i i' isAbelianInv
     · -- n = 15
       by_single_group
     · -- n = 16
-      by_invariant i i'
-        isAbelianInv ⊗
-        (numElementsOfOrderInv 2) ⊗
-        (numElementsOfOrderInv 4) ⊗
-        (numElementsOfOrderInv 8) ⊗
-        squaresInv
+      by_invariant 16 i i'
+        (isAbelianInv ⊗ (numElementsOfOrderInv 2) ⊗ (numElementsOfOrderInv 4) ⊗
+          (numElementsOfOrderInv 8) ⊗ squaresInv)
     · -- n = 17
       by_single_group
   · -- n ≠ n'
