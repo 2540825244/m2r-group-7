@@ -21,7 +21,7 @@ noncomputable def canonicalCqOnCp2Action
     (by rw [card_cyclicGroup, pow_one])
     1 hr
 
-theorem classification_4q {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_prime : Fact q.Prime] [Group G]
+theorem classification_p2q {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_prime : Fact q.Prime] [Group G]
     (h_p_ne_q : p ≠ q) (h : Nat.card G = p ^ 2 * q)
     : Nonempty (G ≃* CyclicGroup (p ^ 2 * q))
       ∨ Nonempty (G ≃* CyclicGroup p × CyclicGroup p × CyclicGroup q)
