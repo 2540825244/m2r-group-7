@@ -25,6 +25,7 @@ import OrderPQ
 import Mathlib.Algebra.Group.Defs
 import Paperproof
 import Mathlib.SetTheory.Cardinal.Finite
+import «M2rGroup7».TwentyFourCase
 
 variable (n : ℕ) (G : Type*) [Group G]
 
