@@ -432,7 +432,7 @@ macro "classify_pq" p:num q:num h:term : tactic => `(tactic|(
   haveI : Fact (Nat.Prime $p) := ⟨by norm_num⟩
   haveI : Fact (Nat.Prime $q) := ⟨by norm_num⟩
   rcases pq_classification (p := $p) (q := $q) (by norm_num)
-      ($h.trans (by norm_num)) with ⟨⟨e⟩⟩ | ⟨_, ⟨e⟩⟩
+      (Eq.trans $h (by norm_num)) with ⟨⟨e⟩⟩ | ⟨_, ⟨e⟩⟩
   · exact ⟨2, by decide, ⟨e⟩⟩
   · exact ⟨1, by decide, ⟨e⟩⟩))
 
@@ -440,9 +440,9 @@ macro "classify_pq" p:num q:num h:term : tactic => `(tactic|(
 macro "classify_pq_cyclic" p:num q:num h:term : tactic => `(tactic|(
   haveI : Fact (Nat.Prime $p) := ⟨by norm_num⟩
   haveI : Fact (Nat.Prime $q) := ⟨by norm_num⟩
-  have ⟨⟨e⟩⟩ : Nonempty (_ ≃* CyclicGroup ($p * $q)) :=
-    (pq_classification (p := $p) (q := $q) (by norm_num) ($h.trans (by norm_num))).resolve_right
-      (fun ⟨hr, _⟩ => absurd hr (by decide))
+  have ⟨e⟩ : Nonempty (_ ≃* CyclicGroup ($p * $q)) :=
+    (pq_classification (p := $p) (q := $q) (by norm_num) (Eq.trans $h (by norm_num))).resolve_right
+      (fun ⟨hr, _⟩ => absurd hr (by native_decide))
   exact ⟨1, by decide, ⟨e⟩⟩))
 
 /-- A group of order at most `maximumOrder` is isomorphic to some group obtained by `retrieve`. -/
