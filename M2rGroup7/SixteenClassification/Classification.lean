@@ -1,5 +1,6 @@
 import «M2rGroup7».SixteenClassification.Preliminary
 import «M2rGroup7».SixteenClassification.Blueprints
+import «M2rGroup7».SixteenClassification.Lemma3
 
 namespace OrderSixteen
 
@@ -554,6 +555,13 @@ theorem realise_ext_type_if_not_iso_to_C2_4
     Nonempty (RealiseExtType G ext_16_11) ∨
     Nonempty (RealiseExtType G ext_16_12) ∨
     Nonempty (RealiseExtType G ext_16_13) := by
-  sorry
+  rcases exists_normal_C8_or_C4_C2 hn h_non_iso with
+    ⟨H, hN, h_iso⟩ | ⟨H, hN, h_iso⟩
+  · haveI := hN
+    have := realise_with_normal_C8 hn H h_iso
+    tauto
+  · haveI := hN
+    have := realise_with_normal_K8 hn H h_iso
+    tauto
 
 end OrderSixteen
