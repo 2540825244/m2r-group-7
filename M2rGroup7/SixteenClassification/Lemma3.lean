@@ -199,6 +199,22 @@ noncomputable def realise_from_normal_index_two
         show x.1 * a ^ (i : ℕ) = x.1 * a ^ (i : ℕ)
         rfl }
 
+/-- A version of `realise_from_normal_index_two` that also exposes the conjugation property
+of `τ_H`, the action by `a` on `H`. -/
+noncomputable def realise_from_normal_index_two_with_conj
+    {G : Type*} [Group G]
+    (H : Subgroup G) [H.Normal] (h_index : H.index = 2)
+    (a : G) (h_a_notMem : a ∉ H) (h_a_sq : a ^ 2 ∈ H) :
+    Σ' (τ : MulAut H) (hmap : τ (⟨a ^ 2, h_a_sq⟩ : H) = ⟨a ^ 2, h_a_sq⟩)
+       (hpow : τ ^ 2 = MulAut.conj (⟨a ^ 2, h_a_sq⟩ : H))
+       (_ : ∀ x : H, ((τ x : H) : G) = a * (x : G) * a⁻¹),
+      RealiseExtType G { N := H, n := 2, act := τ, glue := ⟨a ^ 2, h_a_sq⟩,
+                         map_glue := hmap, pow_n := hpow } := by
+  let res := realise_from_normal_index_two H h_index a h_a_notMem h_a_sq
+  refine ⟨res.1, res.2.1, res.2.2.1, ?_, res.2.2.2⟩
+  intro x
+  rfl
+
 /-! ## Glue: ExtEquiv-based matching helper -/
 
 /-- Transfer a realisation along an `ExtEquiv`: given `R_src : RealiseExtType G E_src`,
@@ -337,9 +353,12 @@ case-by-case construction of the per-case `ExtEquiv` witnesses.
 `CyclicGroup 8`, then `G` realises one of the six `C_8`-based extension types
 `ext_16_1`, `ext_16_5`, `ext_16_6`, `ext_16_7`, `ext_16_8`, `ext_16_9`.
 
-This proof handles the `orderOf a = 2` branch in full (yielding one of
-`ext_16_{5,6,7,8}` according to the automorphism `τ`), and leaves the
-`orderOf a ∈ {4, 16}` branches as `sorry`. -/
+The proof picks a coset representative `a ∉ H` of minimum order, then case-splits
+on `orderOf a ∈ {2, 4, 8, 16}`. The `o(a) = 2` branch dispatches on
+`MulAut.forall_eq_C8` to yield `ext_16_{5,6,7,8}`. The `o(a) = 4` branch yields
+`ext_16_9` (with τ forced to be inversion via min-order). The `o(a) = 8` case
+is ruled out by min-order. The `o(a) = 16` branch yields `ext_16_1` directly
+since `G` is cyclic. -/
 lemma realise_with_normal_C8
     {G : Type*} [Group G]
     (hn : Nat.card G = 16)
@@ -362,8 +381,8 @@ lemma realise_with_normal_C8
   obtain ⟨e⟩ := h_iso
   obtain ⟨a, ha_notMem, ha_sq, ha_min⟩ :=
     exists_min_order_inducing_element H h_index
-  obtain ⟨τ_H, hmap_H, hpow_H, R_H⟩ :=
-    realise_from_normal_index_two H h_index a ha_notMem ha_sq
+  obtain ⟨τ_H, hmap_H, hpow_H, hconj_H, R_H⟩ :=
+    realise_from_normal_index_two_with_conj H h_index a ha_notMem ha_sq
   by_cases h_o2 : orderOf a = 2
   · -- o(a) = 2 case: a² = 1, so e ⟨a², _⟩ = 1 in CyclicGroup 8.
     have h_a_sq_eq : a ^ 2 = 1 := by
@@ -413,8 +432,223 @@ lemma realise_with_normal_C8
         rw [hn] at h
         exact h
       exact ⟨RealiseExtType.transfer iso realise_16_1⟩
-    · -- o(a) ∈ {4, 8} cases left as sorry; see milestones.md
-      sorry
+    · -- o(a) ∈ {4, 8} cases. We rule out 8 by min-order, then handle 4 → ext_16_9.
+      have h_ord_pos : 0 < orderOf a := orderOf_pos a
+      have h_ord_dvd : orderOf a ∣ 16 := hn ▸ orderOf_dvd_natCard a
+      have h_a_ne_one : a ≠ 1 := fun h => ha_notMem (h ▸ H.one_mem)
+      have h_ord_ne_one : orderOf a ≠ 1 := fun h => h_a_ne_one (orderOf_eq_one_iff.mp h)
+      -- The crucial computation: for any x : H, (a * x.1)^2 ∈ H with explicit form.
+      have h_b_sq_eq : ∀ x : H,
+          (a * (x : G)) ^ 2 = ((τ_H x : H) : G) * a ^ 2 * (x : G) := by
+        intro x
+        calc (a * (x : G)) ^ 2
+            = a * (x : G) * (a * (x : G)) := by rw [sq]
+          _ = (a * (x : G) * a⁻¹) * (a * a) * (x : G) := by group
+          _ = ((τ_H x : H) : G) * a ^ 2 * (x : G) := by rw [hconj_H x, sq]
+      have h_b_notMem : ∀ x : H, a * (x : G) ∉ H := by
+        intro x hx
+        have : a = (a * (x : G)) * (x : G)⁻¹ := by group
+        exact ha_notMem (this ▸ H.mul_mem hx (H.inv_mem x.2))
+      have h_b_sq_mem : ∀ x : H, (a * (x : G)) ^ 2 ∈ H := by
+        intro x
+        rw [h_b_sq_eq x]
+        exact H.mul_mem (H.mul_mem (τ_H x).2 ha_sq) x.2
+      -- Define τ_C8 and the key contradiction helper.
+      set τ_C8 : MulAut (CyclicGroup 8) := (e.symm.trans τ_H).trans e with hτ_C8_def
+      have h_b_sq_subtype : ∀ x : H,
+          (a * (x : G)) ^ 2 = ((τ_H x * ⟨a ^ 2, ha_sq⟩ * x : H) : G) := by
+        intro x
+        rw [h_b_sq_eq x]
+        rfl
+      have hτH_eq : ∀ x : H, τ_H x = e.symm (τ_C8 (e x)) := by
+        intro x
+        change τ_H x = e.symm (e (τ_H (e.symm (e x))))
+        rw [MulEquiv.symm_apply_apply, MulEquiv.symm_apply_apply]
+      have h_contra_helper : ∀ x : H,
+          (e ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 8) = 1 → orderOf a ≤ 2 := by
+        intro x hex
+        have hH : ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x : H) = 1 := by
+          have := e.injective (hex.trans (map_one e).symm)
+          exact this
+        have hb2_eq : (a * (x : G)) ^ 2 = 1 := by
+          rw [h_b_sq_subtype x, hH]
+          rfl
+        have hb_order_dvd : orderOf (a * (x : G)) ∣ 2 :=
+          orderOf_dvd_iff_pow_eq_one.mpr hb2_eq
+        have hb_order_le : orderOf (a * (x : G)) ≤ 2 := Nat.le_of_dvd two_pos hb_order_dvd
+        have := ha_min (a * (x : G)) (h_b_notMem x) (h_b_sq_mem x)
+        omega
+      have h_v_fixed : τ_C8 (e ⟨a ^ 2, ha_sq⟩) = e ⟨a ^ 2, ha_sq⟩ := by
+        change e (τ_H (e.symm (e ⟨a ^ 2, ha_sq⟩))) = e ⟨a ^ 2, ha_sq⟩
+        rw [MulEquiv.symm_apply_apply, hmap_H]
+      -- Rule out orderOf a = 8.
+      have h_o8 : orderOf a ≠ 8 := by
+        intro h_o8_eq
+        have ha2_ord : orderOf (a ^ 2) = 4 := by
+          rw [orderOf_pow, h_o8_eq]; decide
+        have ha2_H_ord : orderOf (⟨a ^ 2, ha_sq⟩ : H) = 4 := by
+          have h := orderOf_injective H.subtype Subtype.val_injective (⟨a ^ 2, ha_sq⟩ : H)
+          change orderOf (⟨a ^ 2, ha_sq⟩ : H) = 4
+          rw [← h]; exact ha2_ord
+        have he_ord : orderOf (e ⟨a ^ 2, ha_sq⟩) = 4 := by
+          rw [e.orderOf_eq]; exact ha2_H_ord
+        rcases MulAut.forall_eq_C8 τ_C8 with hτ | hτ | hτ | hτ
+        · have he_cases :
+              e ⟨a ^ 2, ha_sq⟩ = Multiplicative.ofAdd (2 : ZMod 8) ∨
+              e ⟨a ^ 2, ha_sq⟩ = Multiplicative.ofAdd (6 : ZMod 8) := by
+            have hv4 : (e ⟨a ^ 2, ha_sq⟩) ^ 4 = 1 := by
+              rw [← he_ord]; exact pow_orderOf_eq_one _
+            have hv2 : (e ⟨a ^ 2, ha_sq⟩) ^ 2 ≠ 1 := by
+              intro h
+              have : orderOf (e ⟨a ^ 2, ha_sq⟩) ∣ 2 := orderOf_dvd_iff_pow_eq_one.mpr h
+              rw [he_ord] at this
+              omega
+            have key : ∀ y : CyclicGroup 8, y ^ 4 = 1 → y ^ 2 ≠ 1 →
+                y = Multiplicative.ofAdd (2 : ZMod 8) ∨
+                y = Multiplicative.ofAdd (6 : ZMod 8) := by decide
+            exact key _ hv4 hv2
+          rcases he_cases with hv | hv
+          · set x : H := e.symm (Multiplicative.ofAdd (3 : ZMod 8))
+            have hex : e x = Multiplicative.ofAdd (3 : ZMod 8) := e.apply_symm_apply _
+            have h_eq_one : (e ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 8) = 1 := by
+              rw [map_mul, map_mul, hv, hex, hτH_eq x, hex, hτ,
+                  MulAut.one_apply, e.apply_symm_apply]
+              decide
+            have := h_contra_helper x h_eq_one
+            omega
+          · set x : H := e.symm (Multiplicative.ofAdd (1 : ZMod 8))
+            have hex : e x = Multiplicative.ofAdd (1 : ZMod 8) := e.apply_symm_apply _
+            have h_eq_one : (e ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 8) = 1 := by
+              rw [map_mul, map_mul, hv, hex, hτH_eq x, hex, hτ,
+                  MulAut.one_apply, e.apply_symm_apply]
+              decide
+            have := h_contra_helper x h_eq_one
+            omega
+        · exfalso
+          rw [hτ] at h_v_fixed
+          have hv3 : (e ⟨a ^ 2, ha_sq⟩) ^ 3 = e ⟨a ^ 2, ha_sq⟩ := by
+            have heq : c2OnC8Pow3 (Multiplicative.ofAdd 1) (e ⟨a ^ 2, ha_sq⟩) =
+                (e ⟨a ^ 2, ha_sq⟩) ^ 3 := rfl
+            rw [← heq]; exact h_v_fixed
+          have hv_sq : (e ⟨a ^ 2, ha_sq⟩) ^ 2 = 1 := by
+            have key : (e ⟨a ^ 2, ha_sq⟩) ^ 2 * (e ⟨a ^ 2, ha_sq⟩) =
+                1 * (e ⟨a ^ 2, ha_sq⟩) := by
+              rw [one_mul, ← pow_succ]; exact hv3
+            exact mul_right_cancel key
+          have hdvd : orderOf (e ⟨a ^ 2, ha_sq⟩) ∣ 2 := orderOf_dvd_iff_pow_eq_one.mpr hv_sq
+          rw [he_ord] at hdvd
+          omega
+        · have he_cases :
+              e ⟨a ^ 2, ha_sq⟩ = Multiplicative.ofAdd (2 : ZMod 8) ∨
+              e ⟨a ^ 2, ha_sq⟩ = Multiplicative.ofAdd (6 : ZMod 8) := by
+            have hv4 : (e ⟨a ^ 2, ha_sq⟩) ^ 4 = 1 := by
+              rw [← he_ord]; exact pow_orderOf_eq_one _
+            have hv2 : (e ⟨a ^ 2, ha_sq⟩) ^ 2 ≠ 1 := by
+              intro h
+              have : orderOf (e ⟨a ^ 2, ha_sq⟩) ∣ 2 := orderOf_dvd_iff_pow_eq_one.mpr h
+              rw [he_ord] at this
+              omega
+            have key : ∀ y : CyclicGroup 8, y ^ 4 = 1 → y ^ 2 ≠ 1 →
+                y = Multiplicative.ofAdd (2 : ZMod 8) ∨
+                y = Multiplicative.ofAdd (6 : ZMod 8) := by decide
+            exact key _ hv4 hv2
+          rcases he_cases with hv | hv
+          · set x : H := e.symm (Multiplicative.ofAdd (1 : ZMod 8))
+            have hex : e x = Multiplicative.ofAdd (1 : ZMod 8) := e.apply_symm_apply _
+            have h_eq_one : (e ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 8) = 1 := by
+              rw [map_mul, map_mul, hv, hex, hτH_eq x, hex, hτ, e.apply_symm_apply]
+              decide
+            have := h_contra_helper x h_eq_one
+            omega
+          · set x : H := e.symm (Multiplicative.ofAdd (3 : ZMod 8))
+            have hex : e x = Multiplicative.ofAdd (3 : ZMod 8) := e.apply_symm_apply _
+            have h_eq_one : (e ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 8) = 1 := by
+              rw [map_mul, map_mul, hv, hex, hτH_eq x, hex, hτ, e.apply_symm_apply]
+              decide
+            have := h_contra_helper x h_eq_one
+            omega
+        · exfalso
+          rw [hτ] at h_v_fixed
+          have hv7 : (e ⟨a ^ 2, ha_sq⟩) ^ 7 = e ⟨a ^ 2, ha_sq⟩ := by
+            have heq : c2OnC8Pow7 (Multiplicative.ofAdd 1) (e ⟨a ^ 2, ha_sq⟩) =
+                (e ⟨a ^ 2, ha_sq⟩) ^ 7 := rfl
+            rw [← heq]; exact h_v_fixed
+          have hv6 : (e ⟨a ^ 2, ha_sq⟩) ^ 6 = 1 := by
+            have key : (e ⟨a ^ 2, ha_sq⟩) ^ 6 * (e ⟨a ^ 2, ha_sq⟩) =
+                1 * (e ⟨a ^ 2, ha_sq⟩) := by
+              rw [one_mul, ← pow_succ]; exact hv7
+            exact mul_right_cancel key
+          have hd : orderOf (e ⟨a ^ 2, ha_sq⟩) ∣ 6 := orderOf_dvd_iff_pow_eq_one.mpr hv6
+          rw [he_ord] at hd
+          exact absurd hd (by decide)
+      -- Conclude orderOf a = 4.
+      have h_o4 : orderOf a = 4 := by
+        have h16 : (16 : ℕ) = 2 ^ 4 := by decide
+        rw [h16] at h_ord_dvd
+        rcases (Nat.dvd_prime_pow Nat.prime_two (m := 4) (i := orderOf a)).mp h_ord_dvd
+          with ⟨k, hk_le, hk_eq⟩
+        interval_cases k
+        · exact absurd hk_eq h_ord_ne_one
+        · exact absurd hk_eq h_o2
+        · exact hk_eq
+        · exact absurd hk_eq h_o8
+        · exact absurd hk_eq h_o16
+      -- Now: o(a) = 4 case. Derive that e ⟨a²,_⟩ = ofAdd 4.
+      right; right; right; right; right
+      have ha4 : a ^ 4 = 1 := by rw [← h_o4]; exact pow_orderOf_eq_one a
+      have ha2_ne_one : a ^ 2 ≠ 1 := by
+        intro h
+        have : orderOf a ∣ 2 := orderOf_dvd_iff_pow_eq_one.mpr h
+        rw [h_o4] at this
+        omega
+      have ha2_H_ne_one : (⟨a ^ 2, ha_sq⟩ : H) ≠ 1 :=
+        fun h => ha2_ne_one (congrArg Subtype.val h)
+      have ha2_H_sq : (⟨a ^ 2, ha_sq⟩ : H) ^ 2 = 1 := by
+        ext
+        change (a ^ 2) ^ 2 = 1
+        rw [← pow_mul]; exact ha4
+      have h_glue_val : e (⟨a ^ 2, ha_sq⟩ : H) = Multiplicative.ofAdd (4 : ZMod 8) := by
+        have he_sq : (e (⟨a ^ 2, ha_sq⟩ : H)) ^ 2 = 1 := by
+          rw [← map_pow, ha2_H_sq, map_one]
+        have he_ne_one : e (⟨a ^ 2, ha_sq⟩ : H) ≠ 1 := by
+          intro h
+          exact ha2_H_ne_one (e.injective (h.trans (map_one e).symm))
+        have key : ∀ y : CyclicGroup 8, y ^ 2 = 1 → y ≠ 1 →
+            y = Multiplicative.ofAdd (4 : ZMod 8) := by decide
+        exact key _ he_sq he_ne_one
+      -- Determine τ_C8: must be pow7 (else use h_contra_helper for contradiction).
+      rcases MulAut.forall_eq_C8 τ_C8 with hτ | hτ | hτ | hτ
+      · exfalso
+        set x : H := e.symm (Multiplicative.ofAdd (2 : ZMod 8))
+        have hex : e x = Multiplicative.ofAdd (2 : ZMod 8) := e.apply_symm_apply _
+        have h_eq_one : (e ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 8) = 1 := by
+          rw [map_mul, map_mul, h_glue_val, hex, hτH_eq x, hex, hτ,
+              MulAut.one_apply, e.apply_symm_apply]
+          decide
+        have := h_contra_helper x h_eq_one
+        omega
+      · exfalso
+        set x : H := e.symm (Multiplicative.ofAdd (1 : ZMod 8))
+        have hex : e x = Multiplicative.ofAdd (1 : ZMod 8) := e.apply_symm_apply _
+        have h_eq_one : (e ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 8) = 1 := by
+          rw [map_mul, map_mul, h_glue_val, hex, hτH_eq x, hex, hτ, e.apply_symm_apply]
+          decide
+        have := h_contra_helper x h_eq_one
+        omega
+      · exfalso
+        set x : H := e.symm (Multiplicative.ofAdd (2 : ZMod 8))
+        have hex : e x = Multiplicative.ofAdd (2 : ZMod 8) := e.apply_symm_apply _
+        have h_eq_one : (e ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 8) = 1 := by
+          rw [map_mul, map_mul, h_glue_val, hex, hτH_eq x, hex, hτ, e.apply_symm_apply]
+          decide
+        have := h_contra_helper x h_eq_one
+        omega
+      · -- τ_C8 = pow7: produce realisation of ext_16_9.
+        refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_9
+          { hn := rfl
+            φ := e
+            act_conj := hτ.symm
+            act_glue := h_glue_val.symm }⟩
 
 /-! ## Case analysis: normal `K_8 = C_4 × C_2` -/
 
