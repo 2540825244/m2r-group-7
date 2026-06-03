@@ -162,4 +162,6 @@ theorem classification_4q {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_prime : Fact
       exact (Nat.eq_of_mul_eq_mul_left h_q_prime.out.pos (by linarith)).symm
     have eQ : ↥(↑Q : Subgroup G) ≃* CyclicGroup q :=
       Classical.choice (prime_classification_of_group (n := q) h_Q_card)
-    sorry
+    rcases (p_squared_classification (p := p) hK_card) with h_K_C4 | h_K_C2C2
+    · sorry
+    · sorry
