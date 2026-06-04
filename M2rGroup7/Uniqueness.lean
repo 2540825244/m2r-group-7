@@ -305,7 +305,8 @@ theorem uniqueness (n i n' i' : Nat)
         squaresInv)
     · -- n = 17
       by_single_group
-    sorry
+    all_goals
+      sorry
     -- · -- n = 18
     --   by_single_group
     -- · -- n = 19
