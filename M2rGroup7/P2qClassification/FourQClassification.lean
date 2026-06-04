@@ -17,7 +17,7 @@ private noncomputable def _hK4 : Nat.card (CyclicGroup 4) = 2 ^ 2 := by
   rw [card_cyclicGroup]; norm_num
 
 /-- Canonical nontrivial action `C_4 →* Aut(C_q)`, image of order 2. -/
-@[reducible] noncomputable def canonicalC4OnCqAction
+noncomputable def canonicalC4OnCqAction
     {q : ℕ} [hq : Fact q.Prime] (h_q_ne_2 : q ≠ 2) :
     CyclicGroup 4 →* MulAut (CyclicGroup q) :=
   haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
@@ -26,7 +26,7 @@ private noncomputable def _hK4 : Nat.card (CyclicGroup 4) = 2 ^ 2 := by
     1 (one_le_min_two_factorization_two h_q_ne_2)
 
 /-- Canonical action `C_4 →* Aut(C_q)` of image order 4, for `q ≡ 1 (mod 4)`. -/
-@[reducible] noncomputable def canonicalC4OnCqAction_r2
+noncomputable def canonicalC4OnCqAction_r2
     {q : ℕ} [hq : Fact q.Prime] (h_1_mod_4 : q ≡ 1 [MOD 4]) :
     CyclicGroup 4 →* MulAut (CyclicGroup q) :=
   haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
@@ -38,7 +38,7 @@ private noncomputable def _hK4 : Nat.card (CyclicGroup 4) = 2 ^ 2 := by
     2 (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4)
 
 /-- Canonical nontrivial action `C_2 × C_2 →* Aut(C_q)`, image of order 2. -/
-@[reducible] noncomputable def canonicalC2C2OnCqAction
+noncomputable def canonicalC2C2OnCqAction
     {q : ℕ} [hq : Fact q.Prime] (h_q_ne_2 : q ≠ 2) :
     CyclicGroup 2 × CyclicGroup 2 →* MulAut (CyclicGroup q) :=
   haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩

@@ -303,6 +303,44 @@ theorem uniqueness (n i n' i' : Nat)
           (numElementsOfOrderInv 8) ⊗ squaresInv)
     · -- n = 17
       by_single_group
+    · -- n = 18
+      by_single_group
+    · -- n = 19
+      by_single_group
+    · -- n = 20
+      by_invariant i i'
+        isAbelianInv ⊗
+        (numElementsOfOrderInv 2) ⊗
+        (numElementsOfOrderInv 4) ⊗
+        (numElementsOfOrderInv 5) ⊗
+        (numElementsOfOrderInv 10)
+    · -- n = 21: C21 vs C7⋊C3; abelian vs non-abelian
+      by_invariant i i' isAbelianInv
+    · -- n = 22: D11 vs C22; non-abelian vs abelian
+      by_invariant i i' isAbelianInv
+    · -- n = 23
+      by_single_group
+    · -- n = 24
+      by_single_group
+    · -- n = 25: C25 vs C5×C5; C25 has element with x^5≠1, C5×C5 does not
+      by_invariant i i' (hasPowerNotOneInv 5)
+    · -- n = 26: D13 vs C26; non-abelian vs abelian
+      by_invariant i i' isAbelianInv
+    · -- n = 27
+      by_single_group
+    · -- n = 28
+      by_invariant i i'
+        isAbelianInv ⊗
+        (numElementsOfOrderInv 2) ⊗
+        (numElementsOfOrderInv 4) ⊗
+        (numElementsOfOrderInv 7) ⊗
+        (numElementsOfOrderInv 14)
+    · -- n = 29
+      by_single_group
+    · -- n = 30
+      by_single_group
+    · -- n = 31
+      by_single_group
   · -- n ≠ n'
     have : Nat.card G = n := retrieve_card n i
     have : Nat.card G' = n' := retrieve_card n' i'
