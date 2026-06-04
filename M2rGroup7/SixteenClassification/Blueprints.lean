@@ -36,16 +36,16 @@ def psi3 : MulAut (CyclicGroup 4 × CyclicGroup 2) where
   map_mul' := by decide
 
 /-- The order-2 automorphism of `K_8 = C_4 × C_2` sending `x = (gen_C4, 1) ↦ xy` and
-    `y = (1, gen_C2) ↦ y`. Concretely `(a, b) ↦ (a, b · (gen_C2)^{a_index})`. -/
+    `y = (1, gen_C2) ↦ y`. Concretely `(a, b) ↦ (a, b + a mod 2)` in additive ZMod form. -/
 def psi5 : MulAut (CyclicGroup 4 × CyclicGroup 2) where
   toFun ab :=
     (ab.1,
-     ab.2 * (show CyclicGroup 2 from
-       (Multiplicative.ofAdd 1 : CyclicGroup 2) ^ (Multiplicative.toAdd ab.1).val))
+     Multiplicative.ofAdd
+       (Multiplicative.toAdd ab.2 + ((Multiplicative.toAdd ab.1).val : ZMod 2)))
   invFun ab :=
     (ab.1,
-     ab.2 * (show CyclicGroup 2 from
-       (Multiplicative.ofAdd 1 : CyclicGroup 2) ^ (Multiplicative.toAdd ab.1).val))
+     Multiplicative.ofAdd
+       (Multiplicative.toAdd ab.2 + ((Multiplicative.toAdd ab.1).val : ZMod 2)))
   left_inv := by decide
   right_inv := by decide
   map_mul' := by decide
