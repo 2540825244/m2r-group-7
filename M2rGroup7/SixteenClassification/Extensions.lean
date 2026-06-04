@@ -1,5 +1,4 @@
 import «M2rGroup7».SmallGroupsLibrary
-import Mathlib
 
 namespace OrderSixteen
 
@@ -209,15 +208,18 @@ noncomputable def realisingEquiv
       rw [hg, hh, mul_assoc, ← mul_assoc (R_1.a ^ (i : ℕ)), slide_pow R_1 (i : ℕ) y,
           mul_assoc, ← mul_assoc (R_1.ι _), ← R_1.ι.map_mul, pow_add]
     rw [prod_eq]
-    have key := toFun_ι_a_pow ext_equiv R_1 R_2 (x * (E_1.act ^ (i : ℕ)) y) ((i : ℕ) + (j : ℕ))
-    have key' : R_2.ι (ext_equiv.φ (R_1.equiv.symm
+    -- expand_gh: toFun_ι_a_pow applied at ι(x · act^i(y)) · a^(i+j)
+    have expand_gh :=
+      toFun_ι_a_pow ext_equiv R_1 R_2 (x * (E_1.act ^ (i : ℕ)) y) ((i : ℕ) + (j : ℕ))
+    -- toFun_at_prod: resolves the equiv.symm form in the goal to the simplified RHS
+    have toFun_at_prod : R_2.ι (ext_equiv.φ (R_1.equiv.symm
           (R_1.ι (x * (E_1.act ^ (i : ℕ)) y) * R_1.a ^ ((i : ℕ) + (j : ℕ)))).1) *
         R_2.a ^ ((R_1.equiv.symm (R_1.ι (x * (E_1.act ^ (i : ℕ)) y) *
           R_1.a ^ ((i : ℕ) + (j : ℕ)))).2 : ℕ) =
         R_2.ι (ext_equiv.φ (x * (E_1.act ^ (i : ℕ)) y)) *
           R_2.a ^ ((i : ℕ) + (j : ℕ)) := by
-      convert key using 2
-    rw [key']
+      convert expand_gh using 2
+    rw [toFun_at_prod]
     rw [mul_assoc, ← mul_assoc (R_2.a ^ (i : ℕ)),
         slide_pow R_2 (i : ℕ) (ext_equiv.φ y),
         mul_assoc, ← mul_assoc (R_2.ι _), ← map_mul, pow_add]

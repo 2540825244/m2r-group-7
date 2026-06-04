@@ -1,7 +1,14 @@
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
 import «M2rGroup7».SixteenClassification.Blueprints
-import Mathlib
+import Mathlib.GroupTheory.FiniteAbelian.Basic
+import Mathlib.RingTheory.ZMod.UnitsCyclic
+import Mathlib.GroupTheory.SpecificGroups.KleinFour
+import Mathlib.GroupTheory.PGroup
+import Mathlib.GroupTheory.GroupAction.Quotient
+import Mathlib.SetTheory.Cardinal.Finite
+import Mathlib.Data.Fintype.Perm
+import Mathlib.Algebra.Group.Equiv.Finite
 
 namespace OrderSixteen
 
@@ -142,12 +149,12 @@ set_option maxHeartbeats 1000000 in
 /-- Wild's Fact 4: `Aut(K₈) ≃ D₈`, where `K₈ = C₄ × C₂`.
 
 We exhibit the explicit homomorphism `f : D₄ → Aut(C₄ × C₂)` sending the rotation `r` to the
-order-4 automorphism `ρ` and the reflection `s` to the order-2 automorphism `σ`, then check it is a
-bijection. Since both groups are finite with decidable equality, bijectivity is a single decidable
-computation, which is far cheaper than reasoning about generator images by hand. -/
+order-4 automorphism `rho_aut` and the reflection `s` to the order-2 automorphism `sigma_aut`,
+then check it is a bijection. Since both groups are finite with decidable equality, bijectivity is
+a single decidable computation, far cheaper than reasoning about generator images by hand. -/
 noncomputable def autK8Equiv : MulAut (CyclicGroup 4 × CyclicGroup 2) ≃* DihedralGroup 4 := by
-  -- ρ (order 4): `(x, y) ↦ (x · c4Half^y, ofAdd((x mod 2) + y))`
-  let ρ : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
+  -- rho_aut (order 4): `(x, y) ↦ (x · c4Half^y, ofAdd((x mod 2) + y))`
+  let rho_aut : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
     { toFun := fun p =>
         ⟨p.1 * c4Half ^ (Multiplicative.toAdd p.2).val,
          Multiplicative.ofAdd (((Multiplicative.toAdd p.1).val : ZMod 2)
@@ -159,8 +166,8 @@ noncomputable def autK8Equiv : MulAut (CyclicGroup 4 × CyclicGroup 2) ≃* Dihe
       left_inv := by decide
       right_inv := by decide
       map_mul' := by decide }
-  -- σ (order 2): `(x, y) ↦ (x, ofAdd((x mod 2) + y))`
-  let σ : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
+  -- sigma_aut (order 2): `(x, y) ↦ (x, ofAdd((x mod 2) + y))`
+  let sigma_aut : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
     { toFun := fun p =>
         ⟨p.1, Multiplicative.ofAdd (((Multiplicative.toAdd p.1).val : ZMod 2)
            + Multiplicative.toAdd p.2)⟩
@@ -170,11 +177,11 @@ noncomputable def autK8Equiv : MulAut (CyclicGroup 4 × CyclicGroup 2) ≃* Dihe
       left_inv := by decide
       right_inv := by decide
       map_mul' := by decide }
-  -- f : D₄ → Aut sends `r i ↦ ρ^i` and `sr i ↦ σ · ρ^i`
+  -- f : D₄ → Aut sends `r i ↦ rho_aut^i` and `sr i ↦ sigma_aut · rho_aut^i`
   let f : DihedralGroup 4 →* MulAut (CyclicGroup 4 × CyclicGroup 2) :=
     { toFun := fun d => match d with
-        | DihedralGroup.r i => ρ ^ i.val
-        | DihedralGroup.sr i => σ * ρ ^ i.val
+        | DihedralGroup.r i => rho_aut ^ i.val
+        | DihedralGroup.sr i => sigma_aut * rho_aut ^ i.val
       map_one' := by decide
       map_mul' := by decide }
   -- f is a bijection between two finite groups of order 8, hence an isomorphism
