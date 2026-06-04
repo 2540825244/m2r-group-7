@@ -989,8 +989,57 @@ lemma realise_with_normal_K8
       -- commuting with ψ₃ maps the glue (1, ofAdd 1) to (ofAdd 2, 1). Resolution
       -- requires switching to a different normal K_8 ⊂ G; see milestones.md.
       sorry
-    · -- v = (1, ofAdd 1), ψ = ψ₅: structural case requiring K_8-subgroup switch.
-      sorry
+    · -- v = (1, ofAdd 1), ψ = ψ₅: slide via `a' = a · z_H` where `z_H = e'.symm (ofAdd 1, 1)`.
+      -- The shift sends glue v_b = (1, ofAdd 1) → v_a = (ofAdd 2, 1) and preserves
+      -- τ_H (since H is abelian via the iso to K_8 = C_4 × C_2). Emits ext_16_4.
+      right; right; left
+      -- H is abelian (via the iso `e' : H ≃* CyclicGroup 4 × CyclicGroup 2`).
+      have h_H_comm : ∀ y z : H, (y : G) * (z : G) = (z : G) * (y : G) := by
+        intro y z
+        have hyz : (y * z : H) = (z * y : H) := by
+          apply e'.injective
+          rw [map_mul, map_mul, mul_comm]
+        exact congrArg Subtype.val hyz
+      -- Set up the shift element.
+      set z_K : CyclicGroup 4 × CyclicGroup 2 := (Multiplicative.ofAdd 1, 1) with hz_K_def
+      set z_H : H := e'.symm z_K with hz_H_def
+      have hez_H : e' z_H = z_K := e'.apply_symm_apply _
+      set a' : G := a * (z_H : G) with ha'_def
+      have ha'_notMem : a' ∉ H := h_b_notMem z_H
+      have ha'_sq : a' ^ 2 ∈ H := h_b_sq_mem z_H
+      -- Build new realisation with `a'`.
+      obtain ⟨τ_H', hmap_H', hpow_H', hconj_H', R_H'⟩ :=
+        realise_from_normal_index_two_with_conj H h_index a' ha'_notMem ha'_sq
+      -- Show τ_H' = τ_H using abelianness of H.
+      have hτ_eq : τ_H' = τ_H := by
+        apply MulEquiv.ext
+        intro x
+        apply Subtype.ext
+        have h1 := hconj_H' x
+        have h2 := hconj_H x
+        rw [h1, h2, ha'_def]
+        have hcomm : (z_H : G) * (x : G) = (x : G) * (z_H : G) := h_H_comm z_H x
+        rw [mul_inv_rev]
+        calc a * (z_H : G) * (x : G) * ((z_H : G)⁻¹ * a⁻¹)
+            = a * ((z_H : G) * (x : G)) * (z_H : G)⁻¹ * a⁻¹ := by group
+          _ = a * ((x : G) * (z_H : G)) * (z_H : G)⁻¹ * a⁻¹ := by rw [hcomm]
+          _ = a * (x : G) * a⁻¹ := by group
+      -- Compute the new glue under e': it equals (ofAdd 2, 1) = ext_16_4.glue.
+      have ha'_sq_in_H_eq : (⟨a' ^ 2, ha'_sq⟩ : H) = τ_H z_H * ⟨a ^ 2, ha_sq⟩ * z_H := by
+        apply Subtype.ext
+        exact h_b_sq_subtype z_H
+      have h_new_glue : e' (⟨a' ^ 2, ha'_sq⟩ : H) = (Multiplicative.ofAdd 2, 1) := by
+        rw [ha'_sq_in_H_eq, map_mul, map_mul, hτH_eq' z_H, h_conj_eq, hσ, hez_H,
+            ← hv_K'_def, hv]
+        decide
+      -- act_conj for new realisation matches ext_16_4.act = psi5.
+      have act_conj : (e'.symm.trans τ_H').trans e' = ext_16_4.act := by
+        rw [hτ_eq, h_conj_eq, hσ]
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H' realise_16_4
+        { hn := rfl
+          φ := e'
+          act_conj := act_conj.symm
+          act_glue := h_new_glue.symm }⟩
     · -- v = (1, ofAdd 1), ψ = ψ₆: rule out via fixed-point constraint.
       -- v must be ψ₆-fixed (via map_glue), but ψ₆(1, ofAdd 1) = (c4Half, ofAdd 1) ≠ v.
       exfalso
