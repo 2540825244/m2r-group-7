@@ -652,6 +652,24 @@ lemma realise_with_normal_C8
 
 /-! ## Case analysis: normal `K_8 = C_4 × C_2` -/
 
+/-- If `e : N ≃* N'` and `τ : MulAut N`, then the conjugated automorphism
+`(e.symm.trans τ).trans e` satisfies `(·^k) y = e ((τ^k) (e.symm y))` for all `k : ℕ`. -/
+private lemma conjugate_aut_pow_eq
+    {N : Type*} [Group N] {N' : Type*} [Group N']
+    (e : N ≃* N') (τ : MulAut N) : ∀ (k : ℕ) (y : N'),
+    (((e.symm.trans (τ : N ≃* N)).trans e) ^ k) y = e ((τ ^ k) (e.symm y)) := by
+  intro k
+  induction k with
+  | zero =>
+    intro y
+    change y = e (e.symm y)
+    rw [MulEquiv.apply_symm_apply]
+  | succ k ih =>
+    intro y
+    rw [pow_succ', MulAut.mul_apply, ih]
+    change e (τ (e.symm (e ((τ ^ k) (e.symm y))))) = e ((τ ^ (k + 1)) (e.symm y))
+    rw [MulEquiv.symm_apply_apply, pow_succ', MulAut.mul_apply]
+
 set_option maxHeartbeats 800000 in
 -- To realise the extension types
 /-- If `G` is a group of order 16 containing a normal subgroup isomorphic to
@@ -712,20 +730,7 @@ lemma realise_with_normal_K8
       exact map_one e
     set τ_K : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
       (e.symm.trans τ_H).trans e with hτ_K_def
-    have T_pow : ∀ k : ℕ, ∀ y : CyclicGroup 4 × CyclicGroup 2,
-        (τ_K ^ k) y = e ((τ_H ^ k) (e.symm y)) := by
-      intro k
-      induction k with
-      | zero =>
-        intro y
-        change y = e (e.symm y)
-        rw [MulEquiv.apply_symm_apply]
-      | succ k ih =>
-        intro y
-        rw [pow_succ', MulAut.mul_apply, ih]
-        change e (τ_H (e.symm (e ((τ_H ^ k) (e.symm y))))) =
-             e ((τ_H ^ (k + 1)) (e.symm y))
-        rw [MulEquiv.symm_apply_apply, pow_succ', MulAut.mul_apply]
+    have T_pow := conjugate_aut_pow_eq e τ_H
     have hτ_K_sq : τ_K ^ 2 = 1 := by
       apply MulEquiv.ext
       intro y
@@ -869,20 +874,7 @@ lemma realise_with_normal_K8
       rfl
     set τ_K : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
       (e.symm.trans τ_H).trans e with hτ_K_def
-    have T_pow : ∀ k : ℕ, ∀ y : CyclicGroup 4 × CyclicGroup 2,
-        (τ_K ^ k) y = e ((τ_H ^ k) (e.symm y)) := by
-      intro k
-      induction k with
-      | zero =>
-        intro y
-        change y = e (e.symm y)
-        rw [MulEquiv.apply_symm_apply]
-      | succ k ih =>
-        intro y
-        rw [pow_succ', MulAut.mul_apply, ih]
-        change e (τ_H (e.symm (e ((τ_H ^ k) (e.symm y))))) =
-             e ((τ_H ^ (k + 1)) (e.symm y))
-        rw [MulEquiv.symm_apply_apply, pow_succ', MulAut.mul_apply]
+    have T_pow := conjugate_aut_pow_eq e τ_H
     have hτ_K_sq : τ_K ^ 2 = 1 := by
       apply MulEquiv.ext
       intro y
@@ -987,7 +979,8 @@ lemma realise_with_normal_K8
           φ := e'
           act_conj := act_conj.symm
           act_glue := hv.symm }⟩
-    · -- v = (1, ofAdd 1), ψ = ψ₃: K_8-subgroup switch.
+    · -- TODO H2: extract psi3_subgroup_switch_core
+      -- v = (1, ofAdd 1), ψ = ψ₃: K_8-subgroup switch.
       right; right; left
       -- H is abelian (via e').
       have h_H_comm : ∀ y z : H, (y : G) * (z : G) = (z : G) * (y : G) := by
@@ -1060,19 +1053,11 @@ lemma realise_with_normal_K8
       have hcV_comm : (c_H : G) * (V_H : G) = (V_H : G) * (c_H : G) := h_H_comm c_H V_H
       -- c_H⁻¹ = c_H^3.
       have hc_inv_pow3 : ((c_H : G))⁻¹ = ((c_H : G)) ^ 3 := by
-        have h : (c_H : G) ^ 4 = 1 := hcG4
-        have h2 : (c_H : G) * (c_H : G) ^ 3 = 1 := by
-          calc (c_H : G) * (c_H : G) ^ 3
-              = (c_H : G) ^ 1 * (c_H : G) ^ 3 := by rw [pow_one]
-            _ = (c_H : G) ^ (1 + 3) := by rw [← pow_add]
-            _ = (c_H : G) ^ 4 := by norm_num
-            _ = 1 := h
-        exact (eq_inv_of_mul_eq_one_left (by
-          calc (c_H : G) ^ 3 * (c_H : G)
-              = (c_H : G) ^ 3 * (c_H : G) ^ 1 := by rw [pow_one]
-            _ = (c_H : G) ^ (3 + 1) := by rw [← pow_add]
-            _ = (c_H : G) ^ 4 := by norm_num
-            _ = 1 := h)).symm
+        have h2 : ((c_H : G)) ^ 3 * ((c_H : G)) = 1 := by
+          have : ((c_H : G)) ^ 3 * ((c_H : G)) = ((c_H : G)) ^ 4 := by
+            rw [show (4 : ℕ) = 3 + 1 from rfl, pow_add, pow_one]
+          rw [this, hcG4]
+        exact (eq_inv_of_mul_eq_one_left h2).symm
       have hc_pow3_eq : ((c_H : G)) ^ 3 = (V_H : G) * (c_H : G) := by
         have : (c_H : G) ^ 3 = (c_H : G) ^ 2 * (c_H : G) := by
           rw [show (3 : ℕ) = 2 + 1 from rfl, pow_add, pow_one]
@@ -1616,7 +1601,8 @@ lemma realise_with_normal_K8
           φ := e''
           act_conj := act_conj.symm
           act_glue := h_glue''.symm }⟩
-    · -- v = (ofAdd 2, ofAdd 1), ψ = ψ₃: structural case requiring K_8-subgroup switch.
+    · -- TODO H2: extract psi3_subgroup_switch_core
+      -- v = (ofAdd 2, ofAdd 1), ψ = ψ₃: structural case requiring K_8-subgroup switch.
       right; right; left
       -- H is abelian (via e').
       have h_H_comm : ∀ y z : H, (y : G) * (z : G) = (z : G) * (y : G) := by
@@ -1689,19 +1675,11 @@ lemma realise_with_normal_K8
       have hcV_comm : (c_H : G) * (V_H : G) = (V_H : G) * (c_H : G) := h_H_comm c_H V_H
       -- c_H⁻¹ = c_H^3.
       have hc_inv_pow3 : ((c_H : G))⁻¹ = ((c_H : G)) ^ 3 := by
-        have h : (c_H : G) ^ 4 = 1 := hcG4
-        have h2 : (c_H : G) * (c_H : G) ^ 3 = 1 := by
-          calc (c_H : G) * (c_H : G) ^ 3
-              = (c_H : G) ^ 1 * (c_H : G) ^ 3 := by rw [pow_one]
-            _ = (c_H : G) ^ (1 + 3) := by rw [← pow_add]
-            _ = (c_H : G) ^ 4 := by norm_num
-            _ = 1 := h
-        exact (eq_inv_of_mul_eq_one_left (by
-          calc (c_H : G) ^ 3 * (c_H : G)
-              = (c_H : G) ^ 3 * (c_H : G) ^ 1 := by rw [pow_one]
-            _ = (c_H : G) ^ (3 + 1) := by rw [← pow_add]
-            _ = (c_H : G) ^ 4 := by norm_num
-            _ = 1 := h)).symm
+        have h2 : ((c_H : G)) ^ 3 * ((c_H : G)) = 1 := by
+          have : ((c_H : G)) ^ 3 * ((c_H : G)) = ((c_H : G)) ^ 4 := by
+            rw [show (4 : ℕ) = 3 + 1 from rfl, pow_add, pow_one]
+          rw [this, hcG4]
+        exact (eq_inv_of_mul_eq_one_left h2).symm
       have hc_pow3_eq : ((c_H : G)) ^ 3 = (V_H : G) * (c_H : G) := by
         have : (c_H : G) ^ 3 = (c_H : G) ^ 2 * (c_H : G) := by
           rw [show (3 : ℕ) = 2 + 1 from rfl, pow_add, pow_one]
