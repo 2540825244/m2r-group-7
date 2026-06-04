@@ -8,15 +8,11 @@ import «M2rGroup7».Lemmas.SylowUtils
 /-- A group of order `24` has either `1` or `4` Sylow 3-subgroups. -/
 lemma sylow3_24 {G : Type*} [Group G] (h : Nat.card G = 24) :
     Nat.card (Sylow 3 G) = 1 ∨ Nat.card (Sylow 3 G) = 4 := by
-  haveI : Finite G := by
-    apply Nat.finite_of_card_ne_zero
-    rw [h]
-    simp
+  haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [h]; decide)
   have h_mod : Nat.card (Sylow 3 G) % 3 = 1 % 3 := card_sylow_modEq_one 3 G
-  let P : Sylow 3 G := default
-  have h_dvd : Nat.card (Sylow 3 G) ∣ Nat.card G :=
-    (Sylow.card_dvd_index P).trans (Subgroup.index_dvd_card _)
-  rw [h] at h_dvd
+  have h_dvd : Nat.card (Sylow 3 G) ∣ 24 := by
+    rw [← h]
+    exact (Sylow.card_dvd_index (default : Sylow 3 G)).trans (Subgroup.index_dvd_card _)
   have h_pos : 0 < Nat.card (Sylow 3 G) := Nat.card_pos
   have h_le : Nat.card (Sylow 3 G) ≤ 24 := Nat.le_of_dvd (by decide) h_dvd
   interval_cases (Nat.card (Sylow 3 G)) <;> omega
@@ -54,16 +50,44 @@ private lemma order24_1_sylow3_trivial
       h_iso.trans ((MulEquiv.refl (CyclicGroup 3)).prodCongr e)
     tauto
 
-/-- Non-trivial-action branch of the normal-Sylow-3 classification: placeholder
-    for the 7 non-trivial-action groups. The eventual proof will dispatch via
-    `order8_classification` on the order-8 complement `K`, then on the
-    `Aut(K)`-orbit of `ker φ`. Two of the 7 targets (the `C_3 ⋊ C_8` from
-    `K = C_8`, and `(C_6 × C_2) ⋊ C_2` from `K = D_4` with kernel V_4) need
-    new defs in `SmallGroupsLibrary`. -/
-private lemma order24_1_sylow3_nontrivial {G : Type*} [Group G]
-    (h : Nat.card G = 24) (h_n3 : Nat.card (Sylow 3 G) = 1) :
+/-- Non-trivial-action branch of the normal-Sylow-3 classification. Given a
+    semidirect-product iso `↥P ⋊[φ] ↥K ≃* G` with `|P| = 3` and `|K| = 8`,
+    dispatch on `order8_classification` of `K`. Five of the seven possible
+    iso classes are Mathlib-named:
+    - `K = C_4 × C_2`, `ker φ = C_4`  →  `D_3 × C_4`
+    - `K = C_4 × C_2`, `ker φ = V_4`  →  `C_2 × Q_12`
+    - `K = C_2^3`,    `ker φ = V_4`  →  `D_3 × V_4`
+    - `K = D_4`,      `ker φ = C_4`  →  `D_12`
+    - `K = Q_8`,      `ker φ = C_4`  →  `Q_24`
+
+    The remaining two — `C_3 ⋊ C_8` (`K = C_8`) and `(C_6 × C_2) ⋊ C_2`
+    (`K = D_4`, `ker φ = V_4`) — have no Mathlib name and need new defs in
+    `SmallGroupsLibrary`; for now they sit under the trailing `True`. -/
+private lemma order24_1_sylow3_nontrivial
+    {G : Type*} [Group G]
+    {P K : Subgroup G} (h_P_card : Nat.card ↥P = 3) (hK_card : Nat.card ↥K = 8)
+    {φ : ↥K →* MulAut ↥P} (h_iso : ↥P ⋊[φ] ↥K ≃* G) :
+    Nonempty (G ≃* DihedralGroup 3 × CyclicGroup 4) ∨
+    Nonempty (G ≃* CyclicGroup 2 × QuaternionGroup 3) ∨
+    Nonempty (G ≃* DihedralGroup 3 × (CyclicGroup 2 × CyclicGroup 2)) ∨
+    Nonempty (G ≃* DihedralGroup 12) ∨
+    Nonempty (G ≃* QuaternionGroup 6) ∨
     True := by
-  sorry
+  rcases order8_classification (G := ↥K) hK_card with hC8 | hC4C2 | hC2sq3 | hD4 | hQ8
+  · -- K ≃* C_8: target `C_3 ⋊ C_8` needs a SmallGroupsLibrary def; lands in True
+    tauto
+  · -- K ≃* C_4 × C_2: two sub-cases by `ker φ`
+    --   ker = C_4  → D_3 × C_4
+    --   ker = V_4  → C_2 × Q_12
+    sorry
+  · -- K ≃* C_2^3: target `D_3 × V_4`
+    sorry
+  · -- K ≃* D_4: two sub-cases by `ker φ`
+    --   ker = rotation C_4  → D_12
+    --   ker = reflection V_4 → (C_6 × C_2) ⋊ C_2 (needs def; lands in True)
+    sorry
+  · -- K ≃* Q_8: target Q_24
+    sorry
 
 /-- A group of order `24` with a unique Sylow 3-subgroup is isomorphic to one of
     the 12 normal-Sylow-3 groups (5 from a trivial conjugation action, 7 from a
@@ -71,7 +95,8 @@ private lemma order24_1_sylow3_nontrivial {G : Type*} [Group G]
     3-subgroup.
 
     The 5 trivial-action targets are wired up via `order24_1_sylow3_trivial`; the
-    7 non-trivial-action targets are stubbed in `order24_1_sylow3_nontrivial`. -/
+    7 non-trivial-action targets are stubbed in `order24_1_sylow3_nontrivial` (5
+    Mathlib-named + 2 under a trailing `True` placeholder). -/
 lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
     (h_n3 : Nat.card (Sylow 3 G) = 1) :
     (Nonempty (G ≃* CyclicGroup 3 × CyclicGroup 8) ∨
@@ -79,7 +104,12 @@ lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
      Nonempty (G ≃* CyclicGroup 3 × (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)) ∨
      Nonempty (G ≃* CyclicGroup 3 × DihedralGroup 4) ∨
      Nonempty (G ≃* CyclicGroup 3 × QuaternionGroup 2)) ∨
-    True := by
+    (Nonempty (G ≃* DihedralGroup 3 × CyclicGroup 4) ∨
+     Nonempty (G ≃* CyclicGroup 2 × QuaternionGroup 3) ∨
+     Nonempty (G ≃* DihedralGroup 3 × (CyclicGroup 2 × CyclicGroup 2)) ∨
+     Nonempty (G ≃* DihedralGroup 12) ∨
+     Nonempty (G ≃* QuaternionGroup 6) ∨
+     True) := by
   haveI : Fact (Nat.Prime 2) := ⟨by decide⟩
   haveI : Fact (Nat.Prime 3) := ⟨by decide⟩
   haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [h]; decide)
@@ -128,8 +158,8 @@ lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
     have h_g_clean : G ≃* CyclicGroup 3 × ↥K :=
       h_g_to_prod.trans (hP_iso.prodCongr (MulEquiv.refl _))
     exact Or.inl (order24_1_sylow3_trivial h_g_clean hK_card)
-  · -- Non-trivial action: dispatch to the placeholder sub-lemma
-    exact Or.inr (order24_1_sylow3_nontrivial h h_n3)
+  · -- Non-trivial action: pass setup state to the sub-lemma
+    exact Or.inr (order24_1_sylow3_nontrivial h_P_card hK_card h_iso)
 
 /-- A group of order `24` with four Sylow 3-subgroups is isomorphic to some group.
     The precondition is equivalent to not having a normal Sylow 3-subgroup. -/
@@ -141,6 +171,7 @@ lemma order24_4_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
 theorem order24_classification {G : Type*} [Group G] (h : Nat.card G = 24) :
     True := by
   rcases sylow3_24 h with h_n3_1 | h_n3_4
-  · -- order24_1_sylow3 returns `(5-way) ∨ True`; discard to land in `True`
-    rcases order24_1_sylow3 h h_n3_1 with (_ | _ | _ | _ | _) | _ <;> trivial
+  · -- order24_1_sylow3 returns `(5-way trivial) ∨ (5-way Mathlib non-trivial ∨ True)`
+    rcases order24_1_sylow3 h h_n3_1 with (_ | _ | _ | _ | _) | (_ | _ | _ | _ | _ | _) <;>
+      trivial
   · exact order24_4_sylow3 h h_n3_4
