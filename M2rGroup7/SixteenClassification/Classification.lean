@@ -9,7 +9,8 @@ lemma exists_normal_C8_or_C4_C2
     (hn : Nat.card G = 16)
     (h_non_iso : IsEmpty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)) :
     (∃ H : Subgroup G, H.Normal ∧ Nonempty (H ≃* CyclicGroup 8)) ∨
-    (∃ H : Subgroup G, H.Normal ∧ Nonempty (H ≃* CyclicGroup 4 × CyclicGroup 2)) := by
+    ((∀ x : G, orderOf x ≠ 8) ∧
+      ∃ H : Subgroup G, H.Normal ∧ Nonempty (H ≃* CyclicGroup 4 × CyclicGroup 2)) := by
   by_cases h_order_8 : ∃ x : G , orderOf x = 8
   · -- There is element of order 8, then C8 ◃ G
     left
@@ -30,6 +31,7 @@ lemma exists_normal_C8_or_C4_C2
     tauto
   · -- There are no elements of order 8, then K8 ◃ G
     right
+    refine ⟨fun x h => h_order_8 ⟨x, h⟩, ?_⟩
     have h_max_order : ∃ z : G , orderOf z = 4 := by
       haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [hn]; decide)
       haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
@@ -556,12 +558,12 @@ theorem realise_ext_type_if_not_iso_to_C2_4
     Nonempty (RealiseExtType G ext_16_12) ∨
     Nonempty (RealiseExtType G ext_16_13) := by
   rcases exists_normal_C8_or_C4_C2 hn h_non_iso with
-    ⟨H, hN, h_iso⟩ | ⟨H, hN, h_iso⟩
+    ⟨H, hN, h_iso⟩ | ⟨h_no_o8, H, hN, h_iso⟩
   · haveI := hN
     have := realise_with_normal_C8 hn H h_iso
     tauto
   · haveI := hN
-    have := realise_with_normal_K8 hn H h_iso
+    have := realise_with_normal_K8 hn h_no_o8 H h_iso
     tauto
 
 end OrderSixteen
