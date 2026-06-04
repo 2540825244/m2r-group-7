@@ -42,16 +42,16 @@ noncomputable def RealiseExtType.transfer
   ι := (e.symm : G' →* G).comp R.ι
   act_a := by
     intro x
-    show e.symm R.a * e.symm (R.ι x) * (e.symm R.a)⁻¹ = e.symm (R.ι (E.act x))
+    change e.symm R.a * e.symm (R.ι x) * (e.symm R.a)⁻¹ = e.symm (R.ι (E.act x))
     have h := R.act_a x
     rw [← map_inv e.symm, ← map_mul e.symm, ← map_mul e.symm, h]
   pow_a_n := by
-    show (e.symm R.a) ^ E.n = e.symm (R.ι E.glue)
+    change (e.symm R.a) ^ E.n = e.symm (R.ι E.glue)
     rw [← map_pow e.symm, R.pow_a_n]
   equiv := R.equiv.trans e.symm.toEquiv
   equiv_apply := by
     intro x i
-    show e.symm (R.equiv (x, i)) = e.symm (R.ι x) * (e.symm R.a) ^ (i : ℕ)
+    change e.symm (R.equiv (x, i)) = e.symm (R.ι x) * (e.symm R.a) ^ (i : ℕ)
     rw [R.equiv_apply, map_mul, map_pow]
 
 /-- If `G ≃* G'` and `G'` realises an extension type `E`, then so does `G`. -/
@@ -117,16 +117,16 @@ noncomputable def realise_from_normal_index_two
         simpa using this⟩
       left_inv := by intro h; ext; simp; group
       right_inv := by intro h; ext; simp; group
-      map_mul' := by intro x y; ext; simp; group }
+      map_mul' := by intro x y; ext; simp }
   let v : H := ⟨a ^ 2, h_a_sq⟩
   have hmap_glue : τ v = v := by
     ext
-    show a * a ^ 2 * a⁻¹ = a ^ 2
+    change a * a ^ 2 * a⁻¹ = a ^ 2
     group
   have hpow_n : τ ^ 2 = MulAut.conj v := by
     ext h
-    show (τ (τ h)).1 = v.1 * h.1 * v.1⁻¹
-    show a * (a * h.1 * a⁻¹) * a⁻¹ = a^2 * h.1 * (a^2)⁻¹
+    change (τ (τ h)).1 = v.1 * h.1 * v.1⁻¹
+    change a * (a * h.1 * a⁻¹) * a⁻¹ = a^2 * h.1 * (a^2)⁻¹
     rw [pow_two, mul_inv_rev]
     group
   refine ⟨τ, hmap_glue, hpow_n, ?_⟩
@@ -137,14 +137,14 @@ noncomputable def realise_from_normal_index_two
   have left_inv : Function.LeftInverse invFun toFun := by
     rintro ⟨h, i⟩
     fin_cases i
-    · show invFun (h.1 * a ^ (0 : ℕ)) = (h, (0 : Fin 2))
+    · change invFun (h.1 * a ^ (0 : ℕ)) = (h, (0 : Fin 2))
       have hh : h.1 ∈ H := h.2
       have hsimp : h.1 * a ^ (0 : ℕ) = h.1 := by simp
       rw [hsimp]
-      show (if hg : h.1 ∈ H then ((⟨h.1, hg⟩ : H), (0 : Fin 2))
+      change (if hg : h.1 ∈ H then ((⟨h.1, hg⟩ : H), (0 : Fin 2))
             else (⟨h.1 * a⁻¹, hcoset h.1 hg⟩, 1)) = (h, 0)
       rw [dif_pos hh]
-    · show invFun (h.1 * a ^ ((1 : Fin 2) : ℕ)) = (h, (1 : Fin 2))
+    · change invFun (h.1 * a ^ ((1 : Fin 2) : ℕ)) = (h, (1 : Fin 2))
       have hh_a_notMem : h.1 * a ∉ H := by
         intro hcontra
         have hh : h.1⁻¹ ∈ H := inv_mem h.2
@@ -153,29 +153,29 @@ noncomputable def realise_from_normal_index_two
         rw [this] at h2
         exact h_a_notMem h2
       have hsimp : h.1 * a ^ ((1 : Fin 2) : ℕ) = h.1 * a := by
-        show h.1 * a ^ (1 : ℕ) = h.1 * a
+        change h.1 * a ^ (1 : ℕ) = h.1 * a
         rw [pow_one]
       rw [hsimp]
-      show (if hg : h.1 * a ∈ H then ((⟨h.1 * a, hg⟩ : H), (0 : Fin 2))
+      change (if hg : h.1 * a ∈ H then ((⟨h.1 * a, hg⟩ : H), (0 : Fin 2))
             else (⟨(h.1 * a) * a⁻¹, hcoset (h.1 * a) hg⟩, 1)) = (h, 1)
       rw [dif_neg hh_a_notMem]
       ext
-      · show h.1 * a * a⁻¹ = h.1
+      · change h.1 * a * a⁻¹ = h.1
         group
       · rfl
   have right_inv : Function.RightInverse invFun toFun := by
     intro g
     by_cases hg : g ∈ H
-    · show toFun (invFun g) = g
+    · change toFun (invFun g) = g
       have : invFun g = (⟨g, hg⟩, (0 : Fin 2)) := dif_pos hg
       rw [this]
-      show g * a ^ ((0 : Fin 2) : ℕ) = g
+      change g * a ^ ((0 : Fin 2) : ℕ) = g
       simp
-    · show toFun (invFun g) = g
+    · change toFun (invFun g) = g
       have : invFun g = (⟨g * a⁻¹, hcoset g hg⟩, (1 : Fin 2)) := dif_neg hg
       rw [this]
-      show g * a⁻¹ * a ^ ((1 : Fin 2) : ℕ) = g
-      show g * a⁻¹ * a ^ (1 : ℕ) = g
+      change g * a⁻¹ * a ^ ((1 : Fin 2) : ℕ) = g
+      change g * a⁻¹ * a ^ (1 : ℕ) = g
       rw [pow_one]
       group
   let myEquiv : H × Fin 2 ≃ G :=
@@ -188,15 +188,15 @@ noncomputable def realise_from_normal_index_two
       ι := H.subtype
       act_a := by
         intro x
-        show a * x.1 * a⁻¹ = (τ x).1
+        change a * x.1 * a⁻¹ = (τ x).1
         rfl
       pow_a_n := by
-        show a ^ 2 = v.1
+        change a ^ 2 = v.1
         rfl
       equiv := myEquiv
       equiv_apply := by
         intro x i
-        show x.1 * a ^ (i : ℕ) = x.1 * a ^ (i : ℕ)
+        change x.1 * a ^ (i : ℕ) = x.1 * a ^ (i : ℕ)
         rfl }
 
 /-- A version of `realise_from_normal_index_two` that also exposes the conjugation property
@@ -241,7 +241,7 @@ def ExtensionType.conjN
   act := (e.symm.trans E.act).trans e
   glue := e E.glue
   map_glue := by
-    show e (E.act (e.symm (e E.glue))) = e E.glue
+    change e (E.act (e.symm (e E.glue))) = e E.glue
     rw [MulEquiv.symm_apply_apply, E.map_glue]
   pow_n := by
     -- Pointwise: ((e.symm.trans E.act).trans e)^n x = e (E.act^n (e.symm x))
@@ -251,21 +251,21 @@ def ExtensionType.conjN
       induction k with
       | zero =>
         intro x
-        show x = e (e.symm x)
+        change x = e (e.symm x)
         rw [MulEquiv.apply_symm_apply]
       | succ k ih =>
         intro x
         rw [pow_succ', MulAut.mul_apply, ih]
-        show e (E.act (e.symm (e ((E.act ^ k) (e.symm x))))) =
+        change e (E.act (e.symm (e ((E.act ^ k) (e.symm x))))) =
              e ((E.act ^ (k + 1)) (e.symm x))
         rw [MulEquiv.symm_apply_apply, pow_succ', MulAut.mul_apply]
     ext x
     rw [T_pow E.n]
     have hpow := E.pow_n
     have hx := DFunLike.congr_fun hpow (e.symm x)
-    show e ((E.act ^ E.n) (e.symm x)) = (e E.glue) * x * (e E.glue)⁻¹
+    change e ((E.act ^ E.n) (e.symm x)) = (e E.glue) * x * (e E.glue)⁻¹
     rw [hx]
-    show e (E.glue * (e.symm x) * E.glue⁻¹) = e E.glue * x * (e E.glue)⁻¹
+    change e (E.glue * (e.symm x) * E.glue⁻¹) = e E.glue * x * (e E.glue)⁻¹
     rw [map_mul, map_mul, map_inv, MulEquiv.apply_symm_apply]
 
 /-- Transport a realisation across an isomorphism of the underlying normal group.
@@ -285,15 +285,15 @@ noncomputable def RealiseExtType.transferN
   ι := R.ι.comp e.symm.toMonoidHom
   act_a := by
     intro x
-    show R.a * R.ι (e.symm x) * R.a⁻¹ = R.ι (e.symm (e (E.act (e.symm x))))
+    change R.a * R.ι (e.symm x) * R.a⁻¹ = R.ι (e.symm (e (E.act (e.symm x))))
     rw [MulEquiv.symm_apply_apply, R.act_a]
   pow_a_n := by
-    show R.a ^ E.n = R.ι (e.symm (e E.glue))
+    change R.a ^ E.n = R.ι (e.symm (e E.glue))
     rw [MulEquiv.symm_apply_apply, R.pow_a_n]
   equiv := (Equiv.prodCongr e.symm.toEquiv (Equiv.refl _)).trans R.equiv
   equiv_apply := by
     intro x i
-    show R.equiv (e.symm x, i) = R.ι (e.symm x) * R.a ^ (i : ℕ)
+    change R.equiv (e.symm x, i) = R.ι (e.symm x) * R.a ^ (i : ℕ)
     rw [R.equiv_apply]
 
 /-- For a finite group `G` with a normal subgroup `H` of index 2, there exists an
@@ -839,10 +839,11 @@ lemma realise_with_normal_K8
     have hconj_one : MulAut.conj (⟨a ^ 2, ha_sq⟩ : H) = 1 := by
       apply MulEquiv.ext
       intro x
-      show (⟨a ^ 2, ha_sq⟩ : H) * x * (⟨a ^ 2, ha_sq⟩ : H)⁻¹ = x
+      change (⟨a ^ 2, ha_sq⟩ : H) * x * (⟨a ^ 2, ha_sq⟩ : H)⁻¹ = x
       apply e.injective
       rw [map_mul, map_mul, map_inv]
-      have hcomm : ∀ y z : CyclicGroup 4 × CyclicGroup 2, y * z = z * y := fun y z => mul_comm y z
+      have hcomm : ∀ y z : CyclicGroup 4 × CyclicGroup 2, y * z = z * y :=
+        fun y z => mul_comm y z
       rw [hcomm (e _) (e x), mul_assoc, mul_inv_cancel, mul_one]
     have h_b_sq_eq : ∀ x : H,
         (a * (x : G)) ^ 2 = ((τ_H x : H) : G) * a ^ 2 * (x : G) := by
@@ -1080,7 +1081,7 @@ lemma realise_with_normal_K8
       -- U^2 = a^2: U*U = ac·ac = (c⁻¹a)(ac) = c⁻¹·a²·c, then a² commutes with c.
       have hU_sq_a_sq : U ^ 2 = a ^ 2 := by
         have step1 : U * U = ((c_H : G))⁻¹ * a * (a * (c_H : G)) := by
-          show (a * (c_H : G)) * (a * (c_H : G)) = ((c_H : G))⁻¹ * a * (a * (c_H : G))
+          change (a * (c_H : G)) * (a * (c_H : G)) = ((c_H : G))⁻¹ * a * (a * (c_H : G))
           rw [hac]
         have step2 : ((c_H : G))⁻¹ * a * (a * (c_H : G)) = ((c_H : G))⁻¹ * (a * a * (c_H : G)) := by
           rw [mul_assoc, mul_assoc, ← mul_assoc a a]
@@ -1108,7 +1109,8 @@ lemma realise_with_normal_K8
         change a * (c_H : G) * (V_H : G) = (V_H : G) * (a * (c_H : G))
         have h1 : a * (c_H : G) * (V_H : G) = a * ((c_H : G) * (V_H : G)) := mul_assoc _ _ _
         have h2 : a * ((c_H : G) * (V_H : G)) = a * ((V_H : G) * (c_H : G)) := by rw [hcV_comm]
-        have h3 : a * ((V_H : G) * (c_H : G)) = (a * (V_H : G)) * (c_H : G) := (mul_assoc _ _ _).symm
+        have h3 : a * ((V_H : G) * (c_H : G)) = (a * (V_H : G)) * (c_H : G) :=
+          (mul_assoc _ _ _).symm
         have h4 : (a * (V_H : G)) * (c_H : G) = ((V_H : G) * a) * (c_H : G) := by rw [ha_V_comm]
         have h5 : ((V_H : G) * a) * (c_H : G) = (V_H : G) * (a * (c_H : G)) := mul_assoc _ _ _
         rw [h1, h2, h3, h4, h5]
@@ -1130,13 +1132,13 @@ lemma realise_with_normal_K8
       have hιU_mem : ∀ x : CyclicGroup 4, ∃ k : ℤ, ιU x = U ^ k := by
         intro x
         refine ⟨(Multiplicative.toAdd x).cast, ?_⟩
-        show cyclicHom 4 U hU4 x = U ^ ((Multiplicative.toAdd x).cast : ℤ)
+        change cyclicHom 4 U hU4 x = U ^ ((Multiplicative.toAdd x).cast : ℤ)
         unfold cyclicHom
         rfl
       have hιV_mem : ∀ y : CyclicGroup 2, ∃ l : ℤ, ιV y = (V_H : G) ^ l := by
         intro y
         refine ⟨(Multiplicative.toAdd y).cast, ?_⟩
-        show cyclicHom 2 (V_H : G) hVG_sq y = (V_H : G) ^ ((Multiplicative.toAdd y).cast : ℤ)
+        change cyclicHom 2 (V_H : G) hVG_sq y = (V_H : G) ^ ((Multiplicative.toAdd y).cast : ℤ)
         unfold cyclicHom
         rfl
       have hιUV_comm : ∀ (x : CyclicGroup 4) (y : CyclicGroup 2), Commute (ιU x) (ιV y) := by
@@ -1163,7 +1165,7 @@ lemma realise_with_normal_K8
         rw [hιU_pow]
         have h : ((2 : ZMod 4).cast : ℤ) = 2 := by decide
         rw [h]
-        show U ^ (2 : ℤ) = a ^ 2
+        change U ^ (2 : ℤ) = a ^ 2
         rw [show (2 : ℤ) = ((2 : ℕ) : ℤ) from rfl, zpow_natCast, hU_sq_a_sq]
       have hιV_gen : ιV (Multiplicative.ofAdd (1 : ZMod 2)) = (V_H : G) := by
         rw [hιV_pow]
@@ -1187,7 +1189,7 @@ lemma realise_with_normal_K8
           ⟨Multiplicative.toAdd m, rfl⟩
         obtain ⟨n', rfl⟩ : ∃ n', Multiplicative.ofAdd n' = n :=
           ⟨Multiplicative.toAdd n, rfl⟩
-        show conjA (ι (Multiplicative.ofAdd m', Multiplicative.ofAdd n')) =
+        change conjA (ι (Multiplicative.ofAdd m', Multiplicative.ofAdd n')) =
              ι (psi5 (Multiplicative.ofAdd m', Multiplicative.ofAdd n'))
         have lhs_eq : conjA (ι (Multiplicative.ofAdd m', Multiplicative.ofAdd n')) =
             U ^ (m'.cast : ℤ) * (V_H : G) ^ ((m'.cast : ℤ) + (n'.cast : ℤ)) := by
@@ -1197,7 +1199,7 @@ lemma realise_with_normal_K8
           rw [hUV_mul_zpow, mul_assoc, ← zpow_add]
         have rhs_eq : ι (psi5 (Multiplicative.ofAdd m', Multiplicative.ofAdd n')) =
             U ^ (m'.cast : ℤ) * (V_H : G) ^ ((n' + (m'.val : ZMod 2)).cast : ℤ) := by
-          show ι (Multiplicative.ofAdd m',
+          change ι (Multiplicative.ofAdd m',
                  Multiplicative.ofAdd (n' + (m'.val : ZMod 2))) = _
           rw [hι_apply, hιU_pow, hιV_pow]
         rw [lhs_eq, rhs_eq]
@@ -1211,9 +1213,9 @@ lemma realise_with_normal_K8
         fin_cases m' <;> fin_cases n' <;>
           first
             | rfl
-            | (show (V_H : G) ^ (2 : ℤ) = (V_H : G) ^ (0 : ℤ); rw [hV2, zpow_zero])
-            | (show (V_H : G) ^ (3 : ℤ) = (V_H : G) ^ (1 : ℤ); rw [hV3, zpow_one])
-            | (show (V_H : G) ^ (4 : ℤ) = (V_H : G) ^ (0 : ℤ); rw [hV4, zpow_zero])
+            | (change (V_H : G) ^ (2 : ℤ) = (V_H : G) ^ (0 : ℤ); rw [hV2, zpow_zero])
+            | (change (V_H : G) ^ (3 : ℤ) = (V_H : G) ^ (1 : ℤ); rw [hV3, zpow_one])
+            | (change (V_H : G) ^ (4 : ℤ) = (V_H : G) ^ (0 : ℤ); rw [hV4, zpow_zero])
       have hU_ne_one : U ≠ 1 := by
         intro hU1
         have ha_eq : a = ((c_H : G))⁻¹ := by
@@ -1233,7 +1235,8 @@ lemma realise_with_normal_K8
         have hV_eq_a2 : V_H = ⟨a ^ 2, ha_sq⟩ := Subtype.ext h
         have hev : e' V_H = (Multiplicative.ofAdd (2 : ZMod 4), 1) := heV_H
         rw [hV_eq_a2, ← hv_K'_def, hv] at hev
-        have h1 : Multiplicative.ofAdd (2 : ZMod 4) = (1 : CyclicGroup 4) := (Prod.mk.inj hev.symm).1
+        have h1 : Multiplicative.ofAdd (2 : ZMod 4) = (1 : CyclicGroup 4) :=
+          (Prod.mk.inj hev.symm).1
         revert h1; decide
       have hιU_inj : Function.Injective ιU := by
         rw [injective_iff_map_eq_one]
@@ -1347,7 +1350,8 @@ lemma realise_with_normal_K8
              have hc_H_one : c_H = 1 := Subtype.ext hc1
              have he_c : e' c_H = (Multiplicative.ofAdd 1, 1) := hec_H
              rw [hc_H_one, map_one] at he_c
-             have h1 : (1 : CyclicGroup 4) = Multiplicative.ofAdd (1 : ZMod 4) := (Prod.mk.inj he_c).1
+             have h1 : (1 : CyclicGroup 4) = Multiplicative.ofAdd (1 : ZMod 4) :=
+               (Prod.mk.inj he_c).1
              revert h1; decide)
           | (change U ^ ((1 : ZMod 4).cast : ℤ) * (V_H : G) ^ ((1 : ZMod 2).cast : ℤ) = a at hxa
              rw [show ((1 : ZMod 4).cast : ℤ) = 1 from rfl,
@@ -1427,7 +1431,8 @@ lemma realise_with_normal_K8
              have hc_H_eq : c_H = ⟨a ^ 2, ha_sq⟩ := Subtype.ext hcH_eq_a2
              have he_c : e' c_H = (Multiplicative.ofAdd 1, 1) := hec_H
              rw [hc_H_eq, ← hv_K'_def, hv] at he_c
-             have h1' : (1 : CyclicGroup 4) = Multiplicative.ofAdd (1 : ZMod 4) := (Prod.mk.inj he_c).1
+             have h1' : (1 : CyclicGroup 4) = Multiplicative.ofAdd (1 : ZMod 4) :=
+               (Prod.mk.inj he_c).1
              revert h1'; decide)
           | (change U ^ ((3 : ZMod 4).cast : ℤ) * (V_H : G) ^ ((1 : ZMod 2).cast : ℤ) = a at hxa
              rw [show ((3 : ZMod 4).cast : ℤ) = 3 from rfl,
@@ -1460,8 +1465,9 @@ lemma realise_with_normal_K8
                exact hcV_eq
              have he_cV : e' (c_H * V_H) = e' (⟨a ^ 2, ha_sq⟩ : H) := by rw [hcVH_eq]
              rw [map_mul, hec_H, heV_H, ← hv_K'_def, hv] at he_cV
-             have h1' : (Multiplicative.ofAdd (1 : ZMod 4) * Multiplicative.ofAdd (2 : ZMod 4) : CyclicGroup 4) =
-                       (1 : CyclicGroup 4) := (Prod.mk.inj he_cV).1
+             have h1' :
+                 (Multiplicative.ofAdd (1 : ZMod 4) * Multiplicative.ofAdd (2 : ZMod 4) :
+                   CyclicGroup 4) = (1 : CyclicGroup 4) := (Prod.mk.inj he_cV).1
              revert h1'; decide))
       let f : (CyclicGroup 4 × CyclicGroup 2) × Fin 2 → G :=
         fun p => ι p.1 * a ^ (p.2 : ℕ)
@@ -1498,15 +1504,15 @@ lemma realise_with_normal_K8
             exact ha_notMem_ιrange _ ha_eq.symm
       haveI hfinG : Fintype G := Fintype.ofFinite G
       have hcard_eq : Nat.card G = Nat.card ((CyclicGroup 4 × CyclicGroup 2) × Fin 2) := by
-        rw [hn, Nat.card_prod, Nat.card_prod, card_cyclicGroup, card_cyclicGroup, Nat.card_eq_fintype_card,
-            Fintype.card_fin]
+        rw [hn, Nat.card_prod, Nat.card_prod, card_cyclicGroup, card_cyclicGroup,
+            Nat.card_eq_fintype_card, Fintype.card_fin]
       have hf_bij : Function.Bijective f := hf_inj.bijective_of_nat_card_le hcard_eq.le
       refine ⟨{
         a := a
         ι := ι
         act_a := h_act
         pow_a_n := by
-          show a ^ 2 = ι (Multiplicative.ofAdd (2 : ZMod 4), 1)
+          change a ^ 2 = ι (Multiplicative.ofAdd (2 : ZMod 4), 1)
           rw [hι_apply, hιU_ofAdd2]
           have : ιV (1 : CyclicGroup 2) = 1 := map_one ιV
           rw [this, mul_one]
@@ -1597,7 +1603,7 @@ lemma realise_with_normal_K8
         rfl
       have act_conj : (e''.symm.trans τ_H).trans e'' = ext_16_2.act := by
         rw [h_conj_eq'', hσ]
-        show α * 1 * α⁻¹ = (1 : MulAut (CyclicGroup 4 × CyclicGroup 2))
+        change α * 1 * α⁻¹ = (1 : MulAut (CyclicGroup 4 × CyclicGroup 2))
         rw [mul_one, mul_inv_cancel]
       have h_glue'' : e'' (⟨a ^ 2, ha_sq⟩ : H) = ext_16_2.glue := by
         change α (e' (⟨a ^ 2, ha_sq⟩ : H)) = (1, Multiplicative.ofAdd 1)
