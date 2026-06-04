@@ -1,0 +1,51 @@
+You have to figure it out. Some things Claude wrote but do your own research:
+
+"Now I have the full picture. Let me correct and sharpen my earlier analysis.
+
+  The actual noncomputability chain:
+
+  zmodAddCyclicAddEquiv  ← uses h.exists_generator.choose  [root cause]
+    ↑
+  zmodCyclicMulEquiv     [noncomputable]
+    ↑
+  mulEquivOfCyclicCardEq [noncomputable]  ← the Mathlib lemma you're pointing to
+    ↑
+  sdpCanonicalAction     (uses it for eN, eK)  [noncomputable]
+    ↑
+  canonicalCpOnCqAction  [noncomputable]
+
+  AND separately in canonicalAutElement_exists:
+  IsCyclic.exists_generator (α := (ZMod q^n)ˣ).choose  [noncomputable]
+  IsCyclic.mulAutMulEquiv                                [noncomputable, goes through zmodCyclicMulEquiv]
+
+  ---
+  Can mulEquivOfCyclicCardEq be made computable?
+  
+  The Mathlib version is noncomputable because it works for an arbitrary abstract cyclic group G — it must pick a generator nonconstructively. But for our concrete CyclicGroup n = Multiplicative (ZMod n),
+  the generator Multiplicative.ofAdd 1 is explicitly known. Mathlib even provides the explicit-generator version:
+
+  zmodMulEquivOfGenerator  -- takes an explicit generator, still marked noncomputable
+
+  The issue is that even with an explicit generator, zmodAddEquivOfGenerator goes through QuotientAddGroup.liftEquiv which involves quotient type machinery that Lean marks noncomputable regardless. So the
+  noncomputability can't be lifted just by providing a generator.
+
+  However, for the specific case CyclicGroup n ≃* CyclicGroup n (same type), it's just MulEquiv.refl — trivially computable, no iso machinery needed. This covers the case in sdpCanonicalAction with n=m=1,
+  where eN : CyclicGroup q ≃* CyclicGroup (q^1) — once you handle the q = q^1 nat equality, it collapses to refl.
+
+  ---
+  Can canonicalAutElement be made computable after that?
+  
+  Even if you fix mulEquivOfCyclicCardEq, canonicalAutElement has its own noncomputable .choose finding a generator of (ZMod q^n)ˣ. But since (ZMod q)ˣ is Fintype and DecidableEq, finding a generator is 
+  computationally decidable — you can search the finite set for an element with orderOf g = q-1. For instance, Finset.filter (fun g => orderOf g = q - 1) Finset.univ is nonempty, and you can take .choose on
+  that — but at this point it's a decidable choose, which Lean can compute.
+
+  More concretely for our r=1 case: you just need a unit u ∈ (ZMod q)ˣ with u^p = 1 and u ≠ 1, and the corresponding "multiply by u" automorphism. Since (ZMod q)ˣ is finite and the predicate is decidable,
+  Finset.choose gives a computable element. And the automorphism Multiplicative.ofAdd a ↦ Multiplicative.ofAdd (u * a) is concretely computable.
+
+  So yes, in principle both are fixable, but it requires concrete refactoring:
+  1. Replace mulEquivOfCyclicCardEq in sdpCanonicalAction with a computable identity iso for the CyclicGroup case
+  2. Replace IsCyclic.exists_generator.choose in canonicalAutElement with a decidable Finset.choose searching (ZMod q)ˣ for a primitive root
+  3. Replace IsCyclic.mulAutMulEquiv with a computable concrete iso MulAut (CyclicGroup q) ≃* (ZMod q)ˣ via f ↦ f (Multiplicative.ofAdd 1)
+  
+  The practical difficulty is that the CycPGroupClassification.lean proofs are written abstractly for any cyclic group — making them computable would mean either specializing everything to CyclicGroup n
+  concretely, or finding computable analogues of each abstract step."
