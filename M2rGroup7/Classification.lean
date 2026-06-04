@@ -772,16 +772,6 @@ macro "classify_prime_cubed_odd" p:num h:term : tactic => `(tactic|(
   haveI : Fact (Nat.Prime $p) := ⟨by decide⟩
   exact order_odd_prime_cubed_classification (by decide) ($h |>.trans (by norm_num))))
 
-/-- A group of prime order is isomorphic to the cyclic group of the same order. -/
-theorem prime_classification [hn : Fact n.Prime] (h : Nat.card G = n) :
-(Nonempty (MulEquiv G (CyclicGroup n))) := by
-  apply Nonempty.intro
-  have h_g_card : Nat.card G = n := h
-  have : IsCyclic G := isCyclic_of_prime_card h_g_card
-  refine (mulEquivOfCyclicCardEq ?_)
-  have h_c_card: Nat.card (CyclicGroup n) = n := card_cyclicGroup n
-  rw [h_g_card, h_c_card]
-
 macro "classify_prime" p:num h:term : tactic => `(tactic|(
   have : Fact (Nat.Prime $p) := ⟨by decide⟩
   use 1
