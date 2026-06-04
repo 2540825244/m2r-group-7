@@ -820,13 +820,244 @@ lemma realise_with_normal_K8
       · exact hk_eq
       · exact absurd hk_eq h_o8
       · exact absurd hk_eq h_o16
-    -- The o(a) = 4 case body remains to be done. Plan: `a^2` has order 2 in H,
-    -- so `e ⟨a², ha_sq⟩` is one of the three order-2 elements of K_8. Use
-    -- `MulAut.involution_K8_conj_to_rep` (τ_K^2 = 1 because K_8 abelian makes
-    -- `MulAut.conj v = 1`) to slide τ_K into a representative ψ. For each (ψ, v)
-    -- pair, compose with an Aut(K_8)-element to align glue with the canonical
-    -- glue of ext_16_{2, 4, 12}. The ψ_6 case yields a min-order contradiction
-    -- via h_contra_helper. See milestones.md for the per-case mapping.
-    sorry
+    -- o(a) = 4 branch: glue v = e ⟨a², _⟩ is an order-2 element of K_8.
+    -- Use MulAut.involution_K8_conj_to_rep to slide τ_K to one of {1, ψ₃, ψ₅, ψ₆},
+    -- then dispatch per (ψ, v) pair.
+    have h_a4 : a ^ 4 = 1 := by rw [← h_o4]; exact pow_orderOf_eq_one a
+    have ha2_ne_one : a ^ 2 ≠ 1 := by
+      intro h
+      have : orderOf a ∣ 2 := orderOf_dvd_iff_pow_eq_one.mpr h
+      rw [h_o4] at this
+      omega
+    have ha2_H_ne_one : (⟨a ^ 2, ha_sq⟩ : H) ≠ 1 :=
+      fun h => ha2_ne_one (congrArg Subtype.val h)
+    have ha2_H_sq : (⟨a ^ 2, ha_sq⟩ : H) ^ 2 = 1 := by
+      ext
+      change (a ^ 2) ^ 2 = 1
+      rw [← pow_mul]; exact h_a4
+    -- K_8 is abelian, so conjugation by any element is trivial.
+    have hconj_one : MulAut.conj (⟨a ^ 2, ha_sq⟩ : H) = 1 := by
+      apply MulEquiv.ext
+      intro x
+      show (⟨a ^ 2, ha_sq⟩ : H) * x * (⟨a ^ 2, ha_sq⟩ : H)⁻¹ = x
+      apply e.injective
+      rw [map_mul, map_mul, map_inv]
+      have hcomm : ∀ y z : CyclicGroup 4 × CyclicGroup 2, y * z = z * y := fun y z => mul_comm y z
+      rw [hcomm (e _) (e x), mul_assoc, mul_inv_cancel, mul_one]
+    have h_b_sq_eq : ∀ x : H,
+        (a * (x : G)) ^ 2 = ((τ_H x : H) : G) * a ^ 2 * (x : G) := by
+      intro x
+      calc (a * (x : G)) ^ 2
+          = a * (x : G) * (a * (x : G)) := by rw [sq]
+        _ = (a * (x : G) * a⁻¹) * (a * a) * (x : G) := by group
+        _ = ((τ_H x : H) : G) * a ^ 2 * (x : G) := by rw [hconj_H x, sq]
+    have h_b_notMem : ∀ x : H, a * (x : G) ∉ H := by
+      intro x hx
+      have : a = (a * (x : G)) * (x : G)⁻¹ := by group
+      exact ha_notMem (this ▸ H.mul_mem hx (H.inv_mem x.2))
+    have h_b_sq_mem : ∀ x : H, (a * (x : G)) ^ 2 ∈ H := by
+      intro x
+      rw [h_b_sq_eq x]
+      exact H.mul_mem (H.mul_mem (τ_H x).2 ha_sq) x.2
+    have h_b_sq_subtype : ∀ x : H,
+        (a * (x : G)) ^ 2 = ((τ_H x * ⟨a ^ 2, ha_sq⟩ * x : H) : G) := by
+      intro x
+      rw [h_b_sq_eq x]
+      rfl
+    set τ_K : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
+      (e.symm.trans τ_H).trans e with hτ_K_def
+    have T_pow : ∀ k : ℕ, ∀ y : CyclicGroup 4 × CyclicGroup 2,
+        (τ_K ^ k) y = e ((τ_H ^ k) (e.symm y)) := by
+      intro k
+      induction k with
+      | zero =>
+        intro y
+        change y = e (e.symm y)
+        rw [MulEquiv.apply_symm_apply]
+      | succ k ih =>
+        intro y
+        rw [pow_succ', MulAut.mul_apply, ih]
+        change e (τ_H (e.symm (e ((τ_H ^ k) (e.symm y))))) =
+             e ((τ_H ^ (k + 1)) (e.symm y))
+        rw [MulEquiv.symm_apply_apply, pow_succ', MulAut.mul_apply]
+    have hτ_K_sq : τ_K ^ 2 = 1 := by
+      apply MulEquiv.ext
+      intro y
+      rw [T_pow 2 y]
+      have hx := DFunLike.congr_fun hpow_H (e.symm y)
+      change e ((τ_H ^ 2) (e.symm y)) = y
+      rw [hx, hconj_one]
+      change e (e.symm y) = y
+      rw [MulEquiv.apply_symm_apply]
+    obtain ⟨σ, hσ⟩ := MulAut.involution_K8_conj_to_rep τ_K hτ_K_sq
+    set e' : H ≃* CyclicGroup 4 × CyclicGroup 2 := e.trans σ with he'_def
+    -- The glue under e' is σ (e ⟨a², _⟩); call it v_K'.
+    set v_K' : CyclicGroup 4 × CyclicGroup 2 := e' (⟨a ^ 2, ha_sq⟩ : H) with hv_K'_def
+    have hv_K'_sq : v_K' ^ 2 = 1 := by
+      rw [hv_K'_def, ← map_pow, ha2_H_sq, map_one]
+    have hv_K'_ne_one : v_K' ≠ 1 := by
+      intro h
+      apply ha2_H_ne_one
+      exact e'.injective (h.trans (map_one e').symm)
+    have h_conj_eq : (e'.symm.trans τ_H).trans e' = σ * τ_K * σ⁻¹ := by
+      apply MulEquiv.ext
+      intro x
+      change σ (e (τ_H (e.symm (σ.symm x)))) = σ (τ_K (σ⁻¹ x))
+      rfl
+    have hτH_eq' : ∀ x : H,
+        e' (τ_H x) = ((e'.symm.trans τ_H).trans e') (e' x) := by
+      intro x
+      change σ (e (τ_H x)) = σ (e (τ_H (e.symm (σ.symm (σ (e x))))))
+      rw [MulEquiv.symm_apply_apply, MulEquiv.symm_apply_apply]
+    -- Helper for min-order contradiction (mirror of C_8 branch).
+    have h_contra_helper : ∀ x : H,
+        (e' ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 4 × CyclicGroup 2) = 1 →
+        orderOf a ≤ 2 := by
+      intro x hex
+      have hH : ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x : H) = 1 := by
+        have := e'.injective (hex.trans (map_one e').symm)
+        exact this
+      have hb2_eq : (a * (x : G)) ^ 2 = 1 := by
+        rw [h_b_sq_subtype x, hH]
+        rfl
+      have hb_order_dvd : orderOf (a * (x : G)) ∣ 2 :=
+        orderOf_dvd_iff_pow_eq_one.mpr hb2_eq
+      have hb_order_le : orderOf (a * (x : G)) ≤ 2 := Nat.le_of_dvd two_pos hb_order_dvd
+      have := ha_min (a * (x : G)) (h_b_notMem x) (h_b_sq_mem x)
+      omega
+    -- Classify order-2 elements of K_8.
+    have order2_K8 : ∀ y : CyclicGroup 4 × CyclicGroup 2,
+        y ^ 2 = 1 → y ≠ 1 →
+        y = (Multiplicative.ofAdd 2, 1) ∨
+        y = (1, Multiplicative.ofAdd 1) ∨
+        y = (Multiplicative.ofAdd 2, Multiplicative.ofAdd 1) := by decide
+    rcases order2_K8 v_K' hv_K'_sq hv_K'_ne_one with hv | hv | hv
+    all_goals rcases hσ with hσ | hσ | hσ | hσ
+    -- v = (ofAdd 2, 1) cases
+    · -- v = (ofAdd 2, 1), ψ = 1: rule out via h_contra_helper.
+      exfalso
+      set x : H := e'.symm ((Multiplicative.ofAdd 1, 1) :
+        CyclicGroup 4 × CyclicGroup 2) with hx_def
+      have hex : e' x = (Multiplicative.ofAdd 1, 1) := e'.apply_symm_apply _
+      have h_eq_one :
+          (e' ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 4 × CyclicGroup 2) = 1 := by
+        rw [map_mul, map_mul, ← hv_K'_def, hv, hτH_eq' x, hex, h_conj_eq, hσ]
+        decide
+      have := h_contra_helper x h_eq_one
+      omega
+    · -- v = (ofAdd 2, 1), ψ = ψ₃: emit ext_16_12.
+      right; right; right; right; right; left
+      have act_conj : (e'.symm.trans τ_H).trans e' = ext_16_12.act := by
+        rw [h_conj_eq, hσ]
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_12
+        { hn := rfl
+          φ := e'
+          act_conj := act_conj.symm
+          act_glue := hv.symm }⟩
+    · -- v = (ofAdd 2, 1), ψ = ψ₅: emit ext_16_4.
+      right; right; left
+      have act_conj : (e'.symm.trans τ_H).trans e' = ext_16_4.act := by
+        rw [h_conj_eq, hσ]
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_4
+        { hn := rfl
+          φ := e'
+          act_conj := act_conj.symm
+          act_glue := hv.symm }⟩
+    · -- v = (ofAdd 2, 1), ψ = ψ₆: rule out via h_contra_helper.
+      exfalso
+      set x : H := e'.symm ((1, Multiplicative.ofAdd 1) :
+        CyclicGroup 4 × CyclicGroup 2) with hx_def
+      have hex : e' x = (1, Multiplicative.ofAdd 1) := e'.apply_symm_apply _
+      have h_eq_one :
+          (e' ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 4 × CyclicGroup 2) = 1 := by
+        rw [map_mul, map_mul, ← hv_K'_def, hv, hτH_eq' x, hex, h_conj_eq, hσ]
+        decide
+      have := h_contra_helper x h_eq_one
+      omega
+    -- v = (1, ofAdd 1) cases
+    · -- v = (1, ofAdd 1), ψ = 1: emit ext_16_2.
+      left
+      have act_conj : (e'.symm.trans τ_H).trans e' = ext_16_2.act := by
+        rw [h_conj_eq, hσ]
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_2
+        { hn := rfl
+          φ := e'
+          act_conj := act_conj.symm
+          act_glue := hv.symm }⟩
+    · -- v = (1, ofAdd 1), ψ = ψ₃: structural case requiring K_8-subgroup switch.
+      -- The Frattini element (ofAdd 2, 1) is Aut(K_8)-fixed, so no σ' ∈ Aut(K_8)
+      -- commuting with ψ₃ maps the glue (1, ofAdd 1) to (ofAdd 2, 1). Resolution
+      -- requires switching to a different normal K_8 ⊂ G; see milestones.md.
+      sorry
+    · -- v = (1, ofAdd 1), ψ = ψ₅: structural case requiring K_8-subgroup switch.
+      sorry
+    · -- v = (1, ofAdd 1), ψ = ψ₆: rule out via fixed-point constraint.
+      -- v must be ψ₆-fixed (via map_glue), but ψ₆(1, ofAdd 1) = (c4Half, ofAdd 1) ≠ v.
+      exfalso
+      have h_fix : psi6 v_K' = v_K' := by
+        have h1 := hmap_H
+        have h2 : e' (τ_H ⟨a ^ 2, ha_sq⟩) = e' ⟨a ^ 2, ha_sq⟩ := by
+          rw [h1]
+        rw [hτH_eq' ⟨a ^ 2, ha_sq⟩, h_conj_eq, hσ] at h2
+        exact h2
+      rw [hv] at h_fix
+      revert h_fix
+      decide
+    -- v = (ofAdd 2, ofAdd 1) cases
+    · -- v = (ofAdd 2, ofAdd 1), ψ = 1: slide via α to (1, ofAdd 1) and emit ext_16_2.
+      left
+      -- α : K_8 → K_8 by (a, b) ↦ (a · c4Half^{toAdd b}, b), involutive.
+      let α : MulAut (CyclicGroup 4 × CyclicGroup 2) :=
+        { toFun := fun ab => (ab.1 * c4Half ^ (Multiplicative.toAdd ab.2).val, ab.2)
+          invFun := fun ab => (ab.1 * c4Half ^ (Multiplicative.toAdd ab.2).val, ab.2)
+          left_inv := by decide
+          right_inv := by decide
+          map_mul' := by decide }
+      set e'' : H ≃* CyclicGroup 4 × CyclicGroup 2 := e'.trans α with he''_def
+      have h_conj_eq'' : (e''.symm.trans τ_H).trans e'' = α * (σ * τ_K * σ⁻¹) * α⁻¹ := by
+        apply MulEquiv.ext
+        intro x
+        change α (e' (τ_H (e'.symm (α.symm x)))) = α ((σ * τ_K * σ⁻¹) (α⁻¹ x))
+        have hcong := DFunLike.congr_fun h_conj_eq (α.symm x)
+        change e' (τ_H (e'.symm (α.symm x))) = (σ * τ_K * σ⁻¹) (α.symm x) at hcong
+        rw [hcong]
+        rfl
+      have act_conj : (e''.symm.trans τ_H).trans e'' = ext_16_2.act := by
+        rw [h_conj_eq'', hσ]
+        show α * 1 * α⁻¹ = (1 : MulAut (CyclicGroup 4 × CyclicGroup 2))
+        rw [mul_one, mul_inv_cancel]
+      have h_glue'' : e'' (⟨a ^ 2, ha_sq⟩ : H) = ext_16_2.glue := by
+        change α (e' (⟨a ^ 2, ha_sq⟩ : H)) = (1, Multiplicative.ofAdd 1)
+        rw [← hv_K'_def, hv]
+        decide
+      refine ⟨RealiseExtType.transfer_along_extEquiv R_H realise_16_2
+        { hn := rfl
+          φ := e''
+          act_conj := act_conj.symm
+          act_glue := h_glue''.symm }⟩
+    · -- v = (ofAdd 2, ofAdd 1), ψ = ψ₃: structural case requiring K_8-subgroup switch.
+      sorry
+    · -- v = (ofAdd 2, ofAdd 1), ψ = ψ₅: rule out via h_contra_helper.
+      exfalso
+      set x : H := e'.symm ((Multiplicative.ofAdd 1, 1) :
+        CyclicGroup 4 × CyclicGroup 2) with hx_def
+      have hex : e' x = (Multiplicative.ofAdd 1, 1) := e'.apply_symm_apply _
+      have h_eq_one :
+          (e' ((τ_H x) * ⟨a ^ 2, ha_sq⟩ * x) : CyclicGroup 4 × CyclicGroup 2) = 1 := by
+        rw [map_mul, map_mul, ← hv_K'_def, hv, hτH_eq' x, hex, h_conj_eq, hσ]
+        decide
+      have := h_contra_helper x h_eq_one
+      omega
+    · -- v = (ofAdd 2, ofAdd 1), ψ = ψ₆: rule out via fixed-point constraint.
+      exfalso
+      have h_fix : psi6 v_K' = v_K' := by
+        have h1 := hmap_H
+        have h2 : e' (τ_H ⟨a ^ 2, ha_sq⟩) = e' ⟨a ^ 2, ha_sq⟩ := by
+          rw [h1]
+        rw [hτH_eq' ⟨a ^ 2, ha_sq⟩, h_conj_eq, hσ] at h2
+        exact h2
+      rw [hv] at h_fix
+      revert h_fix
+      decide
 
 end OrderSixteen
