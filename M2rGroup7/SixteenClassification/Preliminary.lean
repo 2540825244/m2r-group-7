@@ -9,6 +9,8 @@ import Mathlib.GroupTheory.GroupAction.Quotient
 import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Data.Fintype.Perm
 import Mathlib.Algebra.Group.Equiv.Finite
+import Mathlib.GroupTheory.NoncommCoprod
+import Mathlib.GroupTheory.Rank
 
 namespace OrderSixteen
 
