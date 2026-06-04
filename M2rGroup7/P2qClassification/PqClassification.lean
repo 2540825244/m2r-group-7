@@ -23,21 +23,6 @@ eliminating the old bridge infrastructure (cycGrpPowOne, _canonicalCpOnCqAction,
 
 -- ─── Canonical action C_p →* Aut(C_q) ──────────────────────────────────────
 
-/-- Generic transport: for `CyclicGroup` types parameterized by ℕ with `NeZero`,
-    along `p1 = p` and `q1 = q` (with `NeZero p1`, `NeZero q1` already in scope, and
-    `NeZero p`, `NeZero q` derived from primality below). Both endpoints have `NeZero`
-    so the transport via `Eq.rec` on each is well-typed.
-
-    This is computable: `Eq.mpr` on a propositionally-equal type is a computational
-    no-op at the byte-code level once both indices match. -/
-private def transportCpCqHom {p q p1 q1 : ℕ} [NeZero p] [NeZero q] [NeZero p1] [NeZero q1]
-    (hp : p1 = p) (hq : q1 = q)
-    (f : CyclicGroup p1 →* MulAut (CyclicGroup q1)) :
-    CyclicGroup p →* MulAut (CyclicGroup q) := by
-  subst hp
-  subst hq
-  exact f
-
 /-- The canonical non-trivial action `C_p →* Aut(C_q)` with image of order p.
     Exists when `p ∣ q - 1`, encoded by `hr : 1 ≤ min 1 ((q-1).factorization p)`.
     Built by transporting `canonicalAction p q 1 1 r=1` across `p^1 = p` and `q^1 = q`. -/
@@ -88,14 +73,6 @@ lemma canonicalSDP_card
     Nat.card (SemidirectProduct (CyclicGroup q) (CyclicGroup p)
                (canonicalCpOnCqAction hpq hq2 hr)) = p * q := by
   rw [SemidirectProduct.card, card_cyclicGroup, card_cyclicGroup, mul_comm]
-
-/-- Range cardinality is invariant under `transportCpCqHom`. -/
-private lemma transportCpCqHom_range_card {p q p1 q1 : ℕ}
-    [NeZero p] [NeZero q] [NeZero p1] [NeZero q1]
-    (hp : p1 = p) (hq : q1 = q)
-    (f : CyclicGroup p1 →* MulAut (CyclicGroup q1)) :
-    Nat.card (transportCpCqHom hp hq f).range = Nat.card f.range := by
-  subst hp; subst hq; rfl
 
 lemma canonicalSDP_not_isCyclic
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]

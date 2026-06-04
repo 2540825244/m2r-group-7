@@ -283,6 +283,29 @@ lemma canonicalAction_range_card
     exact cyclicHom_range (p ^ m) τ h_pm
   rw [hrange, Nat.card_zpowers, canonicalAutElement_orderOf]
 
+/-- Generic transport: for `CyclicGroup` types parameterized by ℕ with `NeZero`,
+    along `p1 = p` and `q1 = q` (with `NeZero p1`, `NeZero q1` already in scope, and
+    `NeZero p`, `NeZero q` derived from primality below). Both endpoints have `NeZero`
+    so the transport via `Eq.rec` on each is well-typed.
+
+    This is computable: `Eq.mpr` on a propositionally-equal type is a computational
+    no-op at the byte-code level once both indices match. -/
+def transportCpCqHom {p q p1 q1 : ℕ} [NeZero p] [NeZero q] [NeZero p1] [NeZero q1]
+    (hp : p1 = p) (hq : q1 = q)
+    (f : CyclicGroup p1 →* MulAut (CyclicGroup q1)) :
+    CyclicGroup p →* MulAut (CyclicGroup q) := by
+  subst hp
+  subst hq
+  exact f
+
+/-- Range cardinality is invariant under `transportCpCqHom`. -/
+lemma transportCpCqHom_range_card {p q p1 q1 : ℕ}
+    [NeZero p] [NeZero q] [NeZero p1] [NeZero q1]
+    (hp : p1 = p) (hq : q1 = q)
+    (f : CyclicGroup p1 →* MulAut (CyclicGroup q1)) :
+    Nat.card (transportCpCqHom hp hq f).range = Nat.card f.range := by
+  subst hp; subst hq; rfl
+
 /-- Subgroup of N fixed pointwise by every automorphism in Im(f). -/
 def fixedPointsSubgroup {N H : Type*} [Group N] [Group H] (f : H →* MulAut N) : Subgroup N where
   carrier := {n | ∀ h : H, f h n = n}

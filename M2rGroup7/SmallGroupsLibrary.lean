@@ -127,73 +127,6 @@ private instance : Fact (Nat.Prime 7) := ⟨by norm_num⟩
 private instance : Fact (Nat.Prime 11) := ⟨by norm_num⟩
 private instance : Fact (Nat.Prime 13) := ⟨by norm_num⟩
 
--- ─── Computable surrogate actions for `retrieve` ──────────────────────────────
--- The canonical actions used by the classification theorems
--- (`canonicalCpOnCqAction`, `canonicalC4OnCqAction`, `canonicalC2C2OnCqAction`,
--- `canonicalC3OnC2C2Action`) are noncomputable (they rely on `Classical.choice`
--- via `IsCyclic.exists_generator` / `canonicalAutElement`). To keep `retrieve`
--- computable — so `native_decide` works for the invariant checks in
--- `Uniqueness.lean` — we use the surrogate actions below. Bridging between the
--- canonical actions and these surrogates is done once per family in
--- `Classification.lean`.
-
-/-- The order-2 action `C_2 →* Aut(C_q)` sending the generator to inversion. -/
-def c2OnCqInv (q : Nat) [NeZero q] : CyclicGroup 2 →* MulAut (CyclicGroup q) :=
-  let inv : MulAut (CyclicGroup q) := MulEquiv.inv (CyclicGroup q)
-  cyclicHom 2 inv (by
-    ext x
-    change (x⁻¹)⁻¹ = x
-    exact inv_inv x)
-
-/-- The order-2 action `C_4 →* Aut(C_q)` factoring through `C_4 / C_2`, sending
-the generator to inversion. -/
-def c4OnCqInv (q : Nat) [NeZero q] : CyclicGroup 4 →* MulAut (CyclicGroup q) :=
-  let inv : MulAut (CyclicGroup q) := MulEquiv.inv (CyclicGroup q)
-  cyclicHom 4 inv (by
-    have h2 : inv ^ 2 = 1 := by
-      ext x
-      change (x⁻¹)⁻¹ = x
-      exact inv_inv x
-    change inv ^ (2 * 2) = 1
-    rw [pow_mul, h2, one_pow])
-
-/-- The order-2 action `C_2 × C_2 →* Aut(C_q)` projecting to the first factor
-and then inverting. -/
-def c2c2OnCqInv (q : Nat) [NeZero q] : (CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup q) :=
-  (c2OnCqInv q).comp (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))
-
-/-- The pow-by-2 automorphism of `CyclicGroup 5` (an element of order 4 in
-`Aut(C_5)`). Used as a building block for `c4OnC5Pow2`. -/
-def pow2AutC5 : MulAut (CyclicGroup 5) :=
-  { toFun := (· ^ 2)
-    invFun := (· ^ 3)
-    left_inv := by decide
-    right_inv := by decide
-    map_mul' := fun a b => mul_pow a b 2 }
-
-/-- The order-4 action `C_4 →* Aut(C_5)` sending the generator to `x ↦ x^2`
-(an element of order 4 in `(ZMod 5)^×`). -/
-def c4OnC5Pow2 : CyclicGroup 4 →* MulAut (CyclicGroup 5) :=
-  cyclicHom 4 pow2AutC5 (by
-    ext x
-    change (((x ^ 2) ^ 2) ^ 2) ^ 2 = x
-    revert x; decide)
-
-/-- Order-3 automorphism of `C_2 × C_2` used to build the unique non-abelian
-order-12 group `A_4`. Sends `(x, y) ↦ (x*y, x)`. (Computable replica of
-`c2c2OrderThreeAut` from `FourQClassification.lean`.) -/
-def c2c2OrderThreeAutComp : MulAut (CyclicGroup 2 × CyclicGroup 2) where
-  toFun p := (p.1 * p.2, p.1)
-  invFun p := (p.2, p.1 * p.2)
-  left_inv := by decide
-  right_inv := by decide
-  map_mul' := by decide
-
-/-- The order-3 action `C_3 →* Aut(C_2 × C_2)` defining the `A_4` semidirect
-product structure. -/
-def c3OnC2C2 : CyclicGroup 3 →* MulAut (CyclicGroup 2 × CyclicGroup 2) :=
-  cyclicHom 3 c2c2OrderThreeAutComp (by decide)
-
 /-- Small groups database. Computable: each entry is built from `CyclicGroup`,
 direct products, `DihedralGroup`, `QuaternionGroup`, or a semidirect product
 with one of the explicit computable actions defined above (or in this file). -/
@@ -224,9 +157,12 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 11, 1 => CyclicGroup 11
   | 12, 1 => CyclicGroup 12
   | 12, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 3
-  | 12, 3 => CyclicGroup 3 ⋊[c4OnCqInv 3] CyclicGroup 4
-  | 12, 4 => CyclicGroup 3 ⋊[c2c2OnCqInv 3] (CyclicGroup 2 × CyclicGroup 2)
-  | 12, 5 => (CyclicGroup 2 × CyclicGroup 2) ⋊[c3OnC2C2] CyclicGroup 3
+  | 12, 3 => SemidirectProduct (CyclicGroup 3) (CyclicGroup 4)
+      (canonicalC4OnCqAction (by norm_num : (3:ℕ) ≠ 2))
+  | 12, 4 => SemidirectProduct (CyclicGroup 3) (CyclicGroup 2 × CyclicGroup 2)
+      (canonicalC2C2OnCqAction (by norm_num : (3:ℕ) ≠ 2))
+  | 12, 5 => SemidirectProduct (CyclicGroup 2 × CyclicGroup 2) (CyclicGroup 3)
+      canonicalC3OnC2C2Action
   | 13, 1 => CyclicGroup 13
   | 14, 1 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 2)
       (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 7) (by norm_num : (7:ℕ) ≠ 2)
@@ -252,9 +188,12 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 19, 1 => CyclicGroup 19
   | 20, 1 => CyclicGroup 20
   | 20, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 5
-  | 20, 3 => CyclicGroup 5 ⋊[c4OnCqInv 5] CyclicGroup 4
-  | 20, 4 => CyclicGroup 5 ⋊[c4OnC5Pow2] CyclicGroup 4
-  | 20, 5 => CyclicGroup 5 ⋊[c2c2OnCqInv 5] (CyclicGroup 2 × CyclicGroup 2)
+  | 20, 3 => SemidirectProduct (CyclicGroup 5) (CyclicGroup 4)
+      (canonicalC4OnCqAction (by norm_num : (5:ℕ) ≠ 2))
+  | 20, 4 => SemidirectProduct (CyclicGroup 5) (CyclicGroup 4)
+      (canonicalC4OnCqAction_r2 (by native_decide : (5:ℕ) ≡ 1 [MOD 4]))
+  | 20, 5 => SemidirectProduct (CyclicGroup 5) (CyclicGroup 2 × CyclicGroup 2)
+      (canonicalC2C2OnCqAction (by norm_num : (5:ℕ) ≠ 2))
   | 21, 1 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 3)
       (canonicalCpOnCqAction (by norm_num : (3:ℕ) ≠ 7) (by norm_num : (7:ℕ) ≠ 2)
         (by native_decide : 1 ≤ min 1 ((7 - 1 : ℕ).factorization 3)))
@@ -274,8 +213,10 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 27, 1 => CyclicGroup 27
   | 28, 1 => CyclicGroup 28
   | 28, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 7
-  | 28, 3 => CyclicGroup 7 ⋊[c4OnCqInv 7] CyclicGroup 4
-  | 28, 4 => CyclicGroup 7 ⋊[c2c2OnCqInv 7] (CyclicGroup 2 × CyclicGroup 2)
+  | 28, 3 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 4)
+      (canonicalC4OnCqAction (by norm_num : (7:ℕ) ≠ 2))
+  | 28, 4 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 2 × CyclicGroup 2)
+      (canonicalC2C2OnCqAction (by norm_num : (7:ℕ) ≠ 2))
   | 29, 1 => CyclicGroup 29
   | 30, 1 => CyclicGroup 30
   | 31, 1 => CyclicGroup 31
@@ -347,295 +288,3 @@ theorem retrieve_card (n : Nat) (i : Nat) [hv : ValidIndex n i] : Nat.card (retr
         Std.le_refl, gt_iff_lt, zero_le] <;>
       rfl
 
--- ─── Bridges for 4q (12, 20, 28) classifications ──────────────────────────
-
--- Concrete range cards for the surrogate actions. Each cyclicHom-defined action
--- has range equal to `Subgroup.zpowers a` (where `a` is the chosen target).
--- The lemma `cyclicHom_apply_eq_zpow` was moved to `CycPGroupClassification.lean`
--- (now public) for reuse there. We import and use it directly.
-
-/-- Inversion on `CyclicGroup q` squared equals identity. -/
-private lemma inv_aut_pow_two_eq_one (q : ℕ) [NeZero q] :
-    (MulEquiv.inv (CyclicGroup q)) ^ 2 = 1 := by
-  ext x; change (x⁻¹)⁻¹ = x; exact inv_inv x
-
-/-- Inversion on `CyclicGroup q` to the 4th power equals identity. -/
-private lemma inv_aut_pow_four_eq_one (q : ℕ) [NeZero q] :
-    (MulEquiv.inv (CyclicGroup q)) ^ 4 = 1 := by
-  rw [show (4 : ℕ) = 2 * 2 from rfl, pow_mul, inv_aut_pow_two_eq_one, one_pow]
-
-/-- For the surrogate `c4OnCqInv q`, applied at `x`, the value is `inv^(toAdd x).val`. -/
-private lemma c4OnCqInv_apply (q : ℕ) [NeZero q] (x : CyclicGroup 4) :
-    c4OnCqInv q x = (MulEquiv.inv (CyclicGroup q)) ^ ((Multiplicative.toAdd x).val : ℤ) :=
-  cyclicHom_apply_eq_zpow 4 (MulEquiv.inv (CyclicGroup q)) (inv_aut_pow_four_eq_one q) x
-
-/-- For the surrogate `c2OnCqInv q`, applied at `x`, the value is `inv^(toAdd x).val`. -/
-private lemma c2OnCqInv_apply (q : ℕ) [NeZero q] (x : CyclicGroup 2) :
-    c2OnCqInv q x = (MulEquiv.inv (CyclicGroup q)) ^ ((Multiplicative.toAdd x).val : ℤ) :=
-  cyclicHom_apply_eq_zpow 2 (MulEquiv.inv (CyclicGroup q)) (inv_aut_pow_two_eq_one q) x
-
-private lemma inv_aut_ne_one_three : (MulEquiv.inv (CyclicGroup 3)) ≠ 1 := by decide
-private lemma inv_aut_ne_one_five  : (MulEquiv.inv (CyclicGroup 5)) ≠ 1 := by decide
-private lemma inv_aut_ne_one_seven : (MulEquiv.inv (CyclicGroup 7)) ≠ 1 := by decide
-
-private lemma orderOf_inv_aut_three : orderOf (MulEquiv.inv (CyclicGroup 3)) = 2 :=
-  orderOf_eq_prime (inv_aut_pow_two_eq_one 3) inv_aut_ne_one_three
-private lemma orderOf_inv_aut_five : orderOf (MulEquiv.inv (CyclicGroup 5)) = 2 :=
-  orderOf_eq_prime (inv_aut_pow_two_eq_one 5) inv_aut_ne_one_five
-private lemma orderOf_inv_aut_seven : orderOf (MulEquiv.inv (CyclicGroup 7)) = 2 :=
-  orderOf_eq_prime (inv_aut_pow_two_eq_one 7) inv_aut_ne_one_seven
-
-/-- `(c4OnCqInv q).range ≤ Subgroup.zpowers (MulEquiv.inv (CyclicGroup q))`. -/
-private lemma c4OnCqInv_range_le_zpowers_inv (q : ℕ) [NeZero q] :
-    (c4OnCqInv q).range ≤ Subgroup.zpowers (MulEquiv.inv (CyclicGroup q)) := by
-  rintro y ⟨x, rfl⟩
-  exact ⟨((Multiplicative.toAdd x).val : ℤ), (c4OnCqInv_apply q x).symm⟩
-
-private lemma c4OnCqInv_inv_mem_range (q : ℕ) [NeZero q] :
-    MulEquiv.inv (CyclicGroup q) ∈ (c4OnCqInv q).range := by
-  haveI : Fact (1 < 4) := ⟨by norm_num⟩
-  refine ⟨Multiplicative.ofAdd (1 : ZMod 4), ?_⟩
-  rw [c4OnCqInv_apply]
-  show (MulEquiv.inv (CyclicGroup q)) ^ ((1 : ZMod 4).val : ℤ) = MulEquiv.inv (CyclicGroup q)
-  rw [ZMod.val_one]; exact zpow_one _
-
-lemma c4OnCqInv_range_card_3 : Nat.card (c4OnCqInv 3).range = 2 := by
-  have hle := c4OnCqInv_range_le_zpowers_inv 3
-  have hmem := c4OnCqInv_inv_mem_range 3
-  have hge := Subgroup.zpowers_le.mpr hmem
-  rw [le_antisymm hle hge, Nat.card_zpowers, orderOf_inv_aut_three]
-
-lemma c4OnCqInv_range_card_5 : Nat.card (c4OnCqInv 5).range = 2 := by
-  have hle := c4OnCqInv_range_le_zpowers_inv 5
-  have hmem := c4OnCqInv_inv_mem_range 5
-  have hge := Subgroup.zpowers_le.mpr hmem
-  rw [le_antisymm hle hge, Nat.card_zpowers, orderOf_inv_aut_five]
-
-lemma c4OnCqInv_range_card_7 : Nat.card (c4OnCqInv 7).range = 2 := by
-  have hle := c4OnCqInv_range_le_zpowers_inv 7
-  have hmem := c4OnCqInv_inv_mem_range 7
-  have hge := Subgroup.zpowers_le.mpr hmem
-  rw [le_antisymm hle hge, Nat.card_zpowers, orderOf_inv_aut_seven]
-
--- c2OnCqInv: image of generator is inversion.
-private lemma c2OnCqInv_range_le_zpowers_inv (q : ℕ) [NeZero q] :
-    (c2OnCqInv q).range ≤ Subgroup.zpowers (MulEquiv.inv (CyclicGroup q)) := by
-  rintro y ⟨x, rfl⟩
-  exact ⟨((Multiplicative.toAdd x).val : ℤ), (c2OnCqInv_apply q x).symm⟩
-
-private lemma c2OnCqInv_inv_mem_range (q : ℕ) [NeZero q] :
-    MulEquiv.inv (CyclicGroup q) ∈ (c2OnCqInv q).range := by
-  haveI : Fact (1 < 2) := ⟨by norm_num⟩
-  refine ⟨Multiplicative.ofAdd (1 : ZMod 2), ?_⟩
-  rw [c2OnCqInv_apply]
-  show (MulEquiv.inv (CyclicGroup q)) ^ ((1 : ZMod 2).val : ℤ) = MulEquiv.inv (CyclicGroup q)
-  rw [ZMod.val_one]; exact zpow_one _
-
-private lemma c2c2OnCqInv_range_eq_c2OnCqInv_range (q : ℕ) [NeZero q] :
-    (c2c2OnCqInv q).range = (c2OnCqInv q).range := by
-  ext y
-  simp only [c2c2OnCqInv, MonoidHom.mem_range, MonoidHom.comp_apply, MonoidHom.coe_fst]
-  exact ⟨fun ⟨⟨a, _⟩, h⟩ => ⟨a, h⟩, fun ⟨a, ha⟩ => ⟨(a, 1), ha⟩⟩
-
-lemma c2c2OnCqInv_range_card_3 : Nat.card (c2c2OnCqInv 3).range = 2 := by
-  rw [c2c2OnCqInv_range_eq_c2OnCqInv_range]
-  have hle := c2OnCqInv_range_le_zpowers_inv 3
-  have hmem := c2OnCqInv_inv_mem_range 3
-  have hge := Subgroup.zpowers_le.mpr hmem
-  rw [le_antisymm hle hge, Nat.card_zpowers, orderOf_inv_aut_three]
-
-lemma c2c2OnCqInv_range_card_5 : Nat.card (c2c2OnCqInv 5).range = 2 := by
-  rw [c2c2OnCqInv_range_eq_c2OnCqInv_range]
-  have hle := c2OnCqInv_range_le_zpowers_inv 5
-  have hmem := c2OnCqInv_inv_mem_range 5
-  have hge := Subgroup.zpowers_le.mpr hmem
-  rw [le_antisymm hle hge, Nat.card_zpowers, orderOf_inv_aut_five]
-
-lemma c2c2OnCqInv_range_card_7 : Nat.card (c2c2OnCqInv 7).range = 2 := by
-  rw [c2c2OnCqInv_range_eq_c2OnCqInv_range]
-  have hle := c2OnCqInv_range_le_zpowers_inv 7
-  have hmem := c2OnCqInv_inv_mem_range 7
-  have hge := Subgroup.zpowers_le.mpr hmem
-  rw [le_antisymm hle hge, Nat.card_zpowers, orderOf_inv_aut_seven]
-
--- c3OnC2C2 range cardinality
-private lemma c2c2OrderThreeAutComp_pow_three_eq_one :
-    c2c2OrderThreeAutComp ^ 3 = 1 := by decide
-
-private lemma c2c2OrderThreeAutComp_ne_one : c2c2OrderThreeAutComp ≠ 1 := by decide
-
-private lemma orderOf_c2c2OrderThreeAutComp : orderOf c2c2OrderThreeAutComp = 3 :=
-  orderOf_eq_prime c2c2OrderThreeAutComp_pow_three_eq_one c2c2OrderThreeAutComp_ne_one
-
-/-- For `c3OnC2C2`, applied at `x`, the value is `c2c2OrderThreeAutComp^(toAdd x).val`. -/
-private lemma c3OnC2C2_apply (x : CyclicGroup 3) :
-    c3OnC2C2 x = c2c2OrderThreeAutComp ^ ((Multiplicative.toAdd x).val : ℤ) :=
-  cyclicHom_apply_eq_zpow 3 c2c2OrderThreeAutComp c2c2OrderThreeAutComp_pow_three_eq_one x
-
-private lemma c3OnC2C2_range_le_zpowers :
-    c3OnC2C2.range ≤ Subgroup.zpowers c2c2OrderThreeAutComp := by
-  rintro y ⟨x, rfl⟩
-  exact ⟨((Multiplicative.toAdd x).val : ℤ), (c3OnC2C2_apply x).symm⟩
-
-private lemma c2c2OrderThreeAutComp_mem_c3OnC2C2_range :
-    c2c2OrderThreeAutComp ∈ c3OnC2C2.range := by
-  haveI : Fact (1 < 3) := ⟨by norm_num⟩
-  refine ⟨Multiplicative.ofAdd (1 : ZMod 3), ?_⟩
-  rw [c3OnC2C2_apply]
-  show c2c2OrderThreeAutComp ^ ((1 : ZMod 3).val : ℤ) = c2c2OrderThreeAutComp
-  rw [ZMod.val_one]; exact zpow_one _
-
-private lemma c3OnC2C2_range_card : Nat.card c3OnC2C2.range = 3 := by
-  have hle := c3OnC2C2_range_le_zpowers
-  have hmem := c2c2OrderThreeAutComp_mem_c3OnC2C2_range
-  have hge := Subgroup.zpowers_le.mpr hmem
-  rw [le_antisymm hle hge, Nat.card_zpowers, orderOf_c2c2OrderThreeAutComp]
-
--- c4OnC5Pow2 range cardinality: range is generated by `pow2AutC5`, which has order 4.
-
-private lemma pow2AutC5_pow_four_eq_one : pow2AutC5 ^ 4 = 1 := by
-  ext x; change (((x^2)^2)^2)^2 = x; revert x; decide
-
-private lemma pow2AutC5_pow_two_ne_one : pow2AutC5 ^ 2 ≠ 1 := by
-  intro h
-  have := MulEquiv.ext_iff.mp h (Multiplicative.ofAdd (1 : ZMod 5))
-  revert this; decide
-
-private lemma pow2AutC5_ne_one : pow2AutC5 ≠ 1 := by
-  intro h
-  have := MulEquiv.ext_iff.mp h (Multiplicative.ofAdd (1 : ZMod 5))
-  revert this; decide
-
-private lemma orderOf_pow2AutC5 : orderOf pow2AutC5 = 4 := by
-  have hdvd : orderOf pow2AutC5 ∣ 4 := orderOf_dvd_of_pow_eq_one pow2AutC5_pow_four_eq_one
-  have hle : orderOf pow2AutC5 ≤ 4 := Nat.le_of_dvd (by norm_num) hdvd
-  have hne1 : orderOf pow2AutC5 ≠ 1 :=
-    fun h => pow2AutC5_ne_one (orderOf_eq_one_iff.mp h)
-  have hne2 : orderOf pow2AutC5 ≠ 2 :=
-    fun h => pow2AutC5_pow_two_ne_one (orderOf_dvd_iff_pow_eq_one.mp (h ▸ dvd_refl _))
-  have hpos : 0 < orderOf pow2AutC5 := orderOf_pos _
-  interval_cases (orderOf pow2AutC5) <;>
-    first | rfl | (exfalso; omega) | (exfalso; revert hdvd; decide)
-
-/-- For `c4OnC5Pow2`, applied at `x`, the value is `pow2AutC5^(toAdd x).val`. -/
-private lemma c4OnC5Pow2_apply (x : CyclicGroup 4) :
-    c4OnC5Pow2 x = pow2AutC5 ^ ((Multiplicative.toAdd x).val : ℤ) :=
-  cyclicHom_apply_eq_zpow 4 pow2AutC5 pow2AutC5_pow_four_eq_one x
-
-private lemma c4OnC5Pow2_range_le_zpowers_pow2 :
-    c4OnC5Pow2.range ≤ Subgroup.zpowers pow2AutC5 := by
-  rintro y ⟨x, rfl⟩
-  exact ⟨((Multiplicative.toAdd x).val : ℤ), (c4OnC5Pow2_apply x).symm⟩
-
-private lemma pow2AutC5_mem_c4OnC5Pow2_range : pow2AutC5 ∈ c4OnC5Pow2.range := by
-  haveI : Fact (1 < 4) := ⟨by norm_num⟩
-  refine ⟨Multiplicative.ofAdd (1 : ZMod 4), ?_⟩
-  rw [c4OnC5Pow2_apply]
-  show pow2AutC5 ^ ((1 : ZMod 4).val : ℤ) = pow2AutC5
-  rw [ZMod.val_one]; exact zpow_one _
-
-private lemma c4OnC5Pow2_range_card  : Nat.card c4OnC5Pow2.range = 4 := by
-  have hle := c4OnC5Pow2_range_le_zpowers_pow2
-  have hmem := pow2AutC5_mem_c4OnC5Pow2_range
-  have hge := Subgroup.zpowers_le.mpr hmem
-  rw [le_antisymm hle hge, Nat.card_zpowers, orderOf_pow2AutC5]
-
--- Bridge for retrieve 12 3, retrieve 20 3, retrieve 28 3 (uses c4OnCqInv).
-lemma canonicalC4OnCqAction_iso_c4OnCqInv
-    (q : ℕ) [hq : Fact q.Prime] (hq2 : q ≠ 2)
-    (h_range_card_eq : Nat.card (c4OnCqInv q).range = 2) :
-    Nonempty (SemidirectProduct (CyclicGroup q) (CyclicGroup 4) (canonicalC4OnCqAction hq2)
-      ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4) (c4OnCqInv q)) := by
-  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-  haveI : NeZero q := ⟨hq.out.ne_zero⟩
-  haveI : Finite (CyclicGroup q) :=
-    Nat.finite_of_card_ne_zero (by rw [card_cyclicGroup]; exact hq.out.ne_zero)
-  have h_aut_iso : MulAut (CyclicGroup q) ≃* (ZMod q)ˣ := by
-    have h' := IsCyclic.mulAutMulEquiv (CyclicGroup q)
-    rwa [card_cyclicGroup] at h'
-  haveI : Finite (MulAut (CyclicGroup q)) := Finite.of_equiv _ h_aut_iso.toEquiv.symm
-  haveI hcyc : IsCyclic (MulAut (CyclicGroup q)) :=
-    (MulEquiv.isCyclic h_aut_iso).mpr (ZMod.isCyclic_units_prime hq.out)
-  have h_canon_card : Nat.card (canonicalC4OnCqAction hq2).range = 2 := by
-    have h := sdpCanonicalAction_range_card (N := CyclicGroup q) (K := CyclicGroup 4)
-      (show (2:ℕ) ≠ q by omega) hq2 2 1 Nat.one_pos
-      (by rw [card_cyclicGroup, pow_one]) (by rw [card_cyclicGroup]; norm_num)
-      1 (one_le_min_two_factorization_two hq2)
-    simpa using h
-  exact semidirectProduct_iso_if_range_card_eq (p := 2) (m := 2)
-    ⟨by norm_num⟩
-    (by rw [card_cyclicGroup]; norm_num)
-    (canonicalC4OnCqAction hq2) (c4OnCqInv q) hcyc
-    (h_canon_card.trans h_range_card_eq.symm)
-
--- Bridge for retrieve 20 4 (uses c4OnC5Pow2, range card 4).
-lemma canonicalC4OnCqAction_r2_iso_c4OnC5Pow2
-    (h_1_mod_4 : (5:ℕ) ≡ 1 [MOD 4]) :
-    Nonempty (SemidirectProduct (CyclicGroup 5) (CyclicGroup 4) (canonicalC4OnCqAction_r2 h_1_mod_4)
-      ≃* SemidirectProduct (CyclicGroup 5) (CyclicGroup 4) c4OnC5Pow2) := by
-  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-  haveI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
-  haveI : Finite (CyclicGroup 5) :=
-    Nat.finite_of_card_ne_zero (by rw [card_cyclicGroup]; norm_num)
-  have h_aut_iso : MulAut (CyclicGroup 5) ≃* (ZMod 5)ˣ := by
-    have h' := IsCyclic.mulAutMulEquiv (CyclicGroup 5)
-    rwa [card_cyclicGroup] at h'
-  haveI : Finite (MulAut (CyclicGroup 5)) := Finite.of_equiv _ h_aut_iso.toEquiv.symm
-  haveI hcyc : IsCyclic (MulAut (CyclicGroup 5)) :=
-    (MulEquiv.isCyclic h_aut_iso).mpr (ZMod.isCyclic_units_prime (by norm_num : Nat.Prime 5))
-  have h_canon_card : Nat.card (canonicalC4OnCqAction_r2 h_1_mod_4).range = 4 := by
-    have h := sdpCanonicalAction_range_card (N := CyclicGroup 5) (K := CyclicGroup 4)
-      (show (2:ℕ) ≠ 5 by norm_num) (by norm_num) 2 1 Nat.one_pos
-      (by rw [card_cyclicGroup, pow_one]) (by rw [card_cyclicGroup]; norm_num)
-      2 (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4)
-    simpa using h
-  exact semidirectProduct_iso_if_range_card_eq (p := 2) (m := 2)
-    ⟨by norm_num⟩
-    (by rw [card_cyclicGroup]; norm_num)
-    (canonicalC4OnCqAction_r2 h_1_mod_4) c4OnC5Pow2 hcyc
-    (h_canon_card.trans c4OnC5Pow2_range_card.symm)
-
--- Bridge for retrieve 12 4, retrieve 20 5, retrieve 28 4 (uses c2c2OnCqInv).
-lemma canonicalC2C2OnCqAction_iso_c2c2OnCqInv
-    (q : ℕ) [hq : Fact q.Prime] (hq2 : q ≠ 2)
-    (h_pdvd : (2:ℕ) ∣ q - 1)
-    (h_range_card_eq : Nat.card (c2c2OnCqInv q).range = 2) :
-    Nonempty (SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2)
-        (canonicalC2C2OnCqAction hq2)
-      ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2) (c2c2OnCqInv q)) := by
-  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-  have h_canon_card : Nat.card (canonicalC2C2OnCqAction hq2).range = 2 := by
-    -- canonicalC2C2OnCqAction = (sdpCanonicalAction ...) .comp MonoidHom.fst, and the .comp doesn't
-    -- change the range (the .fst is surjective on the C_2 factor).
-    change Nat.card ((sdpCanonicalAction (p := 2) (q := q) _ _ 1 1 _ _ _ 1 _).comp
-        (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))).range = 2
-    have h_comp_range : ∀ (f : CyclicGroup 2 →* MulAut (CyclicGroup q)),
-        (f.comp (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))).range = f.range :=
-      fun f => by
-        ext y; simp only [MonoidHom.mem_range, MonoidHom.comp_apply, MonoidHom.coe_fst]
-        exact ⟨fun ⟨⟨a, _⟩, h⟩ => ⟨a, h⟩, fun ⟨a, ha⟩ => ⟨(a, 1), ha⟩⟩
-    rw [h_comp_range]
-    have h := sdpCanonicalAction_range_card (N := CyclicGroup q) (K := CyclicGroup 2)
-      (show (2:ℕ) ≠ q by omega) hq2 1 1 Nat.one_pos
-      (by rw [card_cyclicGroup, pow_one]) (by rw [card_cyclicGroup, pow_one])
-      1 (by have := one_le_min_two_factorization_two hq2; omega)
-    simpa using h
-  have h_canon_ne : canonicalC2C2OnCqAction hq2 ≠ 1 := by
-    intro hc; simp [hc] at h_canon_card
-  have h_surr_ne : c2c2OnCqInv q ≠ 1 := by
-    intro hc; rw [hc] at h_range_card_eq
-    have : (1 : CyclicGroup 2 × CyclicGroup 2 →* MulAut (CyclicGroup q)).range = ⊥ := by
-      ext x; simp [Subgroup.mem_bot]
-    rw [this, Subgroup.card_bot] at h_range_card_eq
-    norm_num at h_range_card_eq
-  exact semidirectProduct_CpCp_iso (p := 2) (q := q) h_pdvd
-    (canonicalC2C2OnCqAction hq2) (c2c2OnCqInv q) h_canon_ne h_surr_ne
-    h_canon_card h_range_card_eq
-
--- Bridge for retrieve 12 5 (uses c3OnC2C2).
-lemma canonicalC3OnC2C2Action_iso_c3OnC2C2 :
-    Nonempty (SemidirectProduct (CyclicGroup 2 × CyclicGroup 2) (CyclicGroup 3)
-        canonicalC3OnC2C2Action
-      ≃* SemidirectProduct (CyclicGroup 2 × CyclicGroup 2) (CyclicGroup 3) c3OnC2C2) :=
-  semidirectProduct_C3_on_C2C2_iso canonicalC3OnC2C2Action c3OnC2C2
-    canonicalC3OnC2C2Action_range_card c3OnC2C2_range_card

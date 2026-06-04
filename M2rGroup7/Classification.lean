@@ -829,19 +829,10 @@ theorem order12_classification {G : Type*} [Group G] (h : Nat.card G = 12) :
     h1 | h2 | h3 | ⟨h1mod4, _⟩ | h5 | ⟨_, h6⟩
   · exact Or.inl h1
   · exact Or.inr (Or.inl h2)
-  · obtain ⟨e3⟩ := h3
-    obtain ⟨bridge⟩ :=
-      canonicalC4OnCqAction_iso_c4OnCqInv 3 (by norm_num) c4OnCqInv_range_card_3
-    exact Or.inr (Or.inr (Or.inl ⟨e3.trans bridge⟩))
+  · exact Or.inr (Or.inr (Or.inl h3))
   · exact absurd h1mod4 (by decide)
-  · obtain ⟨e5⟩ := h5
-    obtain ⟨bridge⟩ :=
-      canonicalC2C2OnCqAction_iso_c2c2OnCqInv 3 (by norm_num) (by norm_num)
-        c2c2OnCqInv_range_card_3
-    exact Or.inr (Or.inr (Or.inr (Or.inl ⟨e5.trans bridge⟩)))
-  · obtain ⟨e6⟩ := h6
-    obtain ⟨bridge⟩ := canonicalC3OnC2C2Action_iso_c3OnC2C2
-    exact Or.inr (Or.inr (Or.inr (Or.inr ⟨e6.trans bridge⟩)))
+  · exact Or.inr (Or.inr (Or.inr (Or.inl h5)))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr h6)))
 
 theorem order20_classification {G : Type*} [Group G] (h : Nat.card G = 20) :
     Nonempty (G ≃* retrieve 20 1) ∨
@@ -852,21 +843,12 @@ theorem order20_classification {G : Type*} [Group G] (h : Nat.card G = 20) :
   haveI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
   rcases classification_4q (q := 5) (h_ge_3 := by norm_num)
       (h := h.trans (by norm_num)) with
-    h1 | h2 | h3 | ⟨h1mod4, h4⟩ | h5 | ⟨h5eq3, _⟩
+    h1 | h2 | h3 | ⟨_, h4⟩ | h5 | ⟨h5eq3, _⟩
   · exact Or.inl h1
   · exact Or.inr (Or.inl h2)
-  · obtain ⟨e3⟩ := h3
-    obtain ⟨bridge⟩ :=
-      canonicalC4OnCqAction_iso_c4OnCqInv 5 (by norm_num) c4OnCqInv_range_card_5
-    exact Or.inr (Or.inr (Or.inl ⟨e3.trans bridge⟩))
-  · obtain ⟨e4⟩ := h4
-    obtain ⟨bridge⟩ := canonicalC4OnCqAction_r2_iso_c4OnC5Pow2 h1mod4
-    exact Or.inr (Or.inr (Or.inr (Or.inl ⟨e4.trans bridge⟩)))
-  · obtain ⟨e5⟩ := h5
-    obtain ⟨bridge⟩ :=
-      canonicalC2C2OnCqAction_iso_c2c2OnCqInv 5 (by norm_num) (by norm_num)
-        c2c2OnCqInv_range_card_5
-    exact Or.inr (Or.inr (Or.inr (Or.inr ⟨e5.trans bridge⟩)))
+  · exact Or.inr (Or.inr (Or.inl h3))
+  · exact Or.inr (Or.inr (Or.inr (Or.inl h4)))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr h5)))
   · exact absurd h5eq3 (by decide)
 
 theorem order28_classification {G : Type*} [Group G] (h : Nat.card G = 28) :
@@ -880,16 +862,9 @@ theorem order28_classification {G : Type*} [Group G] (h : Nat.card G = 28) :
     h1 | h2 | h3 | ⟨h1mod4, _⟩ | h5 | ⟨h7eq3, _⟩
   · exact Or.inl h1
   · exact Or.inr (Or.inl h2)
-  · obtain ⟨e3⟩ := h3
-    obtain ⟨bridge⟩ :=
-      canonicalC4OnCqAction_iso_c4OnCqInv 7 (by norm_num) c4OnCqInv_range_card_7
-    exact Or.inr (Or.inr (Or.inl ⟨e3.trans bridge⟩))
+  · exact Or.inr (Or.inr (Or.inl h3))
   · exact absurd h1mod4 (by decide)
-  · obtain ⟨e5⟩ := h5
-    obtain ⟨bridge⟩ :=
-      canonicalC2C2OnCqAction_iso_c2c2OnCqInv 7 (by norm_num) (by norm_num)
-        c2c2OnCqInv_range_card_7
-    exact Or.inr (Or.inr (Or.inr ⟨e5.trans bridge⟩))
+  · exact Or.inr (Or.inr (Or.inr h5))
   · exact absurd h7eq3 (by decide)
 
 /-- A group of order at most `maximumOrder` is isomorphic to some group obtained by `retrieve`. -/

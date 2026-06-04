@@ -9,42 +9,50 @@ import «M2rGroup7».P2qClassification.CycPGroupClassification
 
 /-! ## Canonical actions for `4q` groups
 
-All three canonical actions are defined directly via `sdpCanonicalAction`, eliminating
-the old bridge infrastructure (`_cyclicGroup_pow_one_equiv`, `_canonicalC4OnCqAction`,
-`_canonicalAction_r_iso_*`). -/
-
-private noncomputable def _hK4 : Nat.card (CyclicGroup 4) = 2 ^ 2 := by
-  rw [card_cyclicGroup]; norm_num
+The 4q canonical wrappers are computable: they transport `canonicalAction` (which
+uses `Finset.find?`-style search) across `(2:ℕ)^2 = 4`, `(2:ℕ)^1 = 2`, `q^1 = q`. -/
 
 /-- Canonical nontrivial action `C_4 →* Aut(C_q)`, image of order 2. -/
-noncomputable def canonicalC4OnCqAction
+def canonicalC4OnCqAction
     {q : ℕ} [hq : Fact q.Prime] (h_q_ne_2 : q ≠ 2) :
     CyclicGroup 4 →* MulAut (CyclicGroup q) :=
   haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-  sdpCanonicalAction (show (2 : ℕ) ≠ q from by omega) h_q_ne_2 2 1 Nat.one_pos
-    (by rw [card_cyclicGroup, pow_one]) _hK4
-    1 (one_le_min_two_factorization_two h_q_ne_2)
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : NeZero (q^1) := ⟨pow_ne_zero 1 hq.out.ne_zero⟩
+  haveI : NeZero (4 : ℕ) := ⟨by norm_num⟩
+  haveI : NeZero ((2:ℕ)^2) := ⟨pow_ne_zero 2 (by norm_num)⟩
+  transportCpCqHom (show ((2:ℕ)^2 : ℕ) = 4 by norm_num) (pow_one q)
+    (canonicalAction 2 q 1 2 (show (2:ℕ) ≠ q by omega) h_q_ne_2 Nat.one_pos
+       1 (one_le_min_two_factorization_two h_q_ne_2))
 
 /-- Canonical action `C_4 →* Aut(C_q)` of image order 4, for `q ≡ 1 (mod 4)`. -/
-noncomputable def canonicalC4OnCqAction_r2
+def canonicalC4OnCqAction_r2
     {q : ℕ} [hq : Fact q.Prime] (h_1_mod_4 : q ≡ 1 [MOD 4]) :
     CyclicGroup 4 →* MulAut (CyclicGroup q) :=
   haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-  sdpCanonicalAction
-    (show (2 : ℕ) ≠ q from by simp [Nat.ModEq] at h_1_mod_4; omega)
-    (show q ≠ 2 from by simp [Nat.ModEq] at h_1_mod_4; omega)
-    2 1 Nat.one_pos
-    (by rw [card_cyclicGroup, pow_one]) _hK4
-    2 (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4)
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : NeZero (q^1) := ⟨pow_ne_zero 1 hq.out.ne_zero⟩
+  haveI : NeZero (4 : ℕ) := ⟨by norm_num⟩
+  haveI : NeZero ((2:ℕ)^2) := ⟨pow_ne_zero 2 (by norm_num)⟩
+  transportCpCqHom (show ((2:ℕ)^2 : ℕ) = 4 by norm_num) (pow_one q)
+    (canonicalAction 2 q 1 2
+       (show (2 : ℕ) ≠ q from by simp [Nat.ModEq] at h_1_mod_4; omega)
+       (show q ≠ 2 from by simp [Nat.ModEq] at h_1_mod_4; omega)
+       Nat.one_pos
+       2 (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4))
 
 /-- Canonical nontrivial action `C_2 × C_2 →* Aut(C_q)`, image of order 2. -/
-noncomputable def canonicalC2C2OnCqAction
+def canonicalC2C2OnCqAction
     {q : ℕ} [hq : Fact q.Prime] (h_q_ne_2 : q ≠ 2) :
     CyclicGroup 2 × CyclicGroup 2 →* MulAut (CyclicGroup q) :=
   haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-  (sdpCanonicalAction (show (2 : ℕ) ≠ q from by omega) h_q_ne_2 1 1 Nat.one_pos
-      (by rw [card_cyclicGroup, pow_one]) (by rw [card_cyclicGroup, pow_one])
-      1 (by have := one_le_min_two_factorization_two h_q_ne_2; omega)).comp
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : NeZero (q^1) := ⟨pow_ne_zero 1 hq.out.ne_zero⟩
+  haveI : NeZero (2 : ℕ) := ⟨by norm_num⟩
+  haveI : NeZero ((2:ℕ)^1) := ⟨pow_ne_zero 1 (by norm_num)⟩
+  (transportCpCqHom (pow_one 2) (pow_one q)
+    (canonicalAction 2 q 1 1 (show (2:ℕ) ≠ q by omega) h_q_ne_2 Nat.one_pos
+       1 (by have := one_le_min_two_factorization_two h_q_ne_2; omega))).comp
     (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))
 
 /-! ## Helpers for the `q = 3` case (the `A_4` disjunct). -/
@@ -55,7 +63,7 @@ private lemma sq_eq_one_cyclicGroup2 (x : CyclicGroup 2) : x * x = 1 := by
   have h := pow_card_eq_one' (G := CyclicGroup 2) (x := x)
   rwa [card_cyclicGroup, sq] at h
 
-noncomputable def c2c2OrderThreeAut :
+def c2c2OrderThreeAut :
     MulAut (CyclicGroup 2 × CyclicGroup 2) where
   toFun p := (p.1 * p.2, p.1)
   invFun p := (p.2, p.1 * p.2)
@@ -107,28 +115,19 @@ lemma orderOf_c2c2OrderThreeAut : orderOf c2c2OrderThreeAut = 3 := by
     rw [hcompute, mul_one] at happ
     exact hg_ne (Prod.mk.injEq _ _ _ _ |>.mp happ).2
 
-noncomputable def canonicalC3OnC2C2Action :
+def canonicalC3OnC2C2Action :
     CyclicGroup 3 →* MulAut (CyclicGroup 2 × CyclicGroup 2) :=
-  (MonoidHom.exists_of_generator_and_image
-    (IsCyclic.exists_generator (α := CyclicGroup 3)).choose_spec
-    (by rw [orderOf_c2c2OrderThreeAut, card_cyclicGroup])).choose
-
-lemma canonicalC3OnC2C2Action_generator :
-    canonicalC3OnC2C2Action (IsCyclic.exists_generator (α := CyclicGroup 3)).choose
-      = c2c2OrderThreeAut :=
-  (MonoidHom.exists_of_generator_and_image
-    (IsCyclic.exists_generator (α := CyclicGroup 3)).choose_spec
-    (by rw [orderOf_c2c2OrderThreeAut, card_cyclicGroup])).choose_spec
+  cyclicHom 3 c2c2OrderThreeAut (by
+    have h : c2c2OrderThreeAut ^ 3 = 1 := by
+      rw [← orderOf_c2c2OrderThreeAut]; exact pow_orderOf_eq_one _
+    exact h)
 
 lemma canonicalC3OnC2C2Action_range_card :
     Nat.card canonicalC3OnC2C2Action.range = 3 := by
-  have hg : ∀ x : CyclicGroup 3,
-      x ∈ Subgroup.zpowers (IsCyclic.exists_generator (α := CyclicGroup 3)).choose :=
-    (IsCyclic.exists_generator (α := CyclicGroup 3)).choose_spec
-  have hrange : canonicalC3OnC2C2Action.range = Subgroup.zpowers c2c2OrderThreeAut := by
-    rw [MonoidHom.range_eq_map, ← (Subgroup.eq_top_iff' _).mpr hg,
-        MonoidHom.map_zpowers, canonicalC3OnC2C2Action_generator]
-  rw [hrange, Nat.card_zpowers, orderOf_c2c2OrderThreeAut]
+  have h_pow : c2c2OrderThreeAut ^ 3 = 1 := by
+    rw [← orderOf_c2c2OrderThreeAut]; exact pow_orderOf_eq_one _
+  show Nat.card (cyclicHom 3 c2c2OrderThreeAut h_pow).range = 3
+  rw [cyclicHom_range, Nat.card_zpowers, orderOf_c2c2OrderThreeAut]
 
 theorem semidirectProduct_C3_on_C2C2_iso
     (f_1 f_2 : CyclicGroup 3 →* MulAut (CyclicGroup 2 × CyclicGroup 2))
@@ -179,6 +178,172 @@ theorem semidirectProduct_C3_on_C2C2_iso
     rw [← h_S1, ← h_S2]; exact h_coe
   exact semidirectProduct_iso_if_range_eq instFactPrimeThree
     (by rw [card_cyclicGroup, pow_one]) f_1 f_2 h_range_eq
+
+-- ─── Range cards of the new computable wrappers ──────────────────────────
+
+private lemma _hK4 : Nat.card (CyclicGroup 4) = 2 ^ 2 := by
+  rw [card_cyclicGroup]; norm_num
+
+lemma canonicalC4OnCqAction_range_card
+    {q : ℕ} [hq : Fact q.Prime] (h_q_ne_2 : q ≠ 2) :
+    Nat.card (canonicalC4OnCqAction h_q_ne_2).range = 2 := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : NeZero (q^1) := ⟨pow_ne_zero 1 hq.out.ne_zero⟩
+  haveI : NeZero (4 : ℕ) := ⟨by norm_num⟩
+  haveI : NeZero ((2:ℕ)^2) := ⟨pow_ne_zero 2 (by norm_num)⟩
+  show Nat.card (transportCpCqHom (show ((2:ℕ)^2 : ℕ) = 4 by norm_num) (pow_one q)
+    (canonicalAction 2 q 1 2 (show (2:ℕ) ≠ q by omega) h_q_ne_2 Nat.one_pos
+       1 (one_le_min_two_factorization_two h_q_ne_2))).range = 2
+  rw [transportCpCqHom_range_card]
+  have h := canonicalAction_range_card 2 q 1 2 1 (show (2:ℕ) ≠ q by omega) h_q_ne_2 Nat.one_pos
+    (one_le_min_two_factorization_two h_q_ne_2)
+  simpa using h
+
+lemma canonicalC4OnCqAction_r2_range_card
+    {q : ℕ} [hq : Fact q.Prime] (h_1_mod_4 : q ≡ 1 [MOD 4]) :
+    Nat.card (canonicalC4OnCqAction_r2 h_1_mod_4).range = 4 := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : NeZero (q^1) := ⟨pow_ne_zero 1 hq.out.ne_zero⟩
+  haveI : NeZero (4 : ℕ) := ⟨by norm_num⟩
+  haveI : NeZero ((2:ℕ)^2) := ⟨pow_ne_zero 2 (by norm_num)⟩
+  show Nat.card (transportCpCqHom (show ((2:ℕ)^2 : ℕ) = 4 by norm_num) (pow_one q)
+    (canonicalAction 2 q 1 2
+       (show (2 : ℕ) ≠ q from by simp [Nat.ModEq] at h_1_mod_4; omega)
+       (show q ≠ 2 from by simp [Nat.ModEq] at h_1_mod_4; omega)
+       Nat.one_pos
+       2 (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4))).range = 4
+  rw [transportCpCqHom_range_card]
+  have h := canonicalAction_range_card 2 q 1 2 2
+    (show (2 : ℕ) ≠ q from by simp [Nat.ModEq] at h_1_mod_4; omega)
+    (show q ≠ 2 from by simp [Nat.ModEq] at h_1_mod_4; omega)
+    Nat.one_pos
+    (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4)
+  simpa using h
+
+lemma canonicalC2C2OnCqAction_range_card
+    {q : ℕ} [hq : Fact q.Prime] (h_q_ne_2 : q ≠ 2) :
+    Nat.card (canonicalC2C2OnCqAction h_q_ne_2).range = 2 := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : NeZero (q^1) := ⟨pow_ne_zero 1 hq.out.ne_zero⟩
+  haveI : NeZero (2 : ℕ) := ⟨by norm_num⟩
+  haveI : NeZero ((2:ℕ)^1) := ⟨pow_ne_zero 1 (by norm_num)⟩
+  -- canonicalC2C2OnCqAction = (transportCpCqHom ... (canonicalAction 2 q 1 1 ... 1 _)).comp fst
+  -- The composition with `fst` does not change the range.
+  have h_comp_range : ∀ (f : CyclicGroup 2 →* MulAut (CyclicGroup q)),
+      (f.comp (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))).range = f.range :=
+    fun f => by
+      ext y; simp only [MonoidHom.mem_range, MonoidHom.comp_apply, MonoidHom.coe_fst]
+      exact ⟨fun ⟨⟨a, _⟩, h⟩ => ⟨a, h⟩, fun ⟨a, ha⟩ => ⟨(a, 1), ha⟩⟩
+  show Nat.card ((transportCpCqHom (pow_one 2) (pow_one q)
+      (canonicalAction 2 q 1 1 (show (2:ℕ) ≠ q by omega) h_q_ne_2 Nat.one_pos
+         1 (by have := one_le_min_two_factorization_two h_q_ne_2; omega))).comp
+    (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))).range = 2
+  rw [h_comp_range, transportCpCqHom_range_card]
+  have h := canonicalAction_range_card 2 q 1 1 1 (show (2:ℕ) ≠ q by omega) h_q_ne_2 Nat.one_pos
+    (by have := one_le_min_two_factorization_two h_q_ne_2; omega)
+  simpa using h
+
+-- ─── Bridge lemmas: SDP via `sdpCanonicalAction` ≃* SDP via computable wrappers ──
+
+/-- Bridge: the SDP built by `classify_sdp` (using `sdpCanonicalAction ... 2 1 ... 1 _`)
+    is isomorphic to the SDP built using the new computable `canonicalC4OnCqAction`. -/
+lemma sdpCanonicalAction_iso_canonicalC4OnCqAction
+    {q : ℕ} [hq : Fact q.Prime] (h_q_ne_2 : q ≠ 2) :
+    Nonempty (SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
+        (sdpCanonicalAction (N := CyclicGroup q) (K := CyclicGroup 4)
+          (p := 2) (q := q) (show (2:ℕ) ≠ q by omega) h_q_ne_2 2 1 Nat.one_pos
+          (by rw [card_cyclicGroup, pow_one]) _hK4
+          1 (one_le_min_two_factorization_two h_q_ne_2))
+      ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
+            (canonicalC4OnCqAction h_q_ne_2)) := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : Finite (CyclicGroup q) :=
+    Nat.finite_of_card_ne_zero (by rw [card_cyclicGroup]; exact hq.out.ne_zero)
+  have h_aut_iso : MulAut (CyclicGroup q) ≃* (ZMod q)ˣ := by
+    have h' := IsCyclic.mulAutMulEquiv (CyclicGroup q)
+    rwa [card_cyclicGroup] at h'
+  haveI : Finite (MulAut (CyclicGroup q)) := Finite.of_equiv _ h_aut_iso.toEquiv.symm
+  haveI hcyc : IsCyclic (MulAut (CyclicGroup q)) :=
+    (MulEquiv.isCyclic h_aut_iso).mpr (ZMod.isCyclic_units_prime hq.out)
+  have h_sdp_card : Nat.card (sdpCanonicalAction (N := CyclicGroup q) (K := CyclicGroup 4)
+        (p := 2) (q := q) (show (2:ℕ) ≠ q by omega) h_q_ne_2 2 1 Nat.one_pos
+        (by rw [card_cyclicGroup, pow_one]) _hK4
+        1 (one_le_min_two_factorization_two h_q_ne_2)).range = 2 := by
+    have h := sdpCanonicalAction_range_card (N := CyclicGroup q) (K := CyclicGroup 4)
+      (show (2:ℕ) ≠ q by omega) h_q_ne_2 2 1 Nat.one_pos
+      (by rw [card_cyclicGroup, pow_one]) _hK4
+      1 (one_le_min_two_factorization_two h_q_ne_2)
+    simpa using h
+  have h_canon_card := canonicalC4OnCqAction_range_card h_q_ne_2
+  exact semidirectProduct_iso_if_range_card_eq (p := 2) (m := 2)
+    ⟨by norm_num⟩
+    (by rw [card_cyclicGroup]; norm_num)
+    _ (canonicalC4OnCqAction h_q_ne_2) hcyc
+    (h_sdp_card.trans h_canon_card.symm)
+
+/-- Bridge for the `r = 2` case. -/
+lemma sdpCanonicalAction_iso_canonicalC4OnCqAction_r2
+    {q : ℕ} [hq : Fact q.Prime] (h_1_mod_4 : q ≡ 1 [MOD 4]) :
+    Nonempty (SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
+        (sdpCanonicalAction (N := CyclicGroup q) (K := CyclicGroup 4)
+          (p := 2) (q := q)
+          (show (2 : ℕ) ≠ q from by simp [Nat.ModEq] at h_1_mod_4; omega)
+          (show q ≠ 2 from by simp [Nat.ModEq] at h_1_mod_4; omega)
+          2 1 Nat.one_pos
+          (by rw [card_cyclicGroup, pow_one]) _hK4
+          2 (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4))
+      ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
+            (canonicalC4OnCqAction_r2 h_1_mod_4)) := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : Finite (CyclicGroup q) :=
+    Nat.finite_of_card_ne_zero (by rw [card_cyclicGroup]; exact hq.out.ne_zero)
+  have h_aut_iso : MulAut (CyclicGroup q) ≃* (ZMod q)ˣ := by
+    have h' := IsCyclic.mulAutMulEquiv (CyclicGroup q)
+    rwa [card_cyclicGroup] at h'
+  haveI : Finite (MulAut (CyclicGroup q)) := Finite.of_equiv _ h_aut_iso.toEquiv.symm
+  haveI hcyc : IsCyclic (MulAut (CyclicGroup q)) :=
+    (MulEquiv.isCyclic h_aut_iso).mpr (ZMod.isCyclic_units_prime hq.out)
+  have h_sdp_card : Nat.card (sdpCanonicalAction (N := CyclicGroup q) (K := CyclicGroup 4)
+        (p := 2) (q := q)
+        (show (2 : ℕ) ≠ q from by simp [Nat.ModEq] at h_1_mod_4; omega)
+        (show q ≠ 2 from by simp [Nat.ModEq] at h_1_mod_4; omega)
+        2 1 Nat.one_pos
+        (by rw [card_cyclicGroup, pow_one]) _hK4
+        2 (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4)).range = 4 := by
+    have h := sdpCanonicalAction_range_card (N := CyclicGroup q) (K := CyclicGroup 4)
+      (show (2 : ℕ) ≠ q from by simp [Nat.ModEq] at h_1_mod_4; omega)
+      (show q ≠ 2 from by simp [Nat.ModEq] at h_1_mod_4; omega)
+      2 1 Nat.one_pos
+      (by rw [card_cyclicGroup, pow_one]) _hK4
+      2 (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4)
+    simpa using h
+  have h_canon_card := canonicalC4OnCqAction_r2_range_card h_1_mod_4
+  exact semidirectProduct_iso_if_range_card_eq (p := 2) (m := 2)
+    ⟨by norm_num⟩
+    (by rw [card_cyclicGroup]; norm_num)
+    _ (canonicalC4OnCqAction_r2 h_1_mod_4) hcyc
+    (h_sdp_card.trans h_canon_card.symm)
+
+/-- Bridge for the `C_2 × C_2` case (uses `semidirectProduct_CpCp_iso`). -/
+lemma sdpCanonicalAction_iso_canonicalC2C2OnCqAction
+    {q : ℕ} [hq : Fact q.Prime] (h_q_ne_2 : q ≠ 2)
+    (φ : (CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup q))
+    (hφ_ne : φ ≠ 1) (hφ_range : Nat.card φ.range = 2) :
+    Nonempty (SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2) φ
+      ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2)
+            (canonicalC2C2OnCqAction h_q_ne_2)) := by
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  have h_canon_card := canonicalC2C2OnCqAction_range_card h_q_ne_2
+  have h_canon_ne : canonicalC2C2OnCqAction h_q_ne_2 ≠ 1 := by
+    intro hc; simp [hc] at h_canon_card
+  exact semidirectProduct_CpCp_iso (p := 2) (q := q)
+    (two_dvd_prime_sub_one h_q_ne_2) φ (canonicalC2C2OnCqAction h_q_ne_2)
+    hφ_ne h_canon_ne hφ_range h_canon_card
 
 set_option maxHeartbeats 300000 in
 -- The case split for `4q` exercises several large existentials
@@ -349,13 +514,15 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
           ((SemidirectProduct.mulEquivOfTrivialAction h_triv).trans
             (MulEquiv.prodComm.trans (CyclicGroup.prodMulEquiv (by simpa using h4q))))))
         tauto
-      · -- r = 1: sdpCanonicalAction 1 = canonicalC4OnCqAction by definition
+      · -- r = 1: use the bridge from sdpCanonicalAction 1 to canonicalC4OnCqAction
         obtain ⟨e⟩ := hr_iso
+        obtain ⟨bridge⟩ := sdpCanonicalAction_iso_canonicalC4OnCqAction
+          (q := q) (by omega : q ≠ 2)
         have : G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
                          (canonicalC4OnCqAction (by omega : q ≠ 2)) :=
-          h_iso_g_q_k.symm.trans (h_bridge.trans e)
+          h_iso_g_q_k.symm.trans (h_bridge.trans (e.trans bridge))
         tauto
-      · -- r = 2: forces q ≡ 1 (mod 4); sdpCanonicalAction 2 = canonicalC4OnCqAction_r2
+      · -- r = 2: forces q ≡ 1 (mod 4); use bridge to canonicalC4OnCqAction_r2
         have h_vp_ge_2 : 2 ≤ (q - 1).factorization 2 := by
           have h_min_le_vp : min 2 ((q - 1).factorization 2) ≤ (q - 1).factorization 2 :=
             min_le_right _ _
@@ -367,9 +534,11 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
             simpa [show (2 : ℕ) ^ 2 = 4 by norm_num] using this
           unfold Nat.ModEq; omega
         obtain ⟨e⟩ := hr_iso
+        obtain ⟨bridge⟩ := sdpCanonicalAction_iso_canonicalC4OnCqAction_r2
+          (q := q) h_1_mod_4
         have : G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 4)
                             (canonicalC4OnCqAction_r2 h_1_mod_4) :=
-          h_iso_g_q_k.symm.trans (h_bridge.trans e)
+          h_iso_g_q_k.symm.trans (h_bridge.trans (e.trans bridge))
         tauto
     · -- K ≅ C_2 × C_2
       by_cases h_phi_triv : φ = 1
@@ -391,26 +560,10 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
           have h_pos : 0 < Nat.card φ'.range := Nat.card_pos
           have h_le_2 : Nat.card φ'.range ≤ 2 := Nat.le_of_dvd (by norm_num) h_range_dvd_2
           omega
-        have h_canon_range :
-            Nat.card (canonicalC2C2OnCqAction (q := q) (by omega : q ≠ 2)).range = 2 := by
-          haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-          change Nat.card ((sdpCanonicalAction (p := 2) (q := q) _ _ 1 1 _ _ _ 1 _).comp
-              (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))).range = 2
-          have h_comp_range : ∀ (f : CyclicGroup 2 →* MulAut (CyclicGroup q)),
-              (f.comp (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))).range = f.range :=
-            fun f => by
-              ext y; simp only [MonoidHom.mem_range, MonoidHom.comp_apply, MonoidHom.coe_fst]
-              exact ⟨fun ⟨⟨a, _⟩, h⟩ => ⟨a, h⟩, fun ⟨a, ha⟩ => ⟨(a, 1), ha⟩⟩
-          rw [h_comp_range]
-          exact sdpCanonicalAction_range_card (p := 2) (q := q) _ _ 1 1 _ _ _ 1 _
-        have h_canon_ne : canonicalC2C2OnCqAction (q := q) (by omega : q ≠ 2) ≠ 1 := by
-          intro hc; simp [hc] at h_canon_range
-        obtain ⟨e_canon_to_phi'⟩ :=
-          semidirectProduct_CpCp_iso (p := 2) (q := q)
-            (two_dvd_prime_sub_one (by omega : q ≠ 2))
-            (canonicalC2C2OnCqAction (by omega : q ≠ 2)) φ'
-            h_canon_ne hφ'_ne h_canon_range h_range_card
+        obtain ⟨e_phi'_to_canon⟩ :=
+          sdpCanonicalAction_iso_canonicalC2C2OnCqAction
+            (q := q) (by omega : q ≠ 2) φ' hφ'_ne h_range_card
         have : G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup 2 × CyclicGroup 2)
                          (canonicalC2C2OnCqAction (by omega : q ≠ 2)) :=
-          h_iso_g_q_k.symm.trans (h_sdp_congr.trans e_canon_to_phi'.symm)
+          h_iso_g_q_k.symm.trans (h_sdp_congr.trans e_phi'_to_canon)
         tauto
