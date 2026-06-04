@@ -248,7 +248,7 @@ private unsafe def elabByInvariant : Lean.Elab.Tactic.Tactic
          decide)))
   | _ => Lean.Elab.throwUnsupportedSyntax
 
-set_option maxHeartbeats 800000 in
+set_option maxHeartbeats 1600000 in
 -- Bumping heartbeats to allow the elaborator to construct the O(N²) case-split AST.
 -- The underlying kernel proofs use pure `decide` and execute.
 theorem uniqueness (n i n' i' : Nat)
