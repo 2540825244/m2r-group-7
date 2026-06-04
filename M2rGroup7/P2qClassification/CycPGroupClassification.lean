@@ -306,6 +306,22 @@ lemma transportCpCqHom_range_card {p q p1 q1 : ℕ}
     Nat.card (transportCpCqHom hp hq f).range = Nat.card f.range := by
   subst hp; subst hq; rfl
 
+/-- Transport an SDP across `p1 = p` and `q1 = q` for `CyclicGroup` indices. -/
+def SemidirectProduct.transportCpCqIso {p q p1 q1 : ℕ}
+    [NeZero p] [NeZero q] [NeZero p1] [NeZero q1]
+    (hp : p1 = p) (hq : q1 = q)
+    (f : CyclicGroup p1 →* MulAut (CyclicGroup q1)) :
+    SemidirectProduct (CyclicGroup q1) (CyclicGroup p1) f ≃*
+    SemidirectProduct (CyclicGroup q) (CyclicGroup p) (transportCpCqHom hp hq f) := by
+  subst hp; subst hq; exact MulEquiv.refl _
+
+/-- `transportCpCqHom` sends the trivial action to the trivial action. -/
+lemma transportCpCqHom_one {p q p1 q1 : ℕ}
+    [NeZero p] [NeZero q] [NeZero p1] [NeZero q1]
+    (hp : p1 = p) (hq : q1 = q) :
+    transportCpCqHom hp hq (1 : CyclicGroup p1 →* MulAut (CyclicGroup q1)) = 1 := by
+  subst hp; subst hq; rfl
+
 /-- Subgroup of N fixed pointwise by every automorphism in Im(f). -/
 def fixedPointsSubgroup {N H : Type*} [Group N] [Group H] (f : H →* MulAut N) : Subgroup N where
   carrier := {n | ∀ h : H, f h n = n}
