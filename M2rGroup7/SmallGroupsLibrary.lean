@@ -162,21 +162,6 @@ and then inverting. -/
 def c2c2OnCqInv (q : Nat) [NeZero q] : (CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup q) :=
   (c2OnCqInv q).comp (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))
 
-/-- The order-3 action `C_3 →* Aut(C_7)` sending the generator to `x ↦ x^2`
-(an element of order 3 in `(ZMod 7)^×`). -/
-def c3OnC7Mul2 : CyclicGroup 3 →* MulAut (CyclicGroup 7) :=
-  have h27 : ∀ x : CyclicGroup 7, ((x ^ 2) ^ 2) ^ 2 = x := by decide
-  let mul2 : MulAut (CyclicGroup 7) :=
-    { toFun := (· ^ 2)
-      invFun := (· ^ 4)
-      left_inv := by decide
-      right_inv := by decide
-      map_mul' := fun a b => mul_pow a b 2 }
-  cyclicHom 3 mul2 (by
-    ext x
-    change ((x ^ 2) ^ 2) ^ 2 = x
-    exact h27 x)
-
 /-- The pow-by-2 automorphism of `CyclicGroup 5` (an element of order 4 in
 `Aut(C_5)`). Used as a building block for `c4OnC5Pow2`. -/
 def pow2AutC5 : MulAut (CyclicGroup 5) :=
@@ -220,7 +205,9 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 4, 1 => CyclicGroup 4
   | 4, 2 => CyclicGroup 2 × CyclicGroup 2
   | 5, 1 => CyclicGroup 5
-  | 6, 1 => DihedralGroup 3
+  | 6, 1 => SemidirectProduct (CyclicGroup 3) (CyclicGroup 2)
+      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 3) (by norm_num : (3:ℕ) ≠ 2)
+        (by native_decide : 1 ≤ min 1 ((3 - 1 : ℕ).factorization 2)))
   | 6, 2 => CyclicGroup 6
   | 7, 1 => CyclicGroup 7
   | 8, 1 => CyclicGroup 8
@@ -230,7 +217,9 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 8, 5 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
   | 9, 1 => CyclicGroup 9
   | 9, 2 => CyclicGroup 3 × CyclicGroup 3
-  | 10, 1 => DihedralGroup 5
+  | 10, 1 => SemidirectProduct (CyclicGroup 5) (CyclicGroup 2)
+      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 5) (by norm_num : (5:ℕ) ≠ 2)
+        (by native_decide : 1 ≤ min 1 ((5 - 1 : ℕ).factorization 2)))
   | 10, 2 => CyclicGroup 10
   | 11, 1 => CyclicGroup 11
   | 12, 1 => CyclicGroup 12
@@ -239,7 +228,9 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 12, 4 => CyclicGroup 3 ⋊[c2c2OnCqInv 3] (CyclicGroup 2 × CyclicGroup 2)
   | 12, 5 => (CyclicGroup 2 × CyclicGroup 2) ⋊[c3OnC2C2] CyclicGroup 3
   | 13, 1 => CyclicGroup 13
-  | 14, 1 => DihedralGroup 7
+  | 14, 1 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 2)
+      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 7) (by norm_num : (7:ℕ) ≠ 2)
+        (by native_decide : 1 ≤ min 1 ((7 - 1 : ℕ).factorization 2)))
   | 14, 2 => CyclicGroup 14
   | 15, 1 => CyclicGroup 15
   | 16, 1 => CyclicGroup 16
@@ -264,15 +255,21 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 20, 3 => CyclicGroup 5 ⋊[c4OnCqInv 5] CyclicGroup 4
   | 20, 4 => CyclicGroup 5 ⋊[c4OnC5Pow2] CyclicGroup 4
   | 20, 5 => CyclicGroup 5 ⋊[c2c2OnCqInv 5] (CyclicGroup 2 × CyclicGroup 2)
-  | 21, 1 => CyclicGroup 7 ⋊[c3OnC7Mul2] CyclicGroup 3
+  | 21, 1 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 3)
+      (canonicalCpOnCqAction (by norm_num : (3:ℕ) ≠ 7) (by norm_num : (7:ℕ) ≠ 2)
+        (by native_decide : 1 ≤ min 1 ((7 - 1 : ℕ).factorization 3)))
   | 21, 2 => CyclicGroup 21
-  | 22, 1 => DihedralGroup 11
+  | 22, 1 => SemidirectProduct (CyclicGroup 11) (CyclicGroup 2)
+      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 11) (by norm_num : (11:ℕ) ≠ 2)
+        (by native_decide : 1 ≤ min 1 ((11 - 1 : ℕ).factorization 2)))
   | 22, 2 => CyclicGroup 22
   | 23, 1 => CyclicGroup 23
   | 24, 1 => CyclicGroup 24
   | 25, 1 => CyclicGroup 25
   | 25, 2 => CyclicGroup 5 × CyclicGroup 5
-  | 26, 1 => DihedralGroup 13
+  | 26, 1 => SemidirectProduct (CyclicGroup 13) (CyclicGroup 2)
+      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 13) (by norm_num : (13:ℕ) ≠ 2)
+        (by native_decide : 1 ≤ min 1 ((13 - 1 : ℕ).factorization 2)))
   | 26, 2 => CyclicGroup 26
   | 27, 1 => CyclicGroup 27
   | 28, 1 => CyclicGroup 28
@@ -350,95 +347,12 @@ theorem retrieve_card (n : Nat) (i : Nat) [hv : ValidIndex n i] : Nat.card (retr
         Std.le_refl, gt_iff_lt, zero_le] <;>
       rfl
 
--- ─── Bridge lemmas connecting canonical (noncomputable) actions to the computable
--- surrogate actions used by `retrieve`. Each bridge is itself noncomputable (it goes
--- through `Classical.choice` via the underlying classification utilities), but the
--- `retrieve` *type* and its `Group` instance remain computable — which is what
--- `native_decide` in `Uniqueness.lean` requires.
-
-open SemidirectProduct in
-/-- For odd prime `q`, the canonical noncomputable SDP `C_q ⋊ C_2` is isomorphic to
-`DihedralGroup q`. Both have order `2q` and are non-cyclic for `q ≠ 1`. -/
-lemma canonicalSDP_iso_DihedralGroup
-    (q : ℕ) [hq : Fact q.Prime] (hq2 : q ≠ 2)
-    (hr : 1 ≤ min 1 ((q - 1).factorization 2)) :
-    Nonempty (SemidirectProduct (CyclicGroup q) (CyclicGroup 2)
-        (canonicalCpOnCqAction (show (2:ℕ) ≠ q by have := hq.out.two_le; omega) hq2 hr)
-      ≃* DihedralGroup q) := by
-  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-  have hp_ne_q : (2:ℕ) ≠ q := by have := hq.out.two_le; omega
-  have h_card_sdp : Nat.card
-      (SemidirectProduct (CyclicGroup q) (CyclicGroup 2)
-        (canonicalCpOnCqAction hp_ne_q hq2 hr)) = 2 * q :=
-    canonicalSDP_card hp_ne_q hq2 hr
-  have h_not_cyc_sdp : ¬ IsCyclic
-      (SemidirectProduct (CyclicGroup q) (CyclicGroup 2)
-        (canonicalCpOnCqAction hp_ne_q hq2 hr)) :=
-    canonicalSDP_not_isCyclic hp_ne_q hq2 hr
-  have h_card_dih : Nat.card (DihedralGroup q) = 2 * q := DihedralGroup.nat_card
-  have h_not_cyc_dih : ¬ IsCyclic (DihedralGroup q) :=
-    DihedralGroup.not_isCyclic (by have := hq.out.two_le; omega)
-  exact nonempty_mulEquiv_of_card_eq_prime_mul_prime_of_not_isCyclic'
-    (by have := hq.out.two_le; omega : (2:ℕ) < q)
-    h_card_sdp h_not_cyc_sdp h_card_dih h_not_cyc_dih
-
-/-- The canonical noncomputable SDP `C_7 ⋊ C_3` is isomorphic to the computable surrogate
-`CyclicGroup 7 ⋊[c3OnC7Mul2] CyclicGroup 3`. Both have order 21 and are non-cyclic. -/
-lemma canonicalSDP_iso_retrieve_21
-    (hr : 1 ≤ min 1 ((7 - 1 : ℕ).factorization 3)) :
-    Nonempty (SemidirectProduct (CyclicGroup 7) (CyclicGroup 3)
-        (canonicalCpOnCqAction (show (3:ℕ) ≠ 7 by norm_num) (by norm_num) hr)
-      ≃* (CyclicGroup 7 ⋊[c3OnC7Mul2] CyclicGroup 3)) := by
-  have h_card_lhs : Nat.card
-      (SemidirectProduct (CyclicGroup 7) (CyclicGroup 3)
-        (canonicalCpOnCqAction (show (3:ℕ) ≠ 7 by norm_num) (by norm_num) hr)) = 3 * 7 :=
-    canonicalSDP_card _ _ _
-  have h_not_cyc_lhs : ¬ IsCyclic
-      (SemidirectProduct (CyclicGroup 7) (CyclicGroup 3)
-        (canonicalCpOnCqAction (show (3:ℕ) ≠ 7 by norm_num) (by norm_num) hr)) :=
-    canonicalSDP_not_isCyclic _ _ _
-  -- For the RHS: card = 21 (= 3*7) by SemidirectProduct.card; non-cyclic via nontriviality of c3OnC7Mul2.
-  have h_card_rhs : Nat.card (CyclicGroup 7 ⋊[c3OnC7Mul2] CyclicGroup 3) = 3 * 7 := by
-    rw [SemidirectProduct.card, card_cyclicGroup, card_cyclicGroup]
-  have hc3_ne : c3OnC7Mul2 ≠ 1 := by
-    intro h
-    -- evaluate at the generator of CyclicGroup 3
-    have := DFunLike.congr_fun h (Multiplicative.ofAdd (1 : ZMod 3))
-    -- now `this : c3OnC7Mul2 (gen) = 1`; the LHS sends gen of C_7 to its square.
-    have happ := MulEquiv.ext_iff.mp this (Multiplicative.ofAdd (1 : ZMod 7))
-    -- happ : c3OnC7Mul2 gen (Multiplicative.ofAdd 1 : ZMod 7) = Multiplicative.ofAdd 1
-    -- but the LHS computes to Multiplicative.ofAdd 2, a contradiction.
-    revert happ
-    decide
-  have h_not_cyc_rhs : ¬ IsCyclic (CyclicGroup 7 ⋊[c3OnC7Mul2] CyclicGroup 3) :=
-    sdp_not_isCyclic_of_action_ne_one hc3_ne
-  exact nonempty_mulEquiv_of_card_eq_prime_mul_prime_of_not_isCyclic'
-    (by norm_num : (3:ℕ) < 7)
-    h_card_lhs h_not_cyc_lhs h_card_rhs h_not_cyc_rhs
-
 -- ─── Bridges for 4q (12, 20, 28) classifications ──────────────────────────
 
 -- Concrete range cards for the surrogate actions. Each cyclicHom-defined action
 -- has range equal to `Subgroup.zpowers a` (where `a` is the chosen target).
-
-/-- For any `cyclicHom n a h`, applied at `x : CyclicGroup n`, we get `a ^ (toAdd x).val`. -/
-private lemma cyclicHom_apply_eq_zpow
-    (n : Nat) [NeZero n] {G : Type*} [Group G] (a : G) (h : a ^ n = 1) (x : CyclicGroup n) :
-    cyclicHom n a h x = a ^ ((Multiplicative.toAdd x).val : ℤ) := by
-  show Additive.toMul ((ZMod.lift n
-      ⟨zmultiplesHom (Additive G) (Additive.ofMul a),
-        by change (n : ℤ) • Additive.ofMul a = 0
-           rw [← ofMul_zpow, zpow_natCast, h, ofMul_one]⟩) (Multiplicative.toAdd x))
-      = a ^ ((Multiplicative.toAdd x).val : ℤ)
-  -- Let `m` be the natural-number value of `toAdd x`. The RHS is `a^m`.
-  -- For the LHS, rewrite `toAdd x : ZMod n` as the cast of `m : ℤ` into `ZMod n`
-  -- and apply `ZMod.lift_coe`.
-  set m : ℕ := (Multiplicative.toAdd x).val with hm
-  conv_lhs => rw [show (Multiplicative.toAdd x : ZMod n) = (((m : ℤ) : ZMod n)) from by
-    push_cast; exact (ZMod.natCast_zmod_val _).symm]
-  rw [ZMod.lift_coe]
-  rw [zmultiplesHom_apply, ← ofMul_zpow]
-  rfl
+-- The lemma `cyclicHom_apply_eq_zpow` was moved to `CycPGroupClassification.lean`
+-- (now public) for reuse there. We import and use it directly.
 
 /-- Inversion on `CyclicGroup q` squared equals identity. -/
 private lemma inv_aut_pow_two_eq_one (q : ℕ) [NeZero q] :

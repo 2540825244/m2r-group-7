@@ -796,27 +796,17 @@ macro "classify_prime_sq" p:num h:term : tactic => `(tactic|(
   · exact ⟨1, by decide , hiso⟩
   · exact ⟨2, by decide, hiso⟩))
 
--- For n = 2*q where BOTH cyclic and non-cyclic groups exist (q odd prime, so 2 ∣ q - 1).
--- The non-cyclic SDP is bridged to `DihedralGroup q` which is `retrieve (2*q) 1`.
-macro "classify_pq_p2" q:num h:term : tactic => `(tactic|(
-  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+-- For n = p*q where BOTH cyclic and non-cyclic groups exist (p ∣ q - 1).
+-- The non-cyclic SDP in `retrieve (p*q) 1` is built from the same
+-- `canonicalCpOnCqAction`, so the bridge is `rfl` (proof irrelevance).
+macro "classify_pq" p:num q:num h:term : tactic => `(tactic|(
+  haveI : Fact (Nat.Prime $p) := ⟨by norm_num⟩
   haveI : Fact (Nat.Prime $q) := ⟨by norm_num⟩
-  rcases pq_classification (p := 2) (q := $q) (by norm_num)
+  rcases pq_classification (p := $p) (q := $q) (by norm_num)
       (Eq.trans $h (by norm_num)) with ⟨⟨e⟩⟩ | ⟨hr, ⟨e⟩⟩
   · exact ⟨2, by decide, ⟨e⟩⟩
-  · obtain ⟨bridge⟩ := canonicalSDP_iso_DihedralGroup $q (by norm_num) hr
-    exact ⟨1, by decide, ⟨e.trans bridge⟩⟩))
-
--- For n = 3 * 7: BOTH cyclic and non-cyclic groups exist (3 ∣ 7 - 1).
--- The non-cyclic SDP is bridged to the computable surrogate `retrieve 21 1`.
-macro "classify_pq_3_7" h:term : tactic => `(tactic|(
-  haveI : Fact (Nat.Prime 3) := ⟨by norm_num⟩
-  haveI : Fact (Nat.Prime 7) := ⟨by norm_num⟩
-  rcases pq_classification (p := 3) (q := 7) (by norm_num)
-      (Eq.trans $h (by norm_num)) with ⟨⟨e⟩⟩ | ⟨hr, ⟨e⟩⟩
-  · exact ⟨2, by decide, ⟨e⟩⟩
-  · obtain ⟨bridge⟩ := canonicalSDP_iso_retrieve_21 hr
-    exact ⟨1, by decide, ⟨e.trans bridge⟩⟩))
+  · refine ⟨1, by decide, ⟨e.trans ?_⟩⟩
+    exact MulEquiv.refl _))
 
 -- For n = p*q where p ∤ q - 1, so only the cyclic group exists.
 macro "classify_pq_cyclic" p:num q:num h:term : tactic => `(tactic|(
@@ -942,7 +932,7 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime 5 h
 
   -- n = 6 = 2 * 3
-  · classify_pq_p2 3 h
+  · classify_pq 2 3 h
 
   -- n = 7
   · classify_prime 7 h
@@ -959,7 +949,7 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime_sq 3 h
 
   -- n = 10 = 2 * 5
-  · classify_pq_p2 5 h
+  · classify_pq 2 5 h
 
   -- n = 11
   · classify_prime 11 h
@@ -976,7 +966,7 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime 13 h
 
   -- n = 14 = 2 * 7
-  · classify_pq_p2 7 h
+  · classify_pq 2 7 h
 
   -- n = 15 = 3 * 5  (only cyclic: 3 ∤ 4)
   · classify_pq_cyclic 3 5 h
@@ -1002,10 +992,10 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
     · exact ⟨5, by decide, h5⟩
 
   -- n = 21
-  · classify_pq_3_7 h
+  · classify_pq 3 7 h
 
   -- n = 22
-  · classify_pq_p2 11 h
+  · classify_pq 2 11 h
 
   -- n = 23
   · classify_prime 23 h
@@ -1017,7 +1007,7 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime_sq 5 h
 
   -- n = 26
-  · classify_pq_p2 13 h
+  · classify_pq 2 13 h
 
   -- n = 27
   · sorry
