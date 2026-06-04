@@ -41,7 +41,6 @@ import Mathlib.Data.Bracket
 import Mathlib.Algebra.Group.TypeTags.Basic
 import Paperproof
 import Mathlib.SetTheory.Cardinal.Finite
-import «M2rGroup7».TwentyFourCase
 
 open scoped commutatorElement
 
