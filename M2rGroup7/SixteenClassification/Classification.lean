@@ -566,4 +566,69 @@ theorem realise_ext_type_if_not_iso_to_C2_4
     have := realise_with_normal_K8 hn h_no_o8 H h_iso
     tauto
 
+theorem order_sixteen_classification
+    {G : Type*} [Group G]
+    (hn : Nat.card G = 16) :
+    Nonempty (G ≃* CyclicGroup 16) ∨
+    Nonempty (G ≃* CyclicGroup 4 × CyclicGroup 4) ∨
+    Nonempty (G ≃* (CyclicGroup 2 × CyclicGroup 2) ⋊[c4OnC2sqSwap] CyclicGroup 4) ∨
+    Nonempty (G ≃* CyclicGroup 4 ⋊[c4OnC4Inv] CyclicGroup 4) ∨
+    Nonempty (G ≃* CyclicGroup 8 × CyclicGroup 2) ∨
+    Nonempty (G ≃* CyclicGroup 8 ⋊[c2OnC8Pow5] CyclicGroup 2) ∨
+    Nonempty (G ≃* DihedralGroup 8) ∨
+    Nonempty (G ≃* CyclicGroup 8 ⋊[c2OnC8Pow3] CyclicGroup 2) ∨
+    Nonempty (G ≃* QuaternionGroup 4) ∨
+    Nonempty (G ≃* (CyclicGroup 4 × CyclicGroup 2) × CyclicGroup 2) ∨
+    Nonempty (G ≃* CyclicGroup 2 × DihedralGroup 4) ∨
+    Nonempty (G ≃* CyclicGroup 2 × QuaternionGroup 2) ∨
+    Nonempty (G ≃* (CyclicGroup 4 × CyclicGroup 2) ⋊[c2OnK8Psi6] CyclicGroup 2) ∨
+    Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) := by
+  by_cases hC24 : Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)
+  · tauto
+  · -- G is not isomorphic to C₂⁴; apply the 13-case lemma
+    have h_non_iso : IsEmpty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) :=
+      not_nonempty_iff.mp hC24
+    rcases realise_ext_type_if_not_iso_to_C2_4 hn h_non_iso with
+      h1 | h2 | h3 | h4 | h5 | h6 | h7 | h8 | h9 | h10 | h11 | h12 | h13
+    all_goals (first
+      | (have := h1.map  fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_1;  tauto)
+      | (have := h2.map  fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_2;  tauto)
+      | (have := h3.map  fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_3;  tauto)
+      | (have := h4.map  fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_4;  tauto)
+      | (have := h5.map  fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_5;  tauto)
+      | (have := h6.map  fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_6;  tauto)
+      | (have := h7.map  fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_7;  tauto)
+      | (have := h8.map  fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_8;  tauto)
+      | (have := h9.map  fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_9;  tauto)
+      | (have := h10.map fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_10; tauto)
+      | (have := h11.map fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_11; tauto)
+      | (have := h12.map fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_12; tauto)
+      | (have := h13.map fun R => ExtEquiv.realisingEquiv (ExtEquiv.refl _) R realise_16_13; tauto))
+
+/-- User-facing classification: every group of order 16 is isomorphic to one of the 14
+concrete groups. Case 10 uses right-associative `C₄ × C₂ × C₂ = C₄ × (C₂ × C₂)`,
+bridged from the internal `(C₄ × C₂) × C₂` via `MulEquiv.prodAssoc`. -/
+theorem order_sixteen_classification_normalized
+    {G : Type*} [Group G]
+    (hn : Nat.card G = 16) :
+    Nonempty (G ≃* CyclicGroup 16) ∨
+    Nonempty (G ≃* CyclicGroup 4 × CyclicGroup 4) ∨
+    Nonempty (G ≃* (CyclicGroup 2 × CyclicGroup 2) ⋊[c4OnC2sqSwap] CyclicGroup 4) ∨
+    Nonempty (G ≃* CyclicGroup 4 ⋊[c4OnC4Inv] CyclicGroup 4) ∨
+    Nonempty (G ≃* CyclicGroup 8 × CyclicGroup 2) ∨
+    Nonempty (G ≃* CyclicGroup 8 ⋊[c2OnC8Pow5] CyclicGroup 2) ∨
+    Nonempty (G ≃* DihedralGroup 8) ∨
+    Nonempty (G ≃* CyclicGroup 8 ⋊[c2OnC8Pow3] CyclicGroup 2) ∨
+    Nonempty (G ≃* QuaternionGroup 4) ∨
+    Nonempty (G ≃* CyclicGroup 4 × CyclicGroup 2 × CyclicGroup 2) ∨
+    Nonempty (G ≃* CyclicGroup 2 × DihedralGroup 4) ∨
+    Nonempty (G ≃* CyclicGroup 2 × QuaternionGroup 2) ∨
+    Nonempty (G ≃* (CyclicGroup 4 × CyclicGroup 2) ⋊[c2OnK8Psi6] CyclicGroup 2) ∨
+    Nonempty (G ≃* CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) := by
+  rcases order_sixteen_classification hn with
+    h | h | h | h | h | h | h | h | h | h | h | h | h | h
+  all_goals first
+    | tauto
+    | (have := h.map (fun e => e.trans MulEquiv.prodAssoc); tauto)
+
 end OrderSixteen

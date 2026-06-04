@@ -517,7 +517,7 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
     exact ⟨1, by decide, ⟨hiso⟩⟩
 
   -- n = 16
-  · sorry
+  · exact OrderSixteen.order_sixteen_retrieve h
 
   -- n = 17
   · classify_prime 17 h
