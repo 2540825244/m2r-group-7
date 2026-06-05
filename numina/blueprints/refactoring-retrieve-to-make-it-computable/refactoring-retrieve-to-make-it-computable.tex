@@ -3,6 +3,238 @@
 
 \begin{document}
 
+\section{Goal of this blueprint}
+
+We are classifying finite groups $G$ of order $p^2 q$ with $p \neq q$ primes,
+and in particular the $4q$ case ($p = 2$, $q \geq 3$ odd prime). The Lean code
+has accumulated ad-hoc bridging logic in the $4q$ case that re-proves things
+which are already established by the general classification machinery
+(\texttt{classify\_Cqn\_rtimes\_Cpm}) living in
+\texttt{M2rGroup7.P2qClassification.CycPGroupClassification}. The goal of this
+refactor is to make \texttt{classify\_Cqn\_rtimes\_Cpm} the single source of
+truth wherever the math proof says ``use Lemma~3''.
+
+This blueprint records the informal mathematical proof verbatim, then states
+how each step maps to existing Lean machinery. The refactor target is
+\texttt{classification\_4q} in
+\texttt{M2rGroup7/P2qClassification/FourQClassification.lean}.
+
+\section{Lemmas}
+
+\begin{lemma}[Normal Sylow subgroup]
+    \label{lem:p2q-normal-sylow}
+    For groups of order $p^2 q$, there must exist either a normal Sylow
+    $p$-group or a normal Sylow $q$-group.
+\end{lemma}
+
+\begin{lemma}[Same image in $\operatorname{Aut}(H)$ gives isomorphic SDPs]
+    \label{lem:same-image-sdp}
+    If $K$ is a cyclic $p$-group, two homomorphisms $f, g : K \to
+    \operatorname{Aut}(H)$ define isomorphic semi-direct products $H \rtimes K$
+    if they have the same image.
+\end{lemma}
+
+\begin{lemma}[Classification of $C_{q^n} \rtimes C_{p^m}$]
+    \label{lem:classify-Cqn-Cpm}
+    Semi-direct products $C_{q^n} \rtimes C_{p^m}$ ($q$ odd prime, $p \neq q$)
+    are classified up to isomorphism by $r \in \{0, \ldots, \min(m, d)\}$
+    where $d = v_p(q - 1)$, giving $\min(m, d) + 1$ classes. Every action $f$
+    belongs to exactly one class.
+\end{lemma}
+
+\begin{lemma}[Conjugate images give isomorphic SDPs]
+    \label{lem:conjugate-image-sdp}
+    If $|K| = p$, then two homomorphisms $f, g : K \to \operatorname{Aut}(H)$
+    define isomorphic semi-direct products $H \rtimes K$ if their images are
+    conjugate subgroups of $\operatorname{Aut}(H)$.
+\end{lemma}
+
+\section{Case 1: a normal Sylow $p$-subgroup exists}
+
+$|N| = p^2$ and by Schur--Zassenhaus there exists a complementary subgroup $U$
+of $G$ with $|U| = q$ such that $G \cong N \rtimes U$. We have $U \cong C_q$.
+
+\subsection{Case 1.1: $N \cong C_{p^2}$}
+
+$\operatorname{Aut}(N) \cong C_{p(p-1)}$. Let
+$\varphi : C_q \to C_{p(p-1)}$. Done by Lemma~\ref{lem:classify-Cqn-Cpm}
+when $p$ is odd. When $p = 2$, we get $\varphi : C_q \to C_2$ so only the
+trivial homomorphism is possible, as $q \nmid 2$ for odd $q$.
+
+\begin{itemize}
+    \item (For $p = 2$, only trivial homomorphism.)
+    \item (For $q = 2$, we get $2$ homomorphisms.)
+\end{itemize}
+
+Outcomes:
+\begin{itemize}
+    \item $C_{p^2 q}$ always.
+    \item $C_{p^2} \rtimes C_q$ if $q \mid p - 1$.
+\end{itemize}
+
+\subsection{Case 1.2: $N \cong C_p \times C_p$}
+
+$\operatorname{Aut}(N) \cong \operatorname{GL}_2(p)$. Let
+$\varphi : C_q \to \operatorname{GL}_2(p)$.
+
+\paragraph{Special case $p = 2$.}
+$\operatorname{GL}_2(2) \cong S_3$. Either $\varphi$ is a trivial action, or
+its image is a subgroup of order $q$ in $S_3$, hence $q = 3$. There is only
+one subgroup of order $3$, so this gives one group.
+
+\paragraph{Special case $q = 2$.}
+$\operatorname{Im}(\varphi)$ is trivial or $\langle A \rangle$ where $A \in
+\operatorname{GL}_2(p)$ is of order $2$. By Lemma~\ref{lem:conjugate-image-sdp}
+we only need to look at similarity classes and pick a representative from
+each class. Then $A^2 = 1$ implies the minimal polynomial of $A$ divides
+$x^2 - 1$, and since $p$ is odd, it has distinct factors and so $A$ is
+diagonalisable. Each such matrix is similar to a diagonal matrix
+$\operatorname{diag}(\alpha, \beta)$ with $\alpha^2 = \beta^2 = 1$, hence
+$\alpha = \pm 1$, $\beta = \pm 1$ (since $t^2 - 1$ has at most $2$ roots over a
+field). The case $\alpha = \beta = 1$ has order $1$, so we discard it. There
+are two similarity classes: $\alpha = 1, \beta = -1$ (equivalently
+$\beta = 1, \alpha = -1$), and $\alpha = \beta = -1$.
+
+\emph{Side note:} Lemma~\ref{lem:conjugate-image-sdp} is not strictly needed
+here because the general condition $\varphi_2(u) = \alpha \circ
+\varphi_1(\beta(u)) \circ \alpha^{-1}$ becomes equivalent to similarity:
+$\operatorname{Aut}(C_q) = C_1$ when $q = 2$ so $\beta = \operatorname{id}$,
+and $\varphi_1, \varphi_2$ are determined by where they send the generator
+since $U$ is cyclic.
+
+\paragraph{General special case.} A degree-$3$ map $C_3 \to
+\operatorname{Aut}(G)$, when applicable.
+
+\section{Case 2: a normal Sylow $q$-subgroup exists}
+
+$|N| = q$ and by Schur--Zassenhaus there exists a complementary subgroup $U$
+of $G$ with $|U| = p^2$ such that $G \cong N \rtimes U$. We have $N \cong
+C_q$ and $\operatorname{Aut}(N) \cong C_{q-1}$.
+
+\subsection{Case 2.1: $U \cong C_{p^2}$}
+
+Let $\varphi : C_{p^2} \to C_{q-1}$. Done by
+Lemma~\ref{lem:classify-Cqn-Cpm} when $q$ is odd. Only the trivial
+homomorphism is possible when $q = 2$.
+
+\begin{itemize}
+    \item (When $p = 2$, have to see if $q$ is $1$ mod $4$.)
+    \item (When $q = 2$, we get only the trivial homomorphism.)
+\end{itemize}
+
+Outcomes:
+\begin{itemize}
+    \item $C_{p^2 q}$ always.
+    \item $C_q \rtimes_1 C_{p^2}$ if $v_p(q - 1) \geq 1$.
+    \item $C_q \rtimes_2 C_{p^2}$ if $v_p(q - 1) \geq 2$.
+\end{itemize}
+
+\subsection{Case 2.2: $U \cong C_p \times C_p$}
+
+Let $\varphi : C_p \times C_p \to C_{q-1}$.
+
+$\operatorname{Im}(\varphi) \cong (C_p \times C_p) / \ker(\varphi)$, so the
+order of the image is either $1$, $p$, or $p^2$.
+\begin{itemize}
+    \item If it is $1$: $\varphi$ is trivial, giving
+        $G \cong C_p \times C_p \times C_q$.
+    \item If it is $p^2$: $\ker(\varphi) = 1$, so $\operatorname{Im}(\varphi)$
+        is a non-cyclic subgroup of the cyclic group $C_{q-1}$, impossible.
+    \item If it is $p$: ad-hoc argument matching $\varphi$ against the
+        canonical action of image order $p$ (sub-case of
+        Lemma~\ref{lem:same-image-sdp} applied with cyclic codomain
+        $\operatorname{Aut}(C_q)$, where same image cardinality implies same
+        image because cyclic groups have a unique subgroup of any given order).
+\end{itemize}
+
+\begin{itemize}
+    \item (When $p = 2$, one trivial and one non-trivial.)
+    \item (When $q = 2$, we get only the trivial homomorphism.)
+\end{itemize}
+
+Outcomes:
+\begin{itemize}
+    \item $C_p \times C_p \times C_q$.
+    \item $C_q \rtimes (C_p \times C_p)$ if $p \mid q - 1$.
+\end{itemize}
+
+\section{Mapping to Lean machinery}
+
+The mapping from the math sketch to existing Lean lemmas:
+
+\begin{itemize}
+    \item \textbf{Lemma~\ref{lem:p2q-normal-sylow}} $\leftrightarrow$
+        \texttt{p2q\_group\_has\_normal\_sylow\_subgroup} in
+        \texttt{M2rGroup7.Lemmas.SylowUtils}.
+    \item \textbf{Lemma~\ref{lem:same-image-sdp}} $\leftrightarrow$
+        \texttt{semidirectProduct\_iso\_if\_range\_eq} (and its cardinality
+        variant \texttt{semidirectProduct\_iso\_if\_range\_card\_eq}, which
+        upgrades equal-cardinality to equal-image using uniqueness of cyclic
+        subgroups in a cyclic ambient group) in
+        \texttt{M2rGroup7.Lemmas.ClassificationUtils}.
+    \item \textbf{Lemma~\ref{lem:classify-Cqn-Cpm}} $\leftrightarrow$
+        \texttt{classify\_Cqn\_rtimes\_Cpm} (and the explicit-$r$ variant
+        \texttt{classify\_Cqn\_rtimes\_Cpm\_exists}) in
+        \texttt{M2rGroup7.P2qClassification.CycPGroupClassification}.
+    \item \textbf{Lemma~\ref{lem:conjugate-image-sdp}} is not currently
+        formalised at this level of generality; the only place it is used in
+        the math sketch above is Case~1.2 $q = 2$, which the
+        \texttt{4q} classification does not enter (we have $q \geq 3$). The
+        side note explains why the lemma is unnecessary in that case anyway.
+\end{itemize}
+
+For $4q$ specifically (i.e.\ $p = 2$, $q \geq 3$), Case~1.1 needs the special
+$p = 2$ argument (no use of Lemma~\ref{lem:classify-Cqn-Cpm}); Case~1.2 enters
+the special $p = 2$ sub-case, which gives the $C_3 \to \operatorname{Aut}(C_2
+\times C_2)$ branch (only when $q = 3$); Case~2.1 directly invokes
+Lemma~\ref{lem:classify-Cqn-Cpm} with parameters $p = 2$, $m = 2$, $q$ odd,
+$n = 1$; Case~2.2 follows the ad-hoc ``image trivial or of order $p = 2$''
+argument and uses \texttt{semidirectProduct\_CpCp\_iso}.
+
+\section{Refactor target}
+
+\paragraph{Current state.} In
+\texttt{M2rGroup7/P2qClassification/FourQClassification.lean}, the Case~2.1
+($C_4$) branch of \texttt{classification\_4q} currently dispatches through an
+intermediate helper \texttt{classify\_sdp\_C4\_on\_Cq} that re-proves the
+content of Lemma~\ref{lem:classify-Cqn-Cpm} via range-card matching. This
+introduces auxiliary lemmas
+(\texttt{canonicalC4OnCqAction\_range\_card},
+\texttt{canonicalC4OnCqAction\_r2\_range\_card}) which exist only to feed
+\texttt{semidirectProduct\_iso\_if\_range\_card\_eq}.
+
+\paragraph{Target.} The Case~2.1 branch should invoke
+\texttt{classify\_Cqn\_rtimes\_Cpm} directly on $\varphi$ (transported to
+$C_{2^2} \to \operatorname{Aut}(C_{q^1})$), then transport the resulting
+isomorphism back to $C_4 \to \operatorname{Aut}(C_q)$ form. The transport
+between $C_{2^2}$ and $C_4$, and between $C_{q^1}$ and $C_q$, is genuine
+Lean-only bookkeeping (definitional equality on the underlying types is
+prevented by the indexing) and is handled by a single semi-direct-product
+transport lemma \texttt{SemidirectProduct.transportCpCqIso} together with
+\texttt{transportCpCqHom} (already present). The matching to
+\texttt{canonicalC4OnCqAction}, \texttt{canonicalC4OnCqAction\_r2} is then by
+definitional equality since these wrappers are themselves defined as
+\texttt{transportCpCqHom} of the appropriate \texttt{canonicalAction}.
+
+\paragraph{What stays.} The Case~2.2 ($C_2 \times C_2$) branch is genuinely
+ad-hoc per the math sketch and remains supported by
+\texttt{classify\_sdp\_C2C2\_on\_Cq} plus the single range-card lemma
+\texttt{canonicalC2C2OnCqAction\_range\_card}. The Case~1.2 ($q = 3$) sub-case
+likewise remains ad-hoc and uses \texttt{canonicalC3OnC2C2Action\_range\_card}
+via \texttt{semidirectProduct\_C3\_on\_C2C2\_iso}.
+
+\paragraph{What goes.} \texttt{classify\_sdp\_C4\_on\_Cq},
+\texttt{canonicalC4OnCqAction\_range\_card}, and
+\texttt{canonicalC4OnCqAction\_r2\_range\_card} are deleted from
+\texttt{FourQClassification.lean}; they re-prove
+Lemma~\ref{lem:classify-Cqn-Cpm}'s content rather than invoking it.
+
+\end{document}
+% Blueprint: Refactoring retrieve to make it computable
+% Created by Numina
+
+\begin{document}
+
 % Your blueprint will go here.
 
 \end{document}
