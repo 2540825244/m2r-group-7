@@ -157,6 +157,18 @@ def c4OnCqInv (q : Nat) [NeZero q] : CyclicGroup 4 →* MulAut (CyclicGroup q) :
     change inv ^ (2 * 2) = 1
     rw [pow_mul, h2, one_pow])
 
+/-- The order-2 action `C_8 →* Aut(C_q)` factoring through `C_8 / C_4`, sending
+the generator to inversion. -/
+def c8OnCqInv (q : Nat) [NeZero q] : CyclicGroup 8 →* MulAut (CyclicGroup q) :=
+  let inv : MulAut (CyclicGroup q) := MulEquiv.inv (CyclicGroup q)
+  cyclicHom 8 inv (by
+    have h2 : inv ^ 2 = 1 := by
+      ext x
+      change (x⁻¹)⁻¹ = x
+      exact inv_inv x
+    change inv ^ (2 * 4) = 1
+    rw [pow_mul, h2, one_pow])
+
 /-- The order-2 action `C_2 × C_2 →* Aut(C_q)` projecting to the first factor
 and then inverting. -/
 def c2c2OnCqInv (q : Nat) [NeZero q] : (CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup q) :=

@@ -52,21 +52,23 @@ private lemma order24_1_sylow3_trivial
 
 /-- Non-trivial-action branch of the normal-Sylow-3 classification. Given a
     semidirect-product iso `↥P ⋊[φ] ↥K ≃* G` with `|P| = 3` and `|K| = 8`,
-    dispatch on `order8_classification` of `K`. Five of the seven possible
-    iso classes are Mathlib-named:
+    dispatch on `order8_classification` of `K`. Six of the seven possible
+    iso classes are now named:
+    - `K = C_8`                       →  `C_3 ⋊ C_8`
     - `K = C_4 × C_2`, `ker φ = C_4`  →  `D_3 × C_4`
     - `K = C_4 × C_2`, `ker φ = V_4`  →  `C_2 × Q_12`
     - `K = C_2^3`,    `ker φ = V_4`  →  `D_3 × V_4`
     - `K = D_4`,      `ker φ = C_4`  →  `D_12`
     - `K = Q_8`,      `ker φ = C_4`  →  `Q_24`
 
-    The remaining two — `C_3 ⋊ C_8` (`K = C_8`) and `(C_6 × C_2) ⋊ C_2`
-    (`K = D_4`, `ker φ = V_4`) — have no Mathlib name and need new defs in
-    `SmallGroupsLibrary`; for now they sit under the trailing `True`. -/
+    The remaining target — `(C_6 × C_2) ⋊ C_2` from `K = D_4` with kernel V_4 —
+    has no Mathlib name and needs a new def in `SmallGroupsLibrary`; for now it
+    sits under the trailing `True`. -/
 private lemma order24_1_sylow3_nontrivial
     {G : Type*} [Group G]
     {P K : Subgroup G} (h_P_card : Nat.card ↥P = 3) (hK_card : Nat.card ↥K = 8)
     {φ : ↥K →* MulAut ↥P} (h_iso : ↥P ⋊[φ] ↥K ≃* G) :
+    Nonempty (G ≃* CyclicGroup 3 ⋊[c8OnCqInv 3] CyclicGroup 8) ∨
     Nonempty (G ≃* DihedralGroup 3 × CyclicGroup 4) ∨
     Nonempty (G ≃* CyclicGroup 2 × QuaternionGroup 3) ∨
     Nonempty (G ≃* DihedralGroup 3 × (CyclicGroup 2 × CyclicGroup 2)) ∨
@@ -74,8 +76,8 @@ private lemma order24_1_sylow3_nontrivial
     Nonempty (G ≃* QuaternionGroup 6) ∨
     True := by
   rcases order8_classification (G := ↥K) hK_card with hC8 | hC4C2 | hC2sq3 | hD4 | hQ8
-  · -- K ≃* C_8: target `C_3 ⋊ C_8` needs a SmallGroupsLibrary def; lands in True
-    tauto
+  · -- K ≃* C_8: target `C_3 ⋊[c8OnCqInv 3] C_8`
+    sorry
   · -- K ≃* C_4 × C_2: two sub-cases by `ker φ`
     --   ker = C_4  → D_3 × C_4
     --   ker = V_4  → C_2 × Q_12
@@ -95,8 +97,8 @@ private lemma order24_1_sylow3_nontrivial
     3-subgroup.
 
     The 5 trivial-action targets are wired up via `order24_1_sylow3_trivial`; the
-    7 non-trivial-action targets are stubbed in `order24_1_sylow3_nontrivial` (5
-    Mathlib-named + 2 under a trailing `True` placeholder). -/
+    7 non-trivial-action targets are stubbed in `order24_1_sylow3_nontrivial` (6
+    named + 1 under a trailing `True` placeholder). -/
 lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
     (h_n3 : Nat.card (Sylow 3 G) = 1) :
     (Nonempty (G ≃* CyclicGroup 3 × CyclicGroup 8) ∨
@@ -104,7 +106,8 @@ lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
      Nonempty (G ≃* CyclicGroup 3 × (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)) ∨
      Nonempty (G ≃* CyclicGroup 3 × DihedralGroup 4) ∨
      Nonempty (G ≃* CyclicGroup 3 × QuaternionGroup 2)) ∨
-    (Nonempty (G ≃* DihedralGroup 3 × CyclicGroup 4) ∨
+    (Nonempty (G ≃* CyclicGroup 3 ⋊[c8OnCqInv 3] CyclicGroup 8) ∨
+     Nonempty (G ≃* DihedralGroup 3 × CyclicGroup 4) ∨
      Nonempty (G ≃* CyclicGroup 2 × QuaternionGroup 3) ∨
      Nonempty (G ≃* DihedralGroup 3 × (CyclicGroup 2 × CyclicGroup 2)) ∨
      Nonempty (G ≃* DihedralGroup 12) ∨
@@ -172,6 +175,6 @@ theorem order24_classification {G : Type*} [Group G] (h : Nat.card G = 24) :
     True := by
   rcases sylow3_24 h with h_n3_1 | h_n3_4
   · -- order24_1_sylow3 returns `(5-way trivial) ∨ (5-way Mathlib non-trivial ∨ True)`
-    rcases order24_1_sylow3 h h_n3_1 with (_ | _ | _ | _ | _) | (_ | _ | _ | _ | _ | _) <;>
-      trivial
+    rcases order24_1_sylow3 h h_n3_1 with
+      (_ | _ | _ | _ | _) | (_ | _ | _ | _ | _ | _ | _) <;> trivial
   · exact order24_4_sylow3 h h_n3_4
