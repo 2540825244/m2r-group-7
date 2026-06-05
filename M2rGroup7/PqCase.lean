@@ -1,7 +1,7 @@
 import Mathlib.Logic.Basic
 import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
-import «M2rGroup7».SmallGroupsLibrary
+import «M2rGroup7».CyclicGroup
 import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
 import Mathlib.Logic.Unique
 import OrderPQ
