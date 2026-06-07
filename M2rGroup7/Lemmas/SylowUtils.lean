@@ -1,5 +1,4 @@
 import Mathlib
-import «M2rGroup7».Lemmas.GroupTheoryLemmas
 import «M2rGroup7».Lemmas.NumberTheoryUtils
 
 variable (G : Type*) [Group G]
@@ -358,3 +357,9 @@ lemma p2q_group_has_normal_sylow_subgroup {p : ℕ} {q : ℕ}
         linarith [h_q_prime.out.one_lt]
   tauto
 
+/-- Every group G of order pqr with p < q < r has either a normal Sylow q-group or normal Sylow r-group -/
+lemma pqr_group_has_normal_sylow_qr_subgroup {p : ℕ} {q : ℕ} {r : ℕ}
+    [h_p_prime : Fact p.Prime] [h_q_prime : Fact q.Prime] [h_r_prime : Fact r.Prime]
+    (h_p_le_q : p < q) (h_q_le_r : q < r) (h : Nat.card G = p * q * r)
+    : Nat.card (Sylow q G) = 1 ∨ Nat.card (Sylow r G) = 1 := by
+  sorry
