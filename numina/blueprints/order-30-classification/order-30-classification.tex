@@ -1,8 +1,131 @@
 % Blueprint: Order 30 classification
-% Created by Numina
+% Generated from the project source LaTeX (Order 30 section).
 
 \begin{document}
 
-% Your blueprint will go here.
+\section{Classification of Groups of Order 30}
+\label{order-30-classification}
+
+We classify the finite groups of order $30 = 2 \cdot 3 \cdot 5$ up to isomorphism.
+The proof follows Deopurkar~\cite{deopurkar_modern_2013}.
+There are exactly four isomorphism classes:
+\begin{enumerate}
+  \item $C_{30}$ (cyclic),
+  \item $D_{15}$ (dihedral),
+  \item $C_5 \times D_3$ (equivalently $C_5 \times S_3$),
+  \item $C_3 \times D_5$.
+\end{enumerate}
+
+\subsection{Sylow infrastructure for groups of order \(pqr\)}
+
+\begin{lemma}\label{pqr_normal_sylow}
+Let $G$ be a finite group of order $pqr$ for distinct primes $p < q < r$.
+Then either the Sylow-$q$ subgroup or the Sylow-$r$ subgroup of $G$ is normal,
+i.e.\ $n_q(G) = 1$ or $n_r(G) = 1$.
+\end{lemma}
+
+\begin{proof}
+By Sylow's theorems $n_r \equiv 1 \pmod r$ and $n_r \mid pq$, so $n_r \in \{1, p, q, pq\}$.
+Neither $p$ nor $q$ is congruent to $1$ modulo $r$ because both are smaller than $r$
+and at least $2$. If $n_r = 1$ we are done, so assume $n_r = pq$.
+Distinct Sylow-$r$ subgroups have prime order $r$, so they intersect trivially;
+the total number of elements of order $r$ is therefore $pq(r-1)$.
+
+Now $n_q \mid pr$ and $n_q \equiv 1 \pmod q$. Suppose for contradiction $n_q > 1$.
+Then $n_q \geq q + 1$, so $n_q \in \{r, pr\}$ (since $p < q$, $n_q = p$ is impossible).
+In either case $n_q \geq r$, giving at least $r(q-1) \geq q+r-1$ elements of order $q$.
+Adding the elements of order $r$ and the identity:
+\[
+1 + pq(r-1) + r(q-1) = 1 + pqr - pq + qr - r > pqr,
+\]
+since $qr > pq + r - 1$ follows from $r > p$ and $q \geq 3$. Contradiction.
+\end{proof}
+
+\begin{theorem}\label{pqr_normal_subgroup_qr}
+Let $G$ be a finite group of order $pqr$ for distinct primes $p < q < r$.
+Then $G$ has a normal subgroup of order $qr$.
+\end{theorem}
+
+\begin{proof}
+By Lemma~\ref{pqr_normal_sylow} either $n_q = 1$ or $n_r = 1$.
+Pick a Sylow-$q$ subgroup $Q$ and a Sylow-$r$ subgroup $R$.
+The two subgroups have coprime orders, so $Q \cap R = \{1\}$ and hence
+$|QR| = |Q|\,|R| = qr$.
+If $Q$ is normal then $QR$ is a subgroup (as $Q \lhd G$),
+of order $qr$ and index $p$. Since $p$ is the smallest prime dividing $|G|$,
+the subgroup $QR$ is normal. The case where $R$ is normal is symmetric.
+\end{proof}
+
+\subsection{The main classification}
+
+\begin{theorem}\label{order_30_classification}
+Let $G$ be a group with $|G| = 30$. Then $G$ is isomorphic to exactly one of
+$C_{30}$, $D_{15}$, $C_5 \times D_3$, $C_3 \times D_5$.
+\end{theorem}
+
+\begin{proof}
+By Theorem~\ref{pqr_normal_subgroup_qr} (with $p=2$, $q=3$, $r=5$), $G$ has a
+normal subgroup $N$ of order $15$. By Schur--Zassenhaus there is a complementary
+subgroup $U \leq G$ of order $2$ with $G \cong N \rtimes U$.
+We have $U \cong C_2$, and by the classification of groups of order $pq$ with
+$p \nmid q-1$ (taking $p=3$, $q=5$, where $3 \nmid 4$) we have $N \cong C_{15}$.
+
+Let $\phi : C_2 \to \mathrm{Aut}(C_{15})$ be the underlying homomorphism.
+The image $\mathrm{Im}\,\phi$ has order $1$ or $2$.
+
+\paragraph{Case 1: $|\mathrm{Im}\,\phi| = 1$.}
+The action is trivial, so $G \cong C_{15} \times C_2 \cong C_{30}$.
+
+\paragraph{Case 2: $|\mathrm{Im}\,\phi| = 2$.}
+We have $\mathrm{Aut}(C_{15}) \cong (\mathbb{Z}/15\mathbb{Z})^\times
+\cong (\mathbb{Z}/3)^\times \times (\mathbb{Z}/5)^\times \cong C_2 \times C_4$,
+which has exactly three elements of order two: those acting by
+\begin{itemize}
+  \item inverting both factors (the global inversion automorphism of $C_{15}$),
+  \item inverting only the $C_3$ factor,
+  \item inverting only the $C_5$ factor.
+\end{itemize}
+By Lemma~\ref{equal_image_iso_sdp} (\textit{equal images give isomorphic
+semi-direct products for cyclic $p$-groups in the acting position}), each choice
+gives one isomorphism class. The three resulting groups, written in their direct
+product form, are:
+\begin{itemize}
+  \item $\phi$ inverts both $C_3$ and $C_5$: $G \cong D_{15}$.
+  \item $\phi$ inverts only $C_3$ and fixes $C_5$:
+        $G \cong (C_3 \rtimes_{\mathrm{inv}} C_2) \times C_5 \cong D_3 \times C_5$.
+  \item $\phi$ fixes $C_3$ and inverts $C_5$:
+        $G \cong C_3 \times (C_5 \rtimes_{\mathrm{inv}} C_2) \cong C_3 \times D_5$.
+\end{itemize}
+Combined with Case~1, we obtain the four isomorphism classes claimed.
+\end{proof}
+
+\begin{lemma}\label{equal_image_iso_sdp}
+If $K$ is a cyclic $p$-group, two homomorphisms $f, g : K \to \mathrm{Aut}(H)$
+with the same image define isomorphic semi-direct products $H \rtimes_f K$ and
+$H \rtimes_g K$.
+\end{lemma}
+
+\begin{proof}
+Let $k$ be a generator of $K$. Since $\mathrm{Im}(f) = \langle f(k) \rangle =
+\langle g(k) \rangle$, there exists $n$ with $\gcd(n, |\mathrm{Im}(f)|) = 1$
+such that $g(k) = f(k)^n$. As $\mathrm{Im}(f)$ has order $p^j$ for some $j \geq 0$,
+this $n$ is coprime to $|K| = p^m$. The map $\beta(x) = x^n$ is then an
+automorphism of $K$, and $g = f \circ \beta$. The pair $(\mathrm{id}_H, \beta)$
+induces an isomorphism $H \rtimes_g K \cong H \rtimes_f K$.
+\end{proof}
+
+\subsection{Uniqueness}
+
+The four isomorphism classes are pairwise non-isomorphic. This is verified by
+the decidable group invariants framework
+(\verb|M2rGroup7.Uniqueness.uniqueness|), which uses a computable family of
+invariants (order, abelianness, element count by order, etc.) and checks all
+relevant pairs via \verb|native_decide|. In particular:
+\begin{itemize}
+  \item $C_{30}$ is the unique abelian group of order $30$.
+  \item $D_{15}$ has $15$ elements of order $2$, while $C_5 \times D_3$ has
+        $3$ and $C_3 \times D_5$ has $5$ elements of order $2$.
+\end{itemize}
+This distinguishes all four classes.
 
 \end{document}

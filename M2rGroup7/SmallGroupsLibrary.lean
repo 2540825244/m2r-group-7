@@ -281,6 +281,9 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 28, 4 => CyclicGroup 7 ⋊[c2c2OnCqInv 7] (CyclicGroup 2 × CyclicGroup 2)
   | 29, 1 => CyclicGroup 29
   | 30, 1 => CyclicGroup 30
+  | 30, 2 => DihedralGroup 15
+  | 30, 3 => CyclicGroup 5 × DihedralGroup 3
+  | 30, 4 => CyclicGroup 3 × DihedralGroup 5
   | 31, 1 => CyclicGroup 31
   | _, _ => PUnit -- Fallback to make retrieve total
 
@@ -316,7 +319,7 @@ def num_entries (n : Nat) : Nat :=
   | 27 => 1 -- It is 5 actually, will fill rest later
   | 28 => 4
   | 29 => 1
-  | 30 => 1 -- It is 4 actually, will fill rest later
+  | 30 => 4
   | 31 => 1
   | _ => 0
 
