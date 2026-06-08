@@ -338,23 +338,17 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
         rcases mulAut_cpcp_order_two_conj hp_ne_2 σ hσ_order with h_conj1 | h_conj2
         · -- σ is conjugate to cpcpInvSecond p, hence φ_inter ≅ canonicalC2OnCpCpAction_r1 p
           obtain ⟨cu, hcu⟩ := h_conj1
-          -- hcu : SemiconjBy (↑cu) (cpcpInvSecond p) σ, i.e. cu * cpcpInvSecond p = σ * cu.
-          -- Equivalently, σ = cu * cpcpInvSecond p * cu⁻¹.
+          -- hcu : SemiconjBy (↑cu) (cpcpInvSecond p) σ, i.e. ↑cu * cpcpInvSecond p = σ * ↑cu.
           let c : MulAut (CyclicGroup p × CyclicGroup p) := (cu : MulAut _)
           have hc_eq : σ = c * cpcpInvSecond p * c⁻¹ := by
-            have h1 : (cu : MulAut _) * cpcpInvSecond p = σ * cu := hcu
-            have h2 : σ = c * cpcpInvSecond p * c⁻¹ := by
-              have h3 : c * cpcpInvSecond p * c⁻¹ = σ * c * c⁻¹ := by
-                rw [show c * cpcpInvSecond p = σ * c from h1]
-              rw [h3]; group
-            exact h2
+            have h1 : c * cpcpInvSecond p = σ * c := hcu
+            have h2 : c * cpcpInvSecond p * c⁻¹ = σ * c * c⁻¹ := by rw [h1]
+            rw [h2, mul_inv_cancel_right]
           let conj_hom : CyclicGroup 2 →* MulAut (CyclicGroup p × CyclicGroup p) :=
             { toFun := fun x => c * canonicalC2OnCpCpAction_r1 p x * c⁻¹
               map_one' := by simp
               map_mul' := fun a b => by
-                simp only [map_mul]
-                rw [mul_assoc, mul_assoc, ← mul_assoc c⁻¹, inv_mul_cancel, one_mul,
-                    ← mul_assoc, mul_assoc] }
+                simp only [map_mul]; group }
           have h_eq_on_g₂ : φ_inter g₂ = conj_hom g₂ := by
             show σ = c * canonicalC2OnCpCpAction_r1 p g₂ * c⁻¹
             rw [h_r1_g₂]; exact hc_eq
@@ -375,17 +369,14 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
           obtain ⟨cu, hcu⟩ := h_conj2
           let c : MulAut (CyclicGroup p × CyclicGroup p) := (cu : MulAut _)
           have hc_eq : σ = c * cpcpInvBoth p * c⁻¹ := by
-            have h1 : (cu : MulAut _) * cpcpInvBoth p = σ * cu := hcu
-            have h3 : c * cpcpInvBoth p * c⁻¹ = σ * c * c⁻¹ := by
-              rw [show c * cpcpInvBoth p = σ * c from h1]
-            rw [h3]; group
+            have h1 : c * cpcpInvBoth p = σ * c := hcu
+            have h2 : c * cpcpInvBoth p * c⁻¹ = σ * c * c⁻¹ := by rw [h1]
+            rw [h2, mul_inv_cancel_right]
           let conj_hom : CyclicGroup 2 →* MulAut (CyclicGroup p × CyclicGroup p) :=
             { toFun := fun x => c * canonicalC2OnCpCpAction_r2 p x * c⁻¹
               map_one' := by simp
               map_mul' := fun a b => by
-                simp only [map_mul]
-                rw [mul_assoc, mul_assoc, ← mul_assoc c⁻¹, inv_mul_cancel, one_mul,
-                    ← mul_assoc, mul_assoc] }
+                simp only [map_mul]; group }
           have h_eq_on_g₂ : φ_inter g₂ = conj_hom g₂ := by
             show σ = c * canonicalC2OnCpCpAction_r2 p g₂ * c⁻¹
             rw [h_r2_g₂]; exact hc_eq
