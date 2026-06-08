@@ -262,7 +262,7 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
           simpa using canonicalAction_range_card 2 p 2 1 0 h2p hpne2 (by norm_num) hr_le)
         have : G ≃* CyclicGroup (2 * p ^ 2) := pre.trans
           ((SemidirectProduct.mulEquivOfTrivialAction h_triv).trans
-            (CyclicGroup.prodMulEquiv h2p2cop))
+            (MulEquiv.prodComm.trans (CyclicGroup.prodMulEquiv h2p2cop)))
         tauto
       · -- r = 1: matches `canonicalC2OnCp2Action`.
         tauto
@@ -296,55 +296,76 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
         -- the generator (Multiplicative.ofAdd 1 : CyclicGroup 2) maps to some σ
         let g₂ : CyclicGroup 2 := Multiplicative.ofAdd (1 : ZMod 2)
         let σ : MulAut (CyclicGroup p × CyclicGroup p) := φ_inter g₂
+        have hg2_sq : g₂ ^ 2 = 1 := by
+          show (Multiplicative.ofAdd (1 : ZMod 2)) ^ 2 = 1
+          have h : (Multiplicative.ofAdd (1 : ZMod 2)) ^ (2 : ℕ) =
+              Multiplicative.ofAdd ((2 : ℕ) • (1 : ZMod 2)) := by
+            rw [ofAdd_nsmul]
+          rw [show (2 : ℕ) = (2 : ℕ) from rfl] at h
+          convert h using 1
+          show (1 : CyclicGroup 2) = Multiplicative.ofAdd ((2 : ℕ) • (1 : ZMod 2))
+          rw [show ((2 : ℕ) • (1 : ZMod 2)) = (0 : ZMod 2) from by
+            change ((2 : ℕ) : ZMod 2) * 1 = 0
+            rw [ZMod.natCast_self, zero_mul]]
+          rfl
         have hσ_sq : σ ^ 2 = 1 := by
-          have : g₂ ^ 2 = 1 := by
-            show (Multiplicative.ofAdd (1 : ZMod 2)) ^ 2 = 1
-            rw [show (2 : ℕ) = (2 : ℕ) from rfl, ← ofAdd_nsmul]
-            change Multiplicative.ofAdd ((2 : ℕ) • (1 : ZMod 2)) = 1
-            simp
-          have := congr_arg φ_inter this
+          have := congr_arg φ_inter hg2_sq
           rwa [map_pow, map_one] at this
         -- σ ≠ 1: otherwise φ_inter would be trivial since g₂ generates.
         have hg₂_gen : ∀ x : CyclicGroup 2, x ∈ Subgroup.zpowers g₂ := by
           intro x
-          rw [show (Subgroup.zpowers g₂ : Subgroup (CyclicGroup 2)) = ⊤ from
-            ofAdd_one_zpowers_top 2]
-          exact Subgroup.mem_top _
+          refine Subgroup.mem_zpowers_iff.mpr ⟨((Multiplicative.toAdd x).val : ℤ), ?_⟩
+          show Multiplicative.ofAdd (1 : ZMod 2) ^ ((Multiplicative.toAdd x).val : ℤ) = x
+          rw [← Multiplicative.ofAdd.apply_symm_apply x]
+          show Multiplicative.ofAdd (1 : ZMod 2) ^ ((Multiplicative.toAdd x).val : ℤ)
+              = Multiplicative.ofAdd (Multiplicative.toAdd x)
+          rw [← ofAdd_zsmul, zsmul_one]
+          congr 1
+          push_cast
+          exact ZMod.natCast_zmod_val _
         have hσ_ne_one : σ ≠ 1 := by
           intro hσ1
           apply h_triv
-          have : ∀ x : CyclicGroup 2, φ_inter x = 1 := by
+          have hext : ∀ x : CyclicGroup 2, φ_inter x = 1 := by
             intro x
             obtain ⟨n, hn⟩ := Subgroup.mem_zpowers_iff.mp (hg₂_gen x)
-            rw [← hn, map_zpow]
-            change σ ^ n = 1
-            rw [hσ1, one_zpow]
-          ext x; rw [this x]; rfl
+            have : φ_inter x = (φ_inter g₂) ^ n := by rw [← hn, map_zpow]
+            rw [this, show φ_inter g₂ = σ from rfl, hσ1, one_zpow]
+          ext x : 1; rw [hext x]; rfl
         have hσ_order : orderOf σ = 2 := orderOf_eq_prime hσ_sq hσ_ne_one
         -- Apply mulAut_cpcp_order_two_conj.
+        -- Helper: cyclicHom evaluated at g₂ gives the underlying element.
+        have hval_g₂ : ((Multiplicative.toAdd g₂).val : ℤ) = 1 := by
+          change ((1 : ZMod 2).val : ℤ) = 1
+          rw [ZMod.val_one_eq_one_mod]; norm_num
+        have h_r1_g₂ : canonicalC2OnCpCpAction_r1 p g₂ = cpcpInvSecond p := by
+          show (cyclicHom 2 (cpcpInvSecond p) (cpcpInvSecond_sq p)) g₂ = cpcpInvSecond p
+          rw [cyclicHom_apply_eq_zpow, hval_g₂]; exact zpow_one _
+        have h_r2_g₂ : canonicalC2OnCpCpAction_r2 p g₂ = cpcpInvBoth p := by
+          show (cyclicHom 2 (cpcpInvBoth p) (cpcpInvBoth_sq p)) g₂ = cpcpInvBoth p
+          rw [cyclicHom_apply_eq_zpow, hval_g₂]; exact zpow_one _
         rcases mulAut_cpcp_order_two_conj hp_ne_2 σ hσ_order with h_conj1 | h_conj2
         · -- σ is conjugate to cpcpInvSecond p, hence φ_inter ≅ canonicalC2OnCpCpAction_r1 p
           obtain ⟨c, hc⟩ := h_conj1
-          -- hc : c * cpcpInvSecond p * c⁻¹ = σ
+          -- hc.eq : c * cpcpInvSecond p * c⁻¹ = σ
+          -- We need: φ_inter x = c * (canonicalC2OnCpCpAction_r1 p x) * c⁻¹ for all x.
+          -- Both sides are homomorphisms K → MulAut H, so it suffices to check on g₂.
+          let conj_hom : CyclicGroup 2 →* MulAut (CyclicGroup p × CyclicGroup p) :=
+            (MulAut.conj c).comp (canonicalC2OnCpCpAction_r1 p)
+          have h_eq_on_g₂ : φ_inter g₂ = conj_hom g₂ := by
+            show σ = (MulAut.conj c) (canonicalC2OnCpCpAction_r1 p g₂)
+            rw [h_r1_g₂]
+            show σ = c * cpcpInvSecond p * c⁻¹
+            exact hc.eq.symm
+          have h_eq : φ_inter = conj_hom :=
+            monoidHom_eq_of_generator_eq hg₂_gen h_eq_on_g₂
           have h_action_eq : ∀ x : CyclicGroup 2,
               φ_inter x = c * canonicalC2OnCpCpAction_r1 p x * c⁻¹ := by
             intro x
-            obtain ⟨n, hn⟩ := Subgroup.mem_zpowers_iff.mp (hg₂_gen x)
-            rw [← hn, map_zpow, map_zpow]
-            change σ ^ n = (c * canonicalC2OnCpCpAction_r1 p g₂ * c⁻¹) ^ n
-            have h1 : c * canonicalC2OnCpCpAction_r1 p g₂ * c⁻¹ = σ := by
-              show c * (cyclicHom 2 (cpcpInvSecond p) (cpcpInvSecond_sq p)) g₂ * c⁻¹ = σ
-              -- evaluate cyclicHom at the generator
-              rw [show (cyclicHom 2 (cpcpInvSecond p) (cpcpInvSecond_sq p)) g₂ =
-                cpcpInvSecond p from by
-                rw [cyclicHom_apply_eq_zpow]
-                have hval : ((Multiplicative.toAdd g₂).val : ℤ) = 1 := by
-                  change ((1 : ZMod 2).val : ℤ) = 1
-                  rw [ZMod.val_one_eq_one_mod]; norm_num
-                rw [hval]; exact zpow_one _]
-              exact hc.eq
-            rw [h1]
-          -- Use semidirectProduct_iso_of_conjugate_action
+            have := congr_fun (congr_arg DFunLike.coe h_eq) x
+            simp at this
+            convert this using 1
+            rfl
           obtain ⟨e_iso⟩ := semidirectProduct_iso_of_conjugate_action
             (f_1 := canonicalC2OnCpCpAction_r1 p)
             (f_2 := φ_inter) c 1
@@ -355,23 +376,22 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
           tauto
         · -- σ is conjugate to cpcpInvBoth p, hence φ_inter ≅ canonicalC2OnCpCpAction_r2 p
           obtain ⟨c, hc⟩ := h_conj2
+          let conj_hom : CyclicGroup 2 →* MulAut (CyclicGroup p × CyclicGroup p) :=
+            (MulAut.conj c).comp (canonicalC2OnCpCpAction_r2 p)
+          have h_eq_on_g₂ : φ_inter g₂ = conj_hom g₂ := by
+            show σ = (MulAut.conj c) (canonicalC2OnCpCpAction_r2 p g₂)
+            rw [h_r2_g₂]
+            show σ = c * cpcpInvBoth p * c⁻¹
+            exact hc.eq.symm
+          have h_eq : φ_inter = conj_hom :=
+            monoidHom_eq_of_generator_eq hg₂_gen h_eq_on_g₂
           have h_action_eq : ∀ x : CyclicGroup 2,
               φ_inter x = c * canonicalC2OnCpCpAction_r2 p x * c⁻¹ := by
             intro x
-            obtain ⟨n, hn⟩ := Subgroup.mem_zpowers_iff.mp (hg₂_gen x)
-            rw [← hn, map_zpow, map_zpow]
-            change σ ^ n = (c * canonicalC2OnCpCpAction_r2 p g₂ * c⁻¹) ^ n
-            have h1 : c * canonicalC2OnCpCpAction_r2 p g₂ * c⁻¹ = σ := by
-              show c * (cyclicHom 2 (cpcpInvBoth p) (cpcpInvBoth_sq p)) g₂ * c⁻¹ = σ
-              rw [show (cyclicHom 2 (cpcpInvBoth p) (cpcpInvBoth_sq p)) g₂ =
-                cpcpInvBoth p from by
-                rw [cyclicHom_apply_eq_zpow]
-                have hval : ((Multiplicative.toAdd g₂).val : ℤ) = 1 := by
-                  change ((1 : ZMod 2).val : ℤ) = 1
-                  rw [ZMod.val_one_eq_one_mod]; norm_num
-                rw [hval]; exact zpow_one _]
-              exact hc.eq
-            rw [h1]
+            have := congr_fun (congr_arg DFunLike.coe h_eq) x
+            simp at this
+            convert this using 1
+            rfl
           obtain ⟨e_iso⟩ := semidirectProduct_iso_of_conjugate_action
             (f_1 := canonicalC2OnCpCpAction_r2 p)
             (f_2 := φ_inter) c 1
@@ -390,7 +410,8 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
     obtain ⟨K, hK⟩ := Subgroup.exists_right_complement'_of_coprime
       (N := (↑Q : Subgroup G)) (by
       rw [h_Q_card, h_Q_idx_p2]
-      exact ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_p_prime.out hpne2).pow_right 2)
+      exact ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_p_prime.out
+        (by omega : (2 : ℕ) ≠ p)).pow_right 2)
     have h_iso_g_q_k := SemidirectProduct.mulEquivSubgroup hK
     let φ : ↥K →* MulAut ↥(↑Q : Subgroup G) :=
       (↑Q : Subgroup G).normalizerMonoidHom.comp
