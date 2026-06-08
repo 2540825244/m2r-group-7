@@ -50,18 +50,6 @@ private lemma order24_1_sylow3_trivial
       h_iso.trans ((MulEquiv.refl (CyclicGroup 3)).prodCongr e)
     tauto
 
-/-- Step 1 (basis change): any non-trivial action `φ` of `(C₂)³` on `C₃` produces a
-    semidirect product isomorphic to the same with the standard "first-coord-then-inv"
-    action `(c2OnCqInv 3).comp (MonoidHom.fst ..)`. -/
-private def c3_sdp_c2cubed_iso_standard
-    {φ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
-    (h_nontriv : φ ≠ 1) :
-    CyclicGroup 3 ⋊[φ] (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
-      CyclicGroup 3 ⋊[(c2OnCqInv 3).comp
-                      (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2 × CyclicGroup 2))]
-                    (CyclicGroup 2 × (CyclicGroup 2 × CyclicGroup 2)) := by
-  sorry
-
 /-- Step 2 (factor split): in a semidirect product whose action factors through the first
     projection `A × B → A`, the `B` factor splits off as a direct factor. -/
 private def sdp_prodEquivOfFstAction
@@ -149,6 +137,46 @@ private def dihedralThree_iso_sdp :
     · change DihedralGroup.r (Multiplicative.toAdd c₁ + -Multiplicative.toAdd c₂) =
           DihedralGroup.r (-Multiplicative.toAdd c₂ - -Multiplicative.toAdd c₁)
       congr 1; ring
+
+/-- The canonical iso `CyclicGroup 2 ≃* MulAut (CyclicGroup 3)`, sending the generator
+to inversion. Built by upgrading `c2OnCqInv 3` via bijectivity. -/
+private def c2_mulEquiv_mulAutC3 : CyclicGroup 2 ≃* MulAut (CyclicGroup 3) := by
+  sorry
+
+/-- For any non-trivial action `φ : (C₂)³ →* MulAut(C₃)`, the basis-change automorphism
+of `(C₂)³` that lines `ker φ` up with the standard `{1} × (C₂)²` hyperplane. -/
+private def c3_sdp_c2cubed_basis_change
+    {φ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
+    (h : φ ≠ 1) :
+    (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) := by
+  sorry
+
+/-- The basis change transports `φ` to `(c2OnCqInv 3) ∘ fst`. -/
+private lemma c3_sdp_c2cubed_basis_change_eq
+    {φ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
+    (h : φ ≠ 1) :
+    ((c2OnCqInv 3).comp
+        (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2 × CyclicGroup 2))).comp
+      (c3_sdp_c2cubed_basis_change h).toMonoidHom = φ := by
+  sorry
+
+/-- Step 1 (basis change): any non-trivial action `φ` of `(C₂)³` on `C₃` produces a
+    semidirect product isomorphic to the same with the standard "first-coord-then-inv"
+    action `(c2OnCqInv 3).comp (MonoidHom.fst ..)`. -/
+private def c3_sdp_c2cubed_iso_standard
+    {φ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
+    (h_nontriv : φ ≠ 1) :
+    CyclicGroup 3 ⋊[φ] (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+      CyclicGroup 3 ⋊[(c2OnCqInv 3).comp
+                      (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2 × CyclicGroup 2))]
+                    (CyclicGroup 2 × (CyclicGroup 2 × CyclicGroup 2)) :=
+  SemidirectProduct.congr (MulEquiv.refl _) (c3_sdp_c2cubed_basis_change h_nontriv) (by
+    intro g
+    have h := DFunLike.ext_iff.mp (c3_sdp_c2cubed_basis_change_eq h_nontriv) g
+    ext n
+    simp only [MulEquiv.trans_apply, MulEquiv.refl_apply]
+    exact (congrArg (fun a : MulAut _ => a n) h).symm)
 
 /-- Any non-trivial action `φ` of `C₂³` on `C₃` gives `C₃ ⋊[φ] C₂³` isomorphic to `D₃ × V`. -/
 private def c3_sdp_c2cubed_nontrivial
