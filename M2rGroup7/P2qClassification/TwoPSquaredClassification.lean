@@ -424,12 +424,18 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
         exact ZMod.natCast_zmod_val _
       obtain ⟨i, hi⟩ := Subgroup.mem_zpowers_iff.mp (h_ofAdd_gen a)
       obtain ⟨j, hj⟩ := Subgroup.mem_zpowers_iff.mp (h_ofAdd_gen b)
+      have h_g₁_pow : (g₁ ^ i : H) = (a, 1) := by
+        change (g₁.1 ^ i, g₁.2 ^ i) = (a, 1)
+        show ((Multiplicative.ofAdd (1 : ZMod p) : CyclicGroup p) ^ i,
+              (1 : CyclicGroup p) ^ i) = (a, 1)
+        rw [one_zpow, hi]
+      have h_g₂_pow : (g₂ ^ j : H) = (1, b) := by
+        change (g₂.1 ^ j, g₂.2 ^ j) = (1, b)
+        show ((1 : CyclicGroup p) ^ j,
+              (Multiplicative.ofAdd (1 : ZMod p) : CyclicGroup p) ^ j) = (1, b)
+        rw [one_zpow, hj]
       have hab_eq : (a, b) = g₁ ^ i * g₂ ^ j := by
-        show (a, b) = (Multiplicative.ofAdd 1, (1 : CyclicGroup p)) ^ i *
-          ((1 : CyclicGroup p), Multiplicative.ofAdd 1) ^ j
-        rw [Prod.pow_def, Prod.pow_def, Prod.mk_mul_mk, one_zpow, one_zpow,
-            mul_one, one_mul]
-        exact Prod.mk.injEq .. |>.mpr ⟨hi.symm, hj.symm⟩
+        rw [h_g₁_pow, h_g₂_pow, Prod.mk_mul_mk, mul_one, one_mul]
       rw [hab_eq]
       exact mul_mem
         (Subgroup.mem_sup_left (Subgroup.zpow_mem _ (Subgroup.mem_zpowers g₁) _))
@@ -526,7 +532,7 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
         show ((g₁.1, g₁.2⁻¹) : H) = g₁
         change ((Multiplicative.ofAdd (1 : ZMod p), (1 : CyclicGroup p)⁻¹) : H) =
           (Multiplicative.ofAdd (1 : ZMod p), (1 : CyclicGroup p))
-        simp
+        rw [inv_one]
       rw [h_inv_g₁, h_β_g₁, hu_fixed]
     have h_at_g₂ : (β * cpcpInvSecond p) g₂ = (σ * β) g₂ := by
       rw [MulAut.mul_apply, MulAut.mul_apply]
@@ -535,8 +541,15 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
         show ((g₂.1, g₂.2⁻¹) : H) = g₂⁻¹
         change ((1 : CyclicGroup p), (Multiplicative.ofAdd (1 : ZMod p))⁻¹) =
           ((1 : CyclicGroup p)⁻¹, (Multiplicative.ofAdd (1 : ZMod p))⁻¹)
-        simp
+        rw [inv_one]
       rw [h_inv_g₂, map_inv, h_β_g₂, hv_inv]
+    -- Extract pointwise equalities from h_at_g₁, h_at_g₂
+    have hβσ_g₁ : β (cpcpInvSecond p g₁) = σ (β g₁) := by
+      have := h_at_g₁
+      rwa [MulAut.mul_apply, MulAut.mul_apply] at this
+    have hβσ_g₂ : β (cpcpInvSecond p g₂) = σ (β g₂) := by
+      have := h_at_g₂
+      rwa [MulAut.mul_apply, MulAut.mul_apply] at this
     -- Now show β * cpcpInvSecond p = σ * β by checking they agree on H
     -- It suffices to check on g₁ and g₂ since they generate H
     apply MulEquiv.ext
@@ -550,24 +563,13 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
     obtain ⟨b, hb⟩ := Subgroup.mem_zpowers_iff.mp hw₂_mem
     have hx_eq : x = g₁ ^ a * g₂ ^ b := by rw [← hw_eq, ha, hb]
     rw [hx_eq]
-    -- LHS: (β * cpcpInvSecond p) (g₁^a * g₂^b)
-    -- RHS: (σ * β) (g₁^a * g₂^b)
-    -- Both are multiplicative so it suffices to handle g₁^a and g₂^b separately
-    rw [MulAut.mul_apply, MulAut.mul_apply, map_mul, map_mul, map_zpow, map_zpow,
-        map_zpow, map_zpow]
-    congr 1
-    · -- equality on g₁^a
-      have : β (cpcpInvSecond p g₁) = σ (β g₁) := by
-        rw [show β (cpcpInvSecond p g₁) = (β * cpcpInvSecond p) g₁ from rfl,
-            show σ (β g₁) = (σ * β) g₁ from rfl]
-        exact h_at_g₁
-      rw [this]
-    · -- equality on g₂^b
-      have : β (cpcpInvSecond p g₂) = σ (β g₂) := by
-        rw [show β (cpcpInvSecond p g₂) = (β * cpcpInvSecond p) g₂ from rfl,
-            show σ (β g₂) = (σ * β) g₂ from rfl]
-        exact h_at_g₂
-      rw [this]
+    show (β * cpcpInvSecond p) (g₁ ^ a * g₂ ^ b) = (σ * β) (g₁ ^ a * g₂ ^ b)
+    rw [MulAut.mul_apply, MulAut.mul_apply]
+    show β (cpcpInvSecond p (g₁ ^ a * g₂ ^ b)) = σ (β (g₁ ^ a * g₂ ^ b))
+    rw [map_mul (cpcpInvSecond p), map_mul β, map_mul β, map_mul σ,
+        map_zpow (cpcpInvSecond p), map_zpow (cpcpInvSecond p),
+        map_zpow β, map_zpow β, map_zpow β, map_zpow β,
+        map_zpow σ, map_zpow σ, hβσ_g₁, hβσ_g₂]
 
 /-! ## Range cards for the new canonical actions. -/
 
