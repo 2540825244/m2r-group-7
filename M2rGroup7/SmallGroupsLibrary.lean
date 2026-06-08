@@ -120,12 +120,12 @@ instance : Group Unit where
   inv_mul_cancel _ := by rfl
 
 -- Fact instances for the primes used in retrieve's pq semidirect product entries.
-private instance : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-private instance : Fact (Nat.Prime 3) := ⟨by norm_num⟩
-private instance : Fact (Nat.Prime 5) := ⟨by norm_num⟩
-private instance : Fact (Nat.Prime 7) := ⟨by norm_num⟩
-private instance : Fact (Nat.Prime 11) := ⟨by norm_num⟩
-private instance : Fact (Nat.Prime 13) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 3) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 5) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 7) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 11) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 13) := ⟨by norm_num⟩
 
 -- ─── Computable surrogate actions for `retrieve` ──────────────────────────────
 -- The canonical actions used by the classification theorems
@@ -434,7 +434,7 @@ lemma canonicalSDP_iso_retrieve_21
 -- has range equal to `Subgroup.zpowers a` (where `a` is the chosen target).
 
 /-- For any `cyclicHom n a h`, applied at `x : CyclicGroup n`, we get `a ^ (toAdd x).val`. -/
-private lemma cyclicHom_apply_eq_zpow
+lemma cyclicHom_apply_eq_zpow
     (n : Nat) [NeZero n] {G : Type*} [Group G] (a : G) (h : a ^ n = 1) (x : CyclicGroup n) :
     cyclicHom n a h x = a ^ ((Multiplicative.toAdd x).val : ℤ) := by
   show Additive.toMul ((ZMod.lift n
@@ -453,17 +453,17 @@ private lemma cyclicHom_apply_eq_zpow
   rfl
 
 /-- Inversion on `CyclicGroup q` squared equals identity. -/
-private lemma inv_aut_pow_two_eq_one (q : ℕ) [NeZero q] :
+lemma inv_aut_pow_two_eq_one (q : ℕ) [NeZero q] :
     (MulEquiv.inv (CyclicGroup q)) ^ 2 = 1 := by
   ext x; change (x⁻¹)⁻¹ = x; exact inv_inv x
 
 /-- Inversion on `CyclicGroup q` to the 4th power equals identity. -/
-private lemma inv_aut_pow_four_eq_one (q : ℕ) [NeZero q] :
+lemma inv_aut_pow_four_eq_one (q : ℕ) [NeZero q] :
     (MulEquiv.inv (CyclicGroup q)) ^ 4 = 1 := by
   rw [show (4 : ℕ) = 2 * 2 from rfl, pow_mul, inv_aut_pow_two_eq_one, one_pow]
 
 /-- For the surrogate `c4OnCqInv q`, applied at `x`, the value is `inv^(toAdd x).val`. -/
-private lemma c4OnCqInv_apply (q : ℕ) [NeZero q] (x : CyclicGroup 4) :
+lemma c4OnCqInv_apply (q : ℕ) [NeZero q] (x : CyclicGroup 4) :
     c4OnCqInv q x = (MulEquiv.inv (CyclicGroup q)) ^ ((Multiplicative.toAdd x).val : ℤ) :=
   cyclicHom_apply_eq_zpow 4 (MulEquiv.inv (CyclicGroup q)) (inv_aut_pow_four_eq_one q) x
 
@@ -472,24 +472,24 @@ lemma c2OnCqInv_apply (q : ℕ) [NeZero q] (x : CyclicGroup 2) :
     c2OnCqInv q x = (MulEquiv.inv (CyclicGroup q)) ^ ((Multiplicative.toAdd x).val : ℤ) :=
   cyclicHom_apply_eq_zpow 2 (MulEquiv.inv (CyclicGroup q)) (inv_aut_pow_two_eq_one q) x
 
-private lemma inv_aut_ne_one_three : (MulEquiv.inv (CyclicGroup 3)) ≠ 1 := by decide
-private lemma inv_aut_ne_one_five  : (MulEquiv.inv (CyclicGroup 5)) ≠ 1 := by decide
-private lemma inv_aut_ne_one_seven : (MulEquiv.inv (CyclicGroup 7)) ≠ 1 := by decide
+lemma inv_aut_ne_one_three : (MulEquiv.inv (CyclicGroup 3)) ≠ 1 := by decide
+lemma inv_aut_ne_one_five  : (MulEquiv.inv (CyclicGroup 5)) ≠ 1 := by decide
+lemma inv_aut_ne_one_seven : (MulEquiv.inv (CyclicGroup 7)) ≠ 1 := by decide
 
-private lemma orderOf_inv_aut_three : orderOf (MulEquiv.inv (CyclicGroup 3)) = 2 :=
+lemma orderOf_inv_aut_three : orderOf (MulEquiv.inv (CyclicGroup 3)) = 2 :=
   orderOf_eq_prime (inv_aut_pow_two_eq_one 3) inv_aut_ne_one_three
-private lemma orderOf_inv_aut_five : orderOf (MulEquiv.inv (CyclicGroup 5)) = 2 :=
+lemma orderOf_inv_aut_five : orderOf (MulEquiv.inv (CyclicGroup 5)) = 2 :=
   orderOf_eq_prime (inv_aut_pow_two_eq_one 5) inv_aut_ne_one_five
-private lemma orderOf_inv_aut_seven : orderOf (MulEquiv.inv (CyclicGroup 7)) = 2 :=
+lemma orderOf_inv_aut_seven : orderOf (MulEquiv.inv (CyclicGroup 7)) = 2 :=
   orderOf_eq_prime (inv_aut_pow_two_eq_one 7) inv_aut_ne_one_seven
 
 /-- `(c4OnCqInv q).range ≤ Subgroup.zpowers (MulEquiv.inv (CyclicGroup q))`. -/
-private lemma c4OnCqInv_range_le_zpowers_inv (q : ℕ) [NeZero q] :
+lemma c4OnCqInv_range_le_zpowers_inv (q : ℕ) [NeZero q] :
     (c4OnCqInv q).range ≤ Subgroup.zpowers (MulEquiv.inv (CyclicGroup q)) := by
   rintro y ⟨x, rfl⟩
   exact ⟨((Multiplicative.toAdd x).val : ℤ), (c4OnCqInv_apply q x).symm⟩
 
-private lemma c4OnCqInv_inv_mem_range (q : ℕ) [NeZero q] :
+lemma c4OnCqInv_inv_mem_range (q : ℕ) [NeZero q] :
     MulEquiv.inv (CyclicGroup q) ∈ (c4OnCqInv q).range := by
   haveI : Fact (1 < 4) := ⟨by norm_num⟩
   refine ⟨Multiplicative.ofAdd (1 : ZMod 4), ?_⟩
@@ -516,12 +516,12 @@ lemma c4OnCqInv_range_card_7 : Nat.card (c4OnCqInv 7).range = 2 := by
   rw [le_antisymm hle hge, Nat.card_zpowers, orderOf_inv_aut_seven]
 
 -- c2OnCqInv: image of generator is inversion.
-private lemma c2OnCqInv_range_le_zpowers_inv (q : ℕ) [NeZero q] :
+lemma c2OnCqInv_range_le_zpowers_inv (q : ℕ) [NeZero q] :
     (c2OnCqInv q).range ≤ Subgroup.zpowers (MulEquiv.inv (CyclicGroup q)) := by
   rintro y ⟨x, rfl⟩
   exact ⟨((Multiplicative.toAdd x).val : ℤ), (c2OnCqInv_apply q x).symm⟩
 
-private lemma c2OnCqInv_inv_mem_range (q : ℕ) [NeZero q] :
+lemma c2OnCqInv_inv_mem_range (q : ℕ) [NeZero q] :
     MulEquiv.inv (CyclicGroup q) ∈ (c2OnCqInv q).range := by
   haveI : Fact (1 < 2) := ⟨by norm_num⟩
   refine ⟨Multiplicative.ofAdd (1 : ZMod 2), ?_⟩
@@ -529,7 +529,7 @@ private lemma c2OnCqInv_inv_mem_range (q : ℕ) [NeZero q] :
   show (MulEquiv.inv (CyclicGroup q)) ^ ((1 : ZMod 2).val : ℤ) = MulEquiv.inv (CyclicGroup q)
   rw [ZMod.val_one]; exact zpow_one _
 
-private lemma c2c2OnCqInv_range_eq_c2OnCqInv_range (q : ℕ) [NeZero q] :
+lemma c2c2OnCqInv_range_eq_c2OnCqInv_range (q : ℕ) [NeZero q] :
     (c2c2OnCqInv q).range = (c2OnCqInv q).range := by
   ext y
   simp only [c2c2OnCqInv, MonoidHom.mem_range, MonoidHom.comp_apply, MonoidHom.coe_fst]
@@ -557,25 +557,25 @@ lemma c2c2OnCqInv_range_card_7 : Nat.card (c2c2OnCqInv 7).range = 2 := by
   rw [le_antisymm hle hge, Nat.card_zpowers, orderOf_inv_aut_seven]
 
 -- c3OnC2C2 range cardinality
-private lemma c2c2OrderThreeAutComp_pow_three_eq_one :
+lemma c2c2OrderThreeAutComp_pow_three_eq_one :
     c2c2OrderThreeAutComp ^ 3 = 1 := by decide
 
-private lemma c2c2OrderThreeAutComp_ne_one : c2c2OrderThreeAutComp ≠ 1 := by decide
+lemma c2c2OrderThreeAutComp_ne_one : c2c2OrderThreeAutComp ≠ 1 := by decide
 
-private lemma orderOf_c2c2OrderThreeAutComp : orderOf c2c2OrderThreeAutComp = 3 :=
+lemma orderOf_c2c2OrderThreeAutComp : orderOf c2c2OrderThreeAutComp = 3 :=
   orderOf_eq_prime c2c2OrderThreeAutComp_pow_three_eq_one c2c2OrderThreeAutComp_ne_one
 
 /-- For `c3OnC2C2`, applied at `x`, the value is `c2c2OrderThreeAutComp^(toAdd x).val`. -/
-private lemma c3OnC2C2_apply (x : CyclicGroup 3) :
+lemma c3OnC2C2_apply (x : CyclicGroup 3) :
     c3OnC2C2 x = c2c2OrderThreeAutComp ^ ((Multiplicative.toAdd x).val : ℤ) :=
   cyclicHom_apply_eq_zpow 3 c2c2OrderThreeAutComp c2c2OrderThreeAutComp_pow_three_eq_one x
 
-private lemma c3OnC2C2_range_le_zpowers :
+lemma c3OnC2C2_range_le_zpowers :
     c3OnC2C2.range ≤ Subgroup.zpowers c2c2OrderThreeAutComp := by
   rintro y ⟨x, rfl⟩
   exact ⟨((Multiplicative.toAdd x).val : ℤ), (c3OnC2C2_apply x).symm⟩
 
-private lemma c2c2OrderThreeAutComp_mem_c3OnC2C2_range :
+lemma c2c2OrderThreeAutComp_mem_c3OnC2C2_range :
     c2c2OrderThreeAutComp ∈ c3OnC2C2.range := by
   haveI : Fact (1 < 3) := ⟨by norm_num⟩
   refine ⟨Multiplicative.ofAdd (1 : ZMod 3), ?_⟩
@@ -583,7 +583,7 @@ private lemma c2c2OrderThreeAutComp_mem_c3OnC2C2_range :
   show c2c2OrderThreeAutComp ^ ((1 : ZMod 3).val : ℤ) = c2c2OrderThreeAutComp
   rw [ZMod.val_one]; exact zpow_one _
 
-private lemma c3OnC2C2_range_card : Nat.card c3OnC2C2.range = 3 := by
+lemma c3OnC2C2_range_card : Nat.card c3OnC2C2.range = 3 := by
   have hle := c3OnC2C2_range_le_zpowers
   have hmem := c2c2OrderThreeAutComp_mem_c3OnC2C2_range
   have hge := Subgroup.zpowers_le.mpr hmem
@@ -591,20 +591,20 @@ private lemma c3OnC2C2_range_card : Nat.card c3OnC2C2.range = 3 := by
 
 -- c4OnC5Pow2 range cardinality: range is generated by `pow2AutC5`, which has order 4.
 
-private lemma pow2AutC5_pow_four_eq_one : pow2AutC5 ^ 4 = 1 := by
+lemma pow2AutC5_pow_four_eq_one : pow2AutC5 ^ 4 = 1 := by
   ext x; change (((x^2)^2)^2)^2 = x; revert x; decide
 
-private lemma pow2AutC5_pow_two_ne_one : pow2AutC5 ^ 2 ≠ 1 := by
+lemma pow2AutC5_pow_two_ne_one : pow2AutC5 ^ 2 ≠ 1 := by
   intro h
   have := MulEquiv.ext_iff.mp h (Multiplicative.ofAdd (1 : ZMod 5))
   revert this; decide
 
-private lemma pow2AutC5_ne_one : pow2AutC5 ≠ 1 := by
+lemma pow2AutC5_ne_one : pow2AutC5 ≠ 1 := by
   intro h
   have := MulEquiv.ext_iff.mp h (Multiplicative.ofAdd (1 : ZMod 5))
   revert this; decide
 
-private lemma orderOf_pow2AutC5 : orderOf pow2AutC5 = 4 := by
+lemma orderOf_pow2AutC5 : orderOf pow2AutC5 = 4 := by
   have hdvd : orderOf pow2AutC5 ∣ 4 := orderOf_dvd_of_pow_eq_one pow2AutC5_pow_four_eq_one
   have hle : orderOf pow2AutC5 ≤ 4 := Nat.le_of_dvd (by norm_num) hdvd
   have hne1 : orderOf pow2AutC5 ≠ 1 :=
@@ -616,23 +616,23 @@ private lemma orderOf_pow2AutC5 : orderOf pow2AutC5 = 4 := by
     first | rfl | (exfalso; omega) | (exfalso; revert hdvd; decide)
 
 /-- For `c4OnC5Pow2`, applied at `x`, the value is `pow2AutC5^(toAdd x).val`. -/
-private lemma c4OnC5Pow2_apply (x : CyclicGroup 4) :
+lemma c4OnC5Pow2_apply (x : CyclicGroup 4) :
     c4OnC5Pow2 x = pow2AutC5 ^ ((Multiplicative.toAdd x).val : ℤ) :=
   cyclicHom_apply_eq_zpow 4 pow2AutC5 pow2AutC5_pow_four_eq_one x
 
-private lemma c4OnC5Pow2_range_le_zpowers_pow2 :
+lemma c4OnC5Pow2_range_le_zpowers_pow2 :
     c4OnC5Pow2.range ≤ Subgroup.zpowers pow2AutC5 := by
   rintro y ⟨x, rfl⟩
   exact ⟨((Multiplicative.toAdd x).val : ℤ), (c4OnC5Pow2_apply x).symm⟩
 
-private lemma pow2AutC5_mem_c4OnC5Pow2_range : pow2AutC5 ∈ c4OnC5Pow2.range := by
+lemma pow2AutC5_mem_c4OnC5Pow2_range : pow2AutC5 ∈ c4OnC5Pow2.range := by
   haveI : Fact (1 < 4) := ⟨by norm_num⟩
   refine ⟨Multiplicative.ofAdd (1 : ZMod 4), ?_⟩
   rw [c4OnC5Pow2_apply]
   show pow2AutC5 ^ ((1 : ZMod 4).val : ℤ) = pow2AutC5
   rw [ZMod.val_one]; exact zpow_one _
 
-private lemma c4OnC5Pow2_range_card  : Nat.card c4OnC5Pow2.range = 4 := by
+lemma c4OnC5Pow2_range_card  : Nat.card c4OnC5Pow2.range = 4 := by
   have hle := c4OnC5Pow2_range_le_zpowers_pow2
   have hmem := pow2AutC5_mem_c4OnC5Pow2_range
   have hge := Subgroup.zpowers_le.mpr hmem
