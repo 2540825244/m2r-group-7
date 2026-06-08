@@ -187,4 +187,245 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
                          (canonicalC2OnCpCpAction_r1 p))
       ∨ Nonempty (G ≃* SemidirectProduct (CyclicGroup p × CyclicGroup p) (CyclicGroup 2)
                          (canonicalC2OnCpCpAction_r2 p)) := by
-  sorry
+  haveI : NeZero p := ⟨h_p_prime.out.ne_zero⟩
+  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+  have hp_ne_2 : p ≠ 2 := by omega
+  haveI : Finite G := by
+    apply Nat.finite_of_card_ne_zero; rw [h]
+    have p_ne : p ≠ 0 := Nat.Prime.ne_zero h_p_prime.elim
+    simp; tauto
+  let n_p := Nat.card (Sylow p G)
+  let n_2 := Nat.card (Sylow 2 G)
+  have hpne2 : p ≠ 2 := hp_ne_2
+  have n_p_or_n_2_one : n_p = 1 ∨ n_2 = 1 :=
+    p2q_group_has_normal_sylow_subgroup G hpne2 h
+  have h2cop : Nat.Coprime 2 p :=
+    ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_p_prime.out (by omega))
+  have h_p2_p_card : Nat.card G = p ^ 2 * 2 ^ 1 := by simpa using h
+  have h_2_p2_card : Nat.card G = 2 ^ 1 * p ^ 2 := by rw [h]; ring
+  rcases n_p_or_n_2_one with h_np_1 | h_n2_1
+  · -- n_p = 1: Sylow p-subgroup N (order p²) is normal, complement K of order 2
+    let N : Sylow p G := default
+    haveI : Subsingleton (Sylow p G) := (Nat.card_eq_one_iff_unique.mp h_np_1).1
+    have h_N_card : Nat.card ↥(N : Subgroup G) = p ^ 2 :=
+      sylow_card_eq hpne2 h_p2_p_card N
+    have h_N_idx_2 : ∀ N : Sylow p G, (↑N : Subgroup G).index = 2 := fun N => by
+      simpa using sylow_index_eq hpne2 h_p2_p_card N
+    obtain ⟨K, hK⟩ := Subgroup.exists_right_complement'_of_coprime
+      (N := (↑N : Subgroup G)) (by
+      rw [h_N_card, h_N_idx_2]
+      exact ((h_p_prime.out.coprime_of_ne (by norm_num : (2 : ℕ).Prime) hpne2)).pow_left 2)
+    have h_iso_g_n_k := SemidirectProduct.mulEquivSubgroup hK
+    let φ : ↥K →* MulAut ↥(↑N : Subgroup G) :=
+      (↑N : Subgroup G).normalizerMonoidHom.comp
+        (Subgroup.inclusion (by simp [Subgroup.normalizer_eq_top]))
+    have hK_card : Nat.card ↥K = 2 := by
+      have h1 : Nat.card G = Nat.card ↥(↑N : Subgroup G) * Nat.card ↥K := by
+        have heq := Nat.card_congr h_iso_g_n_k.toEquiv
+        rw [SemidirectProduct.card] at heq; exact heq.symm
+      rw [h_N_card, h] at h1
+      have hp_pos : 0 < p ^ 2 := pow_pos h_p_prime.out.pos 2
+      exact (Nat.eq_of_mul_eq_mul_left hp_pos h1).symm
+    have eK : ↥K ≃* CyclicGroup 2 :=
+      Classical.choice (prime_classification_of_group (n := 2) hK_card)
+    have h2p2cop : Nat.Coprime 2 (p ^ 2) := h2cop.pow_right 2
+    have hp2_2cop : Nat.Coprime (p ^ 2) 2 := h2p2cop.symm
+    rcases (p_squared_classification (p := p) h_N_card) with h_N_Cp2 | h_N_CpCp
+    · -- N ≅ C_{p²}: bridge φ via eN, eK, dispatch via classify_Cqn_rtimes_Cpm
+      let eN := h_N_Cp2.some
+      let φ_inter : CyclicGroup 2 →* MulAut (CyclicGroup (p ^ 2)) :=
+        (MulAut.congr eN).toMonoidHom.comp (φ.comp eK.symm.toMonoidHom)
+      have h_congr : ↥(↑N : Subgroup G) ⋊[φ] ↥K ≃*
+          SemidirectProduct (CyclicGroup (p ^ 2)) (CyclicGroup 2) φ_inter :=
+        SemidirectProduct.congr' (φ₁ := φ) (fn := eN) (fg := eK)
+      haveI : NeZero (p ^ 2) := ⟨pow_ne_zero 2 h_p_prime.out.ne_zero⟩
+      haveI : NeZero ((2:ℕ)^1) := ⟨pow_ne_zero 1 (by norm_num)⟩
+      have h2p : (2 : ℕ) ≠ p := by omega
+      have h21 : ((2:ℕ)^1 : ℕ) = 2 := by norm_num
+      have hp22 : (p^2 : ℕ) = p^2 := rfl
+      have h_pre_iso := SemidirectProduct.transportCpCqIso h21.symm hp22.symm φ_inter
+      obtain ⟨⟨r, hr_lt⟩, ⟨e_pre⟩, _⟩ := classify_Cqn_rtimes_Cpm (p := 2) (q := p) h2p hpne2 1 2
+        Nat.one_pos (by norm_num)
+        (transportCpCqHom h21.symm hp22.symm φ_inter)
+      have hr_le : r ≤ min 1 ((p - 1).factorization 2) := Nat.lt_succ_iff.mp hr_lt
+      let canonR := fun r (hr : r ≤ min 1 ((p - 1).factorization 2)) =>
+        canonicalAction 2 p 2 1 h2p hpne2 (by norm_num) r hr
+      let e_back := fun r hr => SemidirectProduct.transportCpCqIso h21 hp22 (canonR r hr)
+      let pre := h_iso_g_n_k.symm.trans (h_congr.trans (h_pre_iso.trans
+        (e_pre.trans (e_back r hr_le))))
+      have hr_le_1 : r ≤ 1 := hr_le.trans (min_le_left _ _)
+      interval_cases r
+      · -- r = 0: trivial action → G ≃* C_{2p²}
+        have h_triv := eq_one_of_range_card_one (by
+          show Nat.card (transportCpCqHom h21 hp22 (canonR 0 hr_le)).range = 1
+          rw [transportCpCqHom_range_card]
+          simpa using canonicalAction_range_card 2 p 2 1 0 h2p hpne2 (by norm_num) hr_le)
+        have : G ≃* CyclicGroup (2 * p ^ 2) := pre.trans
+          ((SemidirectProduct.mulEquivOfTrivialAction h_triv).trans
+            (CyclicGroup.prodMulEquiv h2p2cop))
+        tauto
+      · -- r = 1: matches `canonicalC2OnCp2Action`.
+        tauto
+    · -- N ≅ C_p × C_p: by_cases on φ_inter triviality
+      let eN := h_N_CpCp.some
+      let φ_inter : CyclicGroup 2 →* MulAut (CyclicGroup p × CyclicGroup p) :=
+        (MulAut.congr eN).toMonoidHom.comp (φ.comp eK.symm.toMonoidHom)
+      have h_congr : ↥(↑N : Subgroup G) ⋊[φ] ↥K ≃*
+          SemidirectProduct (CyclicGroup p × CyclicGroup p) (CyclicGroup 2) φ_inter :=
+        SemidirectProduct.congr' (φ₁ := φ) (fn := eN) (fg := eK)
+      by_cases h_triv : φ_inter = 1
+      · -- φ_inter trivial → G ≃* (C_p × C_p) × C_2
+        have : G ≃* CyclicGroup p × CyclicGroup p × CyclicGroup 2 :=
+          h_iso_g_n_k.symm.trans (h_congr.trans
+            ((SemidirectProduct.mulEquivOfTrivialAction h_triv).trans
+              MulEquiv.prodAssoc))
+        tauto
+      · -- φ_inter nontrivial: image has order 2 by Lagrange (|C_2| = 2 prime)
+        -- so φ_inter is determined by a single order-2 σ; conjugate to canon₁ or canon₂.
+        -- φ_inter(generator) has order dividing 2; nontriviality forces it to be 2.
+        have h_card_K2 : Nat.card (CyclicGroup 2) = 2 := card_cyclicGroup 2
+        -- |φ_inter.range| divides |C_2| = 2, and isn't 1.
+        have h_range_dvd : Nat.card φ_inter.range ∣ 2 := by
+          have := Subgroup.card_range_dvd φ_inter; rwa [h_card_K2] at this
+        have h_range_ne_1 : Nat.card φ_inter.range ≠ 1 :=
+          fun h => h_triv (eq_one_of_range_card_one h)
+        have h_range_card : Nat.card φ_inter.range = 2 := by
+          rcases (Nat.dvd_prime Nat.prime_two).mp h_range_dvd with h1 | h2
+          · exact absurd h1 h_range_ne_1
+          · exact h2
+        -- the generator (Multiplicative.ofAdd 1 : CyclicGroup 2) maps to some σ
+        let g₂ : CyclicGroup 2 := Multiplicative.ofAdd (1 : ZMod 2)
+        let σ : MulAut (CyclicGroup p × CyclicGroup p) := φ_inter g₂
+        have hσ_sq : σ ^ 2 = 1 := by
+          have : g₂ ^ 2 = 1 := by
+            show (Multiplicative.ofAdd (1 : ZMod 2)) ^ 2 = 1
+            rw [show (2 : ℕ) = (2 : ℕ) from rfl, ← ofAdd_nsmul]
+            change Multiplicative.ofAdd ((2 : ℕ) • (1 : ZMod 2)) = 1
+            simp
+          have := congr_arg φ_inter this
+          rwa [map_pow, map_one] at this
+        -- σ ≠ 1: otherwise φ_inter would be trivial since g₂ generates.
+        have hg₂_gen : ∀ x : CyclicGroup 2, x ∈ Subgroup.zpowers g₂ := by
+          intro x
+          rw [show (Subgroup.zpowers g₂ : Subgroup (CyclicGroup 2)) = ⊤ from
+            ofAdd_one_zpowers_top 2]
+          exact Subgroup.mem_top _
+        have hσ_ne_one : σ ≠ 1 := by
+          intro hσ1
+          apply h_triv
+          have : ∀ x : CyclicGroup 2, φ_inter x = 1 := by
+            intro x
+            obtain ⟨n, hn⟩ := Subgroup.mem_zpowers_iff.mp (hg₂_gen x)
+            rw [← hn, map_zpow]
+            change σ ^ n = 1
+            rw [hσ1, one_zpow]
+          ext x; rw [this x]; rfl
+        have hσ_order : orderOf σ = 2 := orderOf_eq_prime hσ_sq hσ_ne_one
+        -- Apply mulAut_cpcp_order_two_conj.
+        rcases mulAut_cpcp_order_two_conj hp_ne_2 σ hσ_order with h_conj1 | h_conj2
+        · -- σ is conjugate to cpcpInvSecond p, hence φ_inter ≅ canonicalC2OnCpCpAction_r1 p
+          obtain ⟨c, hc⟩ := h_conj1
+          -- hc : c * cpcpInvSecond p * c⁻¹ = σ
+          have h_action_eq : ∀ x : CyclicGroup 2,
+              φ_inter x = c * canonicalC2OnCpCpAction_r1 p x * c⁻¹ := by
+            intro x
+            obtain ⟨n, hn⟩ := Subgroup.mem_zpowers_iff.mp (hg₂_gen x)
+            rw [← hn, map_zpow, map_zpow]
+            change σ ^ n = (c * canonicalC2OnCpCpAction_r1 p g₂ * c⁻¹) ^ n
+            have h1 : c * canonicalC2OnCpCpAction_r1 p g₂ * c⁻¹ = σ := by
+              show c * (cyclicHom 2 (cpcpInvSecond p) (cpcpInvSecond_sq p)) g₂ * c⁻¹ = σ
+              -- evaluate cyclicHom at the generator
+              rw [show (cyclicHom 2 (cpcpInvSecond p) (cpcpInvSecond_sq p)) g₂ =
+                cpcpInvSecond p from by
+                rw [cyclicHom_apply_eq_zpow]
+                have hval : ((Multiplicative.toAdd g₂).val : ℤ) = 1 := by
+                  change ((1 : ZMod 2).val : ℤ) = 1
+                  rw [ZMod.val_one_eq_one_mod]; norm_num
+                rw [hval]; exact zpow_one _]
+              exact hc.eq
+            rw [h1]
+          -- Use semidirectProduct_iso_of_conjugate_action
+          obtain ⟨e_iso⟩ := semidirectProduct_iso_of_conjugate_action
+            (f_1 := canonicalC2OnCpCpAction_r1 p)
+            (f_2 := φ_inter) c 1
+            (fun x => by simpa using h_action_eq x)
+          have : G ≃* SemidirectProduct (CyclicGroup p × CyclicGroup p) (CyclicGroup 2)
+                       (canonicalC2OnCpCpAction_r1 p) :=
+            h_iso_g_n_k.symm.trans (h_congr.trans e_iso.symm)
+          tauto
+        · -- σ is conjugate to cpcpInvBoth p, hence φ_inter ≅ canonicalC2OnCpCpAction_r2 p
+          obtain ⟨c, hc⟩ := h_conj2
+          have h_action_eq : ∀ x : CyclicGroup 2,
+              φ_inter x = c * canonicalC2OnCpCpAction_r2 p x * c⁻¹ := by
+            intro x
+            obtain ⟨n, hn⟩ := Subgroup.mem_zpowers_iff.mp (hg₂_gen x)
+            rw [← hn, map_zpow, map_zpow]
+            change σ ^ n = (c * canonicalC2OnCpCpAction_r2 p g₂ * c⁻¹) ^ n
+            have h1 : c * canonicalC2OnCpCpAction_r2 p g₂ * c⁻¹ = σ := by
+              show c * (cyclicHom 2 (cpcpInvBoth p) (cpcpInvBoth_sq p)) g₂ * c⁻¹ = σ
+              rw [show (cyclicHom 2 (cpcpInvBoth p) (cpcpInvBoth_sq p)) g₂ =
+                cpcpInvBoth p from by
+                rw [cyclicHom_apply_eq_zpow]
+                have hval : ((Multiplicative.toAdd g₂).val : ℤ) = 1 := by
+                  change ((1 : ZMod 2).val : ℤ) = 1
+                  rw [ZMod.val_one_eq_one_mod]; norm_num
+                rw [hval]; exact zpow_one _]
+              exact hc.eq
+            rw [h1]
+          obtain ⟨e_iso⟩ := semidirectProduct_iso_of_conjugate_action
+            (f_1 := canonicalC2OnCpCpAction_r2 p)
+            (f_2 := φ_inter) c 1
+            (fun x => by simpa using h_action_eq x)
+          have : G ≃* SemidirectProduct (CyclicGroup p × CyclicGroup p) (CyclicGroup 2)
+                       (canonicalC2OnCpCpAction_r2 p) :=
+            h_iso_g_n_k.symm.trans (h_congr.trans e_iso.symm)
+          tauto
+  · -- n_2 = 1: Sylow 2-subgroup Q (order 2) is normal, complement K of order p²
+    let Q : Sylow 2 G := default
+    haveI : Subsingleton (Sylow 2 G) := (Nat.card_eq_one_iff_unique.mp h_n2_1).1
+    have h_Q_card : Nat.card ↥(Q : Subgroup G) = 2 := by
+      simpa using sylow_card_eq (Ne.symm hpne2) h_2_p2_card Q
+    have h_Q_idx_p2 : ∀ Q : Sylow 2 G, (↑Q : Subgroup G).index = p ^ 2 := fun Q => by
+      simpa using sylow_index_eq (Ne.symm hpne2) h_2_p2_card Q
+    obtain ⟨K, hK⟩ := Subgroup.exists_right_complement'_of_coprime
+      (N := (↑Q : Subgroup G)) (by
+      rw [h_Q_card, h_Q_idx_p2]
+      exact ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_p_prime.out hpne2).pow_right 2)
+    have h_iso_g_q_k := SemidirectProduct.mulEquivSubgroup hK
+    let φ : ↥K →* MulAut ↥(↑Q : Subgroup G) :=
+      (↑Q : Subgroup G).normalizerMonoidHom.comp
+        (Subgroup.inclusion (by simp [Subgroup.normalizer_eq_top]))
+    have hK_card : Nat.card ↥K = p ^ 2 := by
+      have h1 : Nat.card G = Nat.card ↥(↑Q : Subgroup G) * Nat.card ↥K := by
+        have heq := Nat.card_congr h_iso_g_q_k.toEquiv
+        rw [SemidirectProduct.card] at heq; exact heq.symm
+      rw [h_Q_card, h] at h1
+      exact (Nat.eq_of_mul_eq_mul_right (by norm_num : 0 < 2) (by linarith))
+    have eQ : ↥(↑Q : Subgroup G) ≃* CyclicGroup 2 :=
+      Classical.choice (prime_classification_of_group (n := 2) h_Q_card)
+    -- Aut(C_2) is trivial since |Aut(C_2)| = 1
+    have h_aut_card : Nat.card (MulAut ↥(↑Q : Subgroup G)) = 1 := by
+      have h_iso_aut : MulAut ↥(↑Q : Subgroup G) ≃* MulAut (CyclicGroup 2) :=
+        MulAut.congr eQ
+      have h_aut_c2 : Nat.card (MulAut (CyclicGroup 2)) = 1 := by
+        have := card_mulAut_cyclicGroup_prime (q := 2)
+        simpa using this
+      exact (Nat.card_congr h_iso_aut.toEquiv).trans h_aut_c2
+    -- φ trivial since codomain has cardinality 1
+    have h_phi_triv : φ = 1 := eq_one_of_coprime_card (by
+      rw [hK_card, h_aut_card]; simp)
+    have h_2p2cop : Nat.Coprime 2 (p ^ 2) := h2cop.pow_right 2
+    have h_p22cop : Nat.Coprime (p ^ 2) 2 := h_2p2cop.symm
+    rcases (p_squared_classification (p := p) hK_card) with h_K_Cp2 | h_K_CpCp
+    · -- K ≅ C_{p²}: G ≅ C_2 × C_{p²} ≅ C_{2p²}
+      let eK := h_K_Cp2.some
+      have : G ≃* CyclicGroup (2 * p ^ 2) := h_iso_g_q_k.symm.trans
+        ((SemidirectProduct.mulEquivOfTrivialAction h_phi_triv).trans
+          ((eQ.prodCongr eK).trans (CyclicGroup.prodMulEquiv h_2p2cop)))
+      tauto
+    · -- K ≅ C_p × C_p: G ≅ C_2 × (C_p × C_p) ≅ C_p × C_p × C_2
+      let eK := h_K_CpCp.some
+      have : G ≃* CyclicGroup p × CyclicGroup p × CyclicGroup 2 := h_iso_g_q_k.symm.trans
+        ((SemidirectProduct.mulEquivOfTrivialAction h_phi_triv).trans
+          ((eQ.prodCongr eK).trans (MulEquiv.prodComm.trans MulEquiv.prodAssoc)))
+      tauto
