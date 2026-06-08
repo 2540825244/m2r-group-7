@@ -22,8 +22,6 @@ The strategy follows Wild's proof:
    - `realise_with_normal_C8`: normal `C_8`, yielding one of `ext_16_{1,5,6,7,8,9}`.
    - `realise_with_normal_K8`: normal `C_4 × C_2`, yielding one of
      `ext_16_{2,3,4,10,11,12,13}`.
-
-Both `realise_with_normal_C8` and `realise_with_normal_K8` are fully proved.
 -/
 
 namespace OrderSixteen
@@ -324,7 +322,7 @@ lemma exists_min_order_inducing_element
 
 /-! ## Case analysis: normal `C_8`
 
-The plan for `realise_with_normal_C8`:
+The proof of `realise_with_normal_C8`:
 
 1. Obtain a minimum-order inducing element `a ∉ H` with `a^2 ∈ H`
    via `exists_min_order_inducing_element`.
@@ -341,8 +339,6 @@ The plan for `realise_with_normal_C8`:
    `ext_16_i` (using `extension_families_same_isoClasses` or
    `conjugateActEquiv` to bridge glue/action differences) and apply
    `RealiseExtType.transfer_along_extEquiv`.
-
-The proof is complete.
 -/
 
 /-- If `G` is a group of order 16 containing a normal subgroup isomorphic to
