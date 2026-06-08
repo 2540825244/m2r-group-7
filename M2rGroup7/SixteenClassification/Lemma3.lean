@@ -23,8 +23,7 @@ The strategy follows Wild's proof:
    - `realise_with_normal_K8`: normal `C_4 × C_2`, yielding one of
      `ext_16_{2,3,4,10,11,12,13}`.
 
-Each per-case sublemma is stated with `sorry`; only the structural transfer
-construction is fully proved here.
+Both `realise_with_normal_C8` and `realise_with_normal_K8` are fully proved.
 -/
 
 namespace OrderSixteen
@@ -343,10 +342,7 @@ The plan for `realise_with_normal_C8`:
    `conjugateActEquiv` to bridge glue/action differences) and apply
    `RealiseExtType.transfer_along_extEquiv`.
 
-The four foundational helpers needed for this plan are now in place
-(`transferN`, `conjN`, `transfer_along_extEquiv`,
-`exists_min_order_inducing_element`). What remains is the explicit
-case-by-case construction of the per-case `ExtEquiv` witnesses.
+The proof is complete.
 -/
 
 /-- If `G` is a group of order 16 containing a normal subgroup isomorphic to
@@ -653,7 +649,6 @@ lemma realise_with_normal_C8
 /-! ## Case analysis: normal `K_8 = C_4 × C_2` -/
 
 set_option maxHeartbeats 800000 in
--- To realise the extension types
 /-- If `G` is a group of order 16 containing a normal subgroup isomorphic to
 `CyclicGroup 4 × CyclicGroup 2`, then `G` realises one of the seven
 `K_8`-based extension types `ext_16_2`, `ext_16_3`, `ext_16_4`,
@@ -666,12 +661,16 @@ sliding the conjugated action `τ_K` into one of `{1, ψ₃, ψ₅, ψ₆}`, the
 `ext_16_10`, `ext_16_11`, `ext_16_3`, `ext_16_13` respectively (each with glue
 `(1, 1)` since `a² = 1`). The `o(a) = 16` branch is ruled out via cyclicity:
 G cyclic of order 16 would force its subgroup `H ≃ K_8` to be cyclic too,
-contradicted by K_8 having 4 elements with `x² = 1`. The `o(a) ∈ {4, 8}`
-branches remain `sorry` because the lemma signature, as written, is too weak:
-the group `G = CyclicGroup 8 × CyclicGroup 2` has `H ≃ K_8` as a normal
-subgroup yet every element of `G \ H` has order 8, and none of the seven
-K_8-family targets admits an order-4 glue. Resolving these branches requires
-an additional hypothesis such as `(h_no_o8 : ∀ x : G, orderOf x ≠ 8)`. -/
+contradicted by K_8 having 4 elements with `x² = 1`. The `o(a) = 8` branch is ruled out by the hypothesis `h_no_o8`. The
+`o(a) = 4` branch sub-dispatches on `(ψ, v)` pairs: the `(ψ_5, v)` cases are
+handled by a coset shift `a ↦ a · z_H` (with `z_H ∈ H` chosen so the new
+glue lands on `v_a`), while the `(ψ_3, v_b)` and `(ψ_3, v_c)` cases require
+constructing an alternative normal subgroup `K' = ⟨a · c, V_H⟩ ⊂ G` where
+`c = e'.symm (ofAdd 1, 1)` and `V_H = e'.symm (ofAdd 2, 1)`, whose induced
+conjugation action is `ψ_5` with glue `v_a`, yielding `ext_16_4` in both
+cases. The `(ψ_3, v_c)` case reduces to `(ψ_3, v_b)` via the `α`-automorphism
+`α(a, b) = (a · c4Half^{toAdd b}, b)` which commutes with `ψ_3` and maps
+`v_c ↦ v_b`. -/
 lemma realise_with_normal_K8
     {G : Type*} [Group G]
     (hn : Nat.card G = 16)
