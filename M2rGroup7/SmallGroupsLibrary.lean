@@ -468,7 +468,7 @@ private lemma c4OnCqInv_apply (q : ℕ) [NeZero q] (x : CyclicGroup 4) :
   cyclicHom_apply_eq_zpow 4 (MulEquiv.inv (CyclicGroup q)) (inv_aut_pow_four_eq_one q) x
 
 /-- For the surrogate `c2OnCqInv q`, applied at `x`, the value is `inv^(toAdd x).val`. -/
-private lemma c2OnCqInv_apply (q : ℕ) [NeZero q] (x : CyclicGroup 2) :
+lemma c2OnCqInv_apply (q : ℕ) [NeZero q] (x : CyclicGroup 2) :
     c2OnCqInv q x = (MulEquiv.inv (CyclicGroup q)) ^ ((Multiplicative.toAdd x).val : ℤ) :=
   cyclicHom_apply_eq_zpow 2 (MulEquiv.inv (CyclicGroup q)) (inv_aut_pow_two_eq_one q) x
 

@@ -50,6 +50,99 @@ private lemma order24_1_sylow3_trivial
       h_iso.trans ((MulEquiv.refl (CyclicGroup 3)).prodCongr e)
     tauto
 
+/-- Step 1 (basis change): any non-trivial action `φ` of `(C₂)³` on `C₃` produces a
+    semidirect product isomorphic to the same with the standard "first-coord-then-inv"
+    action `(c2OnCqInv 3).comp (MonoidHom.fst ..)`. -/
+private def c3_sdp_c2cubed_iso_standard
+    {φ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
+    (h_nontriv : φ ≠ 1) :
+    CyclicGroup 3 ⋊[φ] (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+      CyclicGroup 3 ⋊[(c2OnCqInv 3).comp
+                      (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2 × CyclicGroup 2))]
+                    (CyclicGroup 2 × (CyclicGroup 2 × CyclicGroup 2)) := by
+  sorry
+
+/-- Step 2 (factor split): in a semidirect product whose action factors through the first
+    projection `A × B → A`, the `B` factor splits off as a direct factor. -/
+private def sdp_prodEquivOfFstAction
+    {N A B : Type*} [Group N] [Group A] [Group B] (ψ : A →* MulAut N) :
+    N ⋊[ψ.comp (MonoidHom.fst A B)] (A × B) ≃* (N ⋊[ψ] A) × B where
+  toFun x := (⟨x.left, x.right.1⟩, x.right.2)
+  invFun y := ⟨y.1.left, (y.1.right, y.2)⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+  map_mul' _ _ := rfl
+
+/-- `CyclicGroup 2` has only two elements: `1` and `ofAdd 1`. -/
+private lemma cyclicGroup_two_cases (k : CyclicGroup 2) :
+    k = 1 ∨ k = Multiplicative.ofAdd (1 : ZMod 2) := by
+  change Multiplicative.ofAdd (Multiplicative.toAdd k) = 1 ∨
+    Multiplicative.ofAdd (Multiplicative.toAdd k) = Multiplicative.ofAdd (1 : ZMod 2)
+  generalize Multiplicative.toAdd k = m
+  fin_cases m <;> [exact Or.inl rfl; exact Or.inr rfl]
+
+/-- Step 3 (dihedral identification): `C₃ ⋊_inv C₂ ≃* D₃`.
+The map: `(c, 1) ↦ r(toAdd c)`, `(c, k) ↦ sr(-toAdd c)` for `k ≠ 1`. -/
+private def dihedralThree_iso_sdp :
+    CyclicGroup 3 ⋊[c2OnCqInv 3] CyclicGroup 2 ≃* DihedralGroup 3 where
+  toFun x :=
+    if x.right = 1 then
+      DihedralGroup.r (Multiplicative.toAdd x.left)
+    else
+      DihedralGroup.sr (-Multiplicative.toAdd x.left)
+  invFun d :=
+    match d with
+    | DihedralGroup.r i => ⟨Multiplicative.ofAdd i, 1⟩
+    | DihedralGroup.sr i =>
+        ⟨Multiplicative.ofAdd (-i), Multiplicative.ofAdd (1 : ZMod 2)⟩
+  left_inv := by
+    rintro ⟨c, k⟩
+    rcases cyclicGroup_two_cases k with hk | hk <;> subst hk
+    · rfl
+    · ext
+      · change Multiplicative.ofAdd (-(-Multiplicative.toAdd c)) = c
+        rw [neg_neg]; rfl
+      · rfl
+  right_inv := by
+    rintro (i | i)
+    · rfl
+    · change DihedralGroup.sr (-(-i)) = DihedralGroup.sr i
+      rw [neg_neg]
+  map_mul' := by
+    rintro ⟨c₁, k₁⟩ ⟨c₂, k₂⟩
+    have h_inv : ∀ c : CyclicGroup 3,
+        (c2OnCqInv 3) (Multiplicative.ofAdd (1 : ZMod 2)) c = c⁻¹ := fun c => by
+      rw [c2OnCqInv_apply]; rfl
+    rcases cyclicGroup_two_cases k₁ with hk1 | hk1 <;>
+      rcases cyclicGroup_two_cases k₂ with hk2 | hk2 <;>
+      subst hk1 <;> subst hk2 <;>
+      simp only [SemidirectProduct.mul_def, h_inv, map_one, MulAut.one_apply,
+        mul_one, one_mul]
+    · rfl
+    · change DihedralGroup.sr (-(Multiplicative.toAdd c₁ + Multiplicative.toAdd c₂)) =
+          DihedralGroup.sr (-Multiplicative.toAdd c₂ - Multiplicative.toAdd c₁)
+      congr 1; ring
+    · change DihedralGroup.sr
+              (-(Multiplicative.toAdd c₁ + -Multiplicative.toAdd c₂)) =
+          DihedralGroup.sr (-Multiplicative.toAdd c₁ + Multiplicative.toAdd c₂)
+      congr 1; ring
+    · change DihedralGroup.r (Multiplicative.toAdd c₁ + -Multiplicative.toAdd c₂) =
+          DihedralGroup.r (-Multiplicative.toAdd c₂ - -Multiplicative.toAdd c₁)
+      congr 1; ring
+
+/-- Any non-trivial action `φ` of `C₂³` on `C₃` gives `C₃ ⋊[φ] C₂³` isomorphic to `D₃ × V`. -/
+private def c3_sdp_c2cubed_nontrivial
+    {φ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
+    (h_nontriv : φ ≠ 1) :
+    CyclicGroup 3 ⋊[φ] (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+      DihedralGroup 3 × (CyclicGroup 2 × CyclicGroup 2) :=
+  -- Step 1: transport `φ` into "first-coord-then-inv" form
+  (c3_sdp_c2cubed_iso_standard h_nontriv).trans <|
+  -- Step 2: split off the trailing `C₂ × C₂` as a direct factor
+  (sdp_prodEquivOfFstAction (c2OnCqInv 3)).trans <|
+  -- Step 3: identify the surviving `C₃ ⋊_inv C₂` as `D₃`
+  dihedralThree_iso_sdp.prodCongr (MulEquiv.refl _)
+
 /-- Non-trivial-action branch of the normal-Sylow-3 classification. Given a
     semidirect-product iso `↥P ⋊[φ] ↥K ≃* G` with `|P| = 3` and `|K| = 8`,
     dispatch on `order8_classification` of `K`. Six of the seven possible
@@ -67,7 +160,7 @@ private lemma order24_1_sylow3_trivial
 private lemma order24_1_sylow3_nontrivial
     {G : Type*} [Group G]
     {P K : Subgroup G} (h_P_card : Nat.card ↥P = 3) (hK_card : Nat.card ↥K = 8)
-    {φ : ↥K →* MulAut ↥P} (h_iso : ↥P ⋊[φ] ↥K ≃* G) :
+    {φ : ↥K →* MulAut ↥P} (h_iso : ↥P ⋊[φ] ↥K ≃* G) (h_phi_nontriv : φ ≠ 1) :
     Nonempty (G ≃* CyclicGroup 3 ⋊[c8OnCqInv 3] CyclicGroup 8) ∨
     Nonempty (G ≃* DihedralGroup 3 × CyclicGroup 4) ∨
     Nonempty (G ≃* CyclicGroup 2 × QuaternionGroup 3) ∨
@@ -83,7 +176,25 @@ private lemma order24_1_sylow3_nontrivial
     --   ker = V_4  → C_2 × Q_12
     sorry
   · -- K ≃* C_2^3: target `D_3 × V_4`
-    sorry
+    obtain ⟨eK⟩ := hC2sq3
+    haveI : IsCyclic ↥P := isCyclic_of_prime_card h_P_card
+    have eP : ↥P ≃* CyclicGroup 3 :=
+      mulEquivOfCyclicCardEq (h_P_card.trans (card_cyclicGroup 3).symm)
+    -- The transported action `ψ : (C₂)³ →* MulAut(C₃)` is non-trivial since `φ` is.
+    have h_psi_nontriv :
+        (MulAut.congr eP).toMonoidHom.comp (φ.comp eK.symm.toMonoidHom) ≠ 1 := by
+      intro h
+      apply h_phi_nontriv
+      refine MonoidHom.ext fun k => ?_
+      have hk := DFunLike.ext_iff.mp h (eK k)
+      simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
+        MulEquiv.symm_apply_apply, MonoidHom.one_apply] at hk
+      exact (MulEquiv.map_eq_one_iff (MulAut.congr eP)).mp hk
+    let : G ≃* DihedralGroup 3 × (CyclicGroup 2 × CyclicGroup 2) :=
+      h_iso.symm.trans <|
+      (SemidirectProduct.congr' eP eK).trans <|
+      c3_sdp_c2cubed_nontrivial h_psi_nontriv
+    tauto
   · -- K ≃* D_4: two sub-cases by `ker φ`
     --   ker = rotation C_4  → D_12
     --   ker = reflection V_4 → (C_6 × C_2) ⋊ C_2 (needs def; lands in True)
@@ -162,7 +273,7 @@ lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
       h_g_to_prod.trans (hP_iso.prodCongr (MulEquiv.refl _))
     exact Or.inl (order24_1_sylow3_trivial h_g_clean hK_card)
   · -- Non-trivial action: pass setup state to the sub-lemma
-    exact Or.inr (order24_1_sylow3_nontrivial h_P_card hK_card h_iso)
+    exact Or.inr (order24_1_sylow3_nontrivial h_P_card hK_card h_iso h_triv)
 
 /-- A group of order `24` with four Sylow 3-subgroups is isomorphic to some group.
     The precondition is equivalent to not having a normal Sylow 3-subgroup. -/
