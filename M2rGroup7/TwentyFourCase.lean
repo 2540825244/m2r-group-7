@@ -156,14 +156,46 @@ private noncomputable def c2_mulEquiv_mulAutC3 : CyclicGroup 2 ≃* MulAut (Cycl
     · exact ⟨1, by rw [map_one, h]⟩
     · exact ⟨Multiplicative.ofAdd 1, by rw [h_gen, h]⟩
 
-/-- For any non-trivial action `φ : (C₂)³ →* MulAut(C₃)`, the basis-change automorphism
-of `(C₂)³` that lines `ker φ` up with the standard `{1} × (C₂)²` hyperplane. -/
-private def c3_sdp_c2cubed_basis_change
+/-- Core linear-algebra fact: any non-trivial `χ : (C₂)³ →* C₂` admits a basis-change
+automorphism `α` of `(C₂)³` such that `fst ∘ α = χ`. (`(C₂)³` is `(F₂)³` viewed
+multiplicatively; non-trivial `χ` is a non-zero linear functional, so its kernel is
+a 2-dim hyperplane and any complementing vector pulls back to the first standard basis
+vector.) -/
+private lemma fst_basis_change_exists
+    {χ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* CyclicGroup 2}
+    (h : χ ≠ 1) :
+    ∃ α : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+          (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2),
+      (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2 × CyclicGroup 2)).comp
+        α.toMonoidHom = χ := by
+  sorry
+
+/-- Reduces to `fst_basis_change_exists` via post-composition with the iso
+`c2_mulEquiv_mulAutC3.symm`. -/
+private lemma c3_sdp_c2cubed_basis_change_exists
+    {φ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
+    (h : φ ≠ 1) :
+    ∃ α : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+          (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2),
+      ((c2OnCqInv 3).comp
+          (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2 × CyclicGroup 2))).comp
+        α.toMonoidHom = φ := by
+  obtain ⟨α, hα⟩ := fst_basis_change_exists
+    (χ := c2_mulEquiv_mulAutC3.symm.toMonoidHom.comp φ)
+    fun heq => h <| MonoidHom.ext fun p =>
+      c2_mulEquiv_mulAutC3.symm.map_eq_one_iff.mp (DFunLike.ext_iff.mp heq p)
+  refine ⟨α, ?_⟩
+  rw [MonoidHom.comp_assoc, hα]
+  exact MonoidHom.ext fun p => c2_mulEquiv_mulAutC3.apply_symm_apply (φ p)
+
+/-- The basis-change automorphism (chosen non-constructively from
+`c3_sdp_c2cubed_basis_change_exists`). -/
+private noncomputable def c3_sdp_c2cubed_basis_change
     {φ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
     (h : φ ≠ 1) :
     (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
-      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) := by
-  sorry
+      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) :=
+  (c3_sdp_c2cubed_basis_change_exists h).choose
 
 /-- The basis change transports `φ` to `(c2OnCqInv 3) ∘ fst`. -/
 private lemma c3_sdp_c2cubed_basis_change_eq
@@ -171,13 +203,13 @@ private lemma c3_sdp_c2cubed_basis_change_eq
     (h : φ ≠ 1) :
     ((c2OnCqInv 3).comp
         (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2 × CyclicGroup 2))).comp
-      (c3_sdp_c2cubed_basis_change h).toMonoidHom = φ := by
-  sorry
+      (c3_sdp_c2cubed_basis_change h).toMonoidHom = φ :=
+  (c3_sdp_c2cubed_basis_change_exists h).choose_spec
 
 /-- Step 1 (basis change): any non-trivial action `φ` of `(C₂)³` on `C₃` produces a
     semidirect product isomorphic to the same with the standard "first-coord-then-inv"
     action `(c2OnCqInv 3).comp (MonoidHom.fst ..)`. -/
-private def c3_sdp_c2cubed_iso_standard
+private noncomputable def c3_sdp_c2cubed_iso_standard
     {φ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
     (h_nontriv : φ ≠ 1) :
     CyclicGroup 3 ⋊[φ] (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
@@ -192,7 +224,7 @@ private def c3_sdp_c2cubed_iso_standard
     exact (congrArg (fun a : MulAut _ => a n) h).symm)
 
 /-- Any non-trivial action `φ` of `C₂³` on `C₃` gives `C₃ ⋊[φ] C₂³` isomorphic to `D₃ × V`. -/
-private def c3_sdp_c2cubed_nontrivial
+private noncomputable def c3_sdp_c2cubed_nontrivial
     {φ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
     (h_nontriv : φ ≠ 1) :
     CyclicGroup 3 ⋊[φ] (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
