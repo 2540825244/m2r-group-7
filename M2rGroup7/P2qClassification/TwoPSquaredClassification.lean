@@ -23,25 +23,25 @@ def canonicalC2OnCp2Action {p : ℕ} [h_p_prime : Fact p.Prime] (h_p_ne_2 : p �
 
 /-! ## Canonical actions on `C_p × C_p` for the `C_2` factor.
 
-For `p` odd prime, the equivalence `aut_of_CpCp p : MulAut (C_p × C_p) ≃* GL₂(𝔽_p)`
-(which is nonempty) lets us transport order-2 elements of `GL₂(𝔽_p)` back to
-order-2 automorphisms of `C_p × C_p`. We use this to define the two canonical
-nontrivial `C_2`-actions, by transporting `diag(1, -1)` and `-I`. These actions
-are necessarily noncomputable. -/
+For `p` odd prime, the explicit equivalence
+`autMulEquivCpCp p : MulAut (C_p × C_p) ≃* GL₂(𝔽_p)` lets us transport order-2
+elements of `GL₂(𝔽_p)` back to order-2 automorphisms of `C_p × C_p`. We use this
+to define the two canonical nontrivial `C_2`-actions, by transporting
+`diag(1, -1)` and `-I`. -/
 
-/-- A fixed choice of equivalence `MulAut (C_p × C_p) ≃* GL₂(𝔽_p)`. -/
-noncomputable def cpcpEquivGL2 (p : ℕ) [Fact p.Prime] :
+/-- Explicit equivalence `MulAut (C_p × C_p) ≃* GL₂(𝔽_p)` (computable). -/
+abbrev cpcpEquivGL2 (p : ℕ) [Fact p.Prime] :
     MulAut (CyclicGroup p × CyclicGroup p) ≃* GL (Fin 2) (ZMod p) :=
-  (aut_of_CpCp p).some
+  autMulEquivCpCp p
 
 /-- The canonical "`diag(1, -1)`" action `C_2 →* Aut(C_p × C_p)`. -/
-noncomputable def canonicalC2OnCpCpAction_r1 {p : ℕ} [Fact p.Prime] (hp_ne_2 : p ≠ 2) :
+def canonicalC2OnCpCpAction_r1 {p : ℕ} [Fact p.Prime] (hp_ne_2 : p ≠ 2) :
     CyclicGroup 2 →* MulAut (CyclicGroup p × CyclicGroup p) :=
   cyclicHom 2 ((cpcpEquivGL2 p).symm (gl2Diag1NegOne hp_ne_2)) (by
     rw [← map_pow, gl2Diag1NegOne_sq hp_ne_2, map_one])
 
 /-- The canonical "`-I`" action `C_2 →* Aut(C_p × C_p)`. -/
-noncomputable def canonicalC2OnCpCpAction_r2 (p : ℕ) [Fact p.Prime] :
+def canonicalC2OnCpCpAction_r2 (p : ℕ) [Fact p.Prime] :
     CyclicGroup 2 →* MulAut (CyclicGroup p × CyclicGroup p) :=
   cyclicHom 2 ((cpcpEquivGL2 p).symm gl2DiagNeg1Neg1) (by
     rw [← map_pow, gl2DiagNeg1Neg1_sq, map_one])

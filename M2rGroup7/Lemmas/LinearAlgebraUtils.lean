@@ -37,13 +37,13 @@ private lemma diag_self_mul_aux (v : Fin 2 → ZMod p) (hv : ∀ i, v i * v i = 
 /-- The element diag(1, -1) of GL₂(𝔽_p).
     Defined only for odd p (p ≠ 2) since we need 1 ≠ -1 to ensure it has order 2
     (for the statement; the matrix itself is always well-defined). -/
-noncomputable def gl2Diag1NegOne (_hp2 : p ≠ 2) : GL (Fin 2) (ZMod p) :=
+def gl2Diag1NegOne (_hp2 : p ≠ 2) : GL (Fin 2) (ZMod p) :=
   let v : Fin 2 → ZMod p := ![(1 : ZMod p), -1]
   have hv : ∀ i : Fin 2, v i * v i = 1 := by intro i; fin_cases i <;> simp [v]
   ⟨Matrix.diagonal v, Matrix.diagonal v, diag_self_mul_aux v hv, diag_self_mul_aux v hv⟩
 
 /-- The element diag(-1, -1) = -I of GL₂(𝔽_p). -/
-noncomputable def gl2DiagNeg1Neg1 : GL (Fin 2) (ZMod p) := -1
+def gl2DiagNeg1Neg1 : GL (Fin 2) (ZMod p) := -1
 
 @[simp] lemma gl2Diag1NegOne_val (hp2 : p ≠ 2) :
     (gl2Diag1NegOne hp2 : GL (Fin 2) (ZMod p)).val =
@@ -250,8 +250,8 @@ noncomputable def GL2F2_isoS3 : GL (Fin 2) (ZMod 2) ≃* DihedralGroup 3 :=
       exact absurd hcomm (by native_decide)
     · exact h)
 
-/-- The automorphism group of C_p × C_p is isomorphic to GL(2, 𝔽_p).
-    Proof sketch:
+/-- An explicit isomorphism `MulAut(C_p × C_p) ≃* GL(2, 𝔽_p)`.
+    Construction:
       MulAut(C_p × C_p)
         ≃*  AddAut(ZMod p × ZMod p)
               [strip Multiplicative: MulAutMultiplicative + MulEquiv.prodMultiplicative]
@@ -259,39 +259,27 @@ noncomputable def GL2F2_isoS3 : GL (Fin 2) (ZMod 2) ≃* DihedralGroup 3 :=
               [AddMonoidHom.toZModLinearMapEquiv: every additive aut of a ZMod p-module is linear]
         ≃*  GL (Fin 2) (ZMod p)
               [Matrix.GeneralLinearGroup.toLin' with standard basis] -/
-lemma aut_of_CpCp (p : ℕ) [hp : Fact p.Prime] :
-    Nonempty (MulAut (CyclicGroup p × CyclicGroup p) ≃* GL (Fin 2) (ZMod p)) := by
-  -- Step 1: strip the Multiplicative wrapper
-  -- CyclicGroup p = Multiplicative (ZMod p), so C_p × C_p ≃* Multiplicative (ZMod p × ZMod p)
-  -- Then MulAutMultiplicative gives MulAut (Multiplicative G) ≃* AddAut G
-  have step1 : MulAut (CyclicGroup p × CyclicGroup p) ≃* AddAut (ZMod p × ZMod p) :=
+def autMulEquivCpCp (p : ℕ) [hp : Fact p.Prime] :
+    MulAut (CyclicGroup p × CyclicGroup p) ≃* GL (Fin 2) (ZMod p) :=
+  let step1 : MulAut (CyclicGroup p × CyclicGroup p) ≃* AddAut (ZMod p × ZMod p) :=
     (MulAut.congr (MulEquiv.prodMultiplicative (ZMod p) (ZMod p)).symm).trans
       (MulAutMultiplicative (ZMod p × ZMod p))
-  -- Step 2: every additive automorphism of a ZMod p-module is automatically ZMod p-linear
-  -- (AddMonoidHom.toZModLinearMap shows additive homs between ZMod p-modules are linear)
-  have step2 : AddAut (ZMod p × ZMod p) ≃*
+  let step2 : AddAut (ZMod p × ZMod p) ≃*
       ((ZMod p × ZMod p) ≃ₗ[ZMod p] (ZMod p × ZMod p)) :=
     { toFun := fun f => f.toLinearEquiv
         (fun r x => (AddMonoidHom.toZModLinearMap p f.toAddMonoidHom).map_smul r x)
       invFun := fun g => g.toAddEquiv
-      left_inv := fun f => by
-        apply AddEquiv.ext
-        intro x
-        rfl
-      right_inv := fun g => by
-        apply LinearEquiv.ext
-        intro x
-        rfl
-      map_mul' := fun f g => by
-        apply LinearEquiv.ext
-        intro x
-        rfl
-      }
-  -- Step 3: LinearEquiv group ≃* GL(Fin 2, ZMod p)
-  -- via generalLinearEquiv, then finTwoArrow to match (Fin 2 → ZMod p), then toLin
-  have step3 : ((ZMod p × ZMod p) ≃ₗ[ZMod p] (ZMod p × ZMod p)) ≃* GL (Fin 2) (ZMod p) :=
+      left_inv := fun _ => by apply AddEquiv.ext; intro _; rfl
+      right_inv := fun _ => by apply LinearEquiv.ext; intro _; rfl
+      map_mul' := fun _ _ => by apply LinearEquiv.ext; intro _; rfl }
+  let step3 : ((ZMod p × ZMod p) ≃ₗ[ZMod p] (ZMod p × ZMod p)) ≃* GL (Fin 2) (ZMod p) :=
     (LinearMap.GeneralLinearGroup.generalLinearEquiv (ZMod p) (ZMod p × ZMod p)).symm
       |>.trans (LinearMap.GeneralLinearGroup.congrLinearEquiv
         (LinearEquiv.finTwoArrow (ZMod p) (ZMod p)).symm)
       |>.trans Matrix.GeneralLinearGroup.toLin.symm
-  exact ⟨step1.trans (step2.trans step3)⟩
+  step1.trans (step2.trans step3)
+
+/-- Existence form of `autMulEquivCpCp`, kept for backwards compatibility. -/
+lemma aut_of_CpCp (p : ℕ) [hp : Fact p.Prime] :
+    Nonempty (MulAut (CyclicGroup p × CyclicGroup p) ≃* GL (Fin 2) (ZMod p)) :=
+  ⟨autMulEquivCpCp p⟩
