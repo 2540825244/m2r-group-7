@@ -96,7 +96,6 @@ space and analyse the ±1 eigenspaces of the linear automorphism corresponding t
 Either both `+1` and `-1` eigenspaces are 1-dimensional (giving the `cpcpInvSecond`
 case via a change-of-basis), or `σ` acts as `-id` (giving the `cpcpInvBoth` case
 directly). -/
-set_option maxHeartbeats 800000 in
 lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 2)
     (σ : MulAut (CyclicGroup p × CyclicGroup p)) (hσ : orderOf σ = 2) :
     IsConj (cpcpInvSecond p) σ ∨ IsConj (cpcpInvBoth p) σ := by
@@ -106,7 +105,7 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
   have hσ_sq : σ ^ 2 = 1 := by
     have h := pow_orderOf_eq_one σ; rw [hσ] at h; exact h
   have hσ_ne_one : σ ≠ 1 := by
-    intro h; rw [h, orderOf_one] at hσ; exact two_ne_zero hσ.symm
+    intro h; rw [h, orderOf_one] at hσ; exact absurd hσ (by norm_num)
   -- σ ∘ σ = id pointwise
   have hσσ : ∀ x : H, σ (σ x) = x := by
     intro x
@@ -149,7 +148,8 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
   -- Case A: σ = cpcpInvBoth p
   by_cases h_eq_both : σ = cpcpInvBoth p
   · right
-    rw [h_eq_both]
+    rw [← h_eq_both]
+    exact IsConj.refl σ
   -- Case B: σ ≠ cpcpInvBoth p
   · left
     -- Step 1: find z with σ z ≠ z⁻¹ (otherwise σ = cpcpInvBoth p)
@@ -537,11 +537,13 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
       have h : β_add g₂_add = v_add := h_β_eq_g₂
       change Additive.toMul (β_add (Additive.ofMul g₂)) = v
       rw [h]; rfl
-    -- Conclude: σ = β * cpcpInvSecond p * β⁻¹
-    -- i.e., β * cpcpInvSecond p = σ * β
-    -- Build c = β
+    -- Conclude: β * cpcpInvSecond p * β⁻¹ = σ
+    -- Use isConj_iff: IsConj a b ↔ ∃ c, c * a * c⁻¹ = b
+    rw [isConj_iff]
     refine ⟨β, ?_⟩
-    -- SemiconjBy β (cpcpInvSecond p) σ : β * cpcpInvSecond p = σ * β
+    -- Goal: β * cpcpInvSecond p * β⁻¹ = σ
+    -- Equivalent to β * cpcpInvSecond p = σ * β
+    rw [mul_inv_eq_iff_eq_mul]
     show β * cpcpInvSecond p = σ * β
     -- Verify on generators g₁ and g₂
     have h_at_g₁ : (β * cpcpInvSecond p) g₁ = (σ * β) g₁ := by
