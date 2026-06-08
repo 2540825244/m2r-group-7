@@ -156,11 +156,66 @@ private noncomputable def c2_mulEquiv_mulAutC3 : CyclicGroup 2 ≃* MulAut (Cycl
     · exact ⟨1, by rw [map_one, h]⟩
     · exact ⟨Multiplicative.ofAdd 1, by rw [h_gen, h]⟩
 
+/-- Two homomorphisms out of `(C₂)³` agreeing on the three standard generators are equal. -/
+private lemma c2_3_hom_ext {H : Type*} [Group H]
+    {f g : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* H}
+    (h1 : f (Multiplicative.ofAdd 1, 1, 1) = g (Multiplicative.ofAdd 1, 1, 1))
+    (h2 : f (1, Multiplicative.ofAdd 1, 1) = g (1, Multiplicative.ofAdd 1, 1))
+    (h3 : f (1, 1, Multiplicative.ofAdd 1) = g (1, 1, Multiplicative.ofAdd 1)) :
+    f = g := by
+  ext ⟨x, y, z⟩
+  have key : (x, y, z) =
+      ((x, 1, 1) : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) * (1, y, 1) * (1, 1, z) := by
+    ext <;> simp
+  have h_one : ((1, 1, 1) : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) = 1 := rfl
+  rw [key, f.map_mul, f.map_mul, g.map_mul, g.map_mul]
+  rcases cyclicGroup_two_cases x with rfl | rfl <;>
+    rcases cyclicGroup_two_cases y with rfl | rfl <;>
+    rcases cyclicGroup_two_cases z with rfl | rfl <;>
+    simp [h_one, f.map_one, g.map_one, h1, h2, h3]
+
+/-- Swap the first two coordinates of `(C₂)³`. -/
+private def c2_3_swap_12 :
+    (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) where
+  toFun := fun ⟨x, y, z⟩ => ⟨y, x, z⟩
+  invFun := fun ⟨x, y, z⟩ => ⟨y, x, z⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+  map_mul' _ _ := rfl
+
+/-- Swap the first and third coordinates of `(C₂)³`. -/
+private def c2_3_swap_13 :
+    (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) where
+  toFun := fun ⟨x, y, z⟩ => ⟨z, y, x⟩
+  invFun := fun ⟨x, y, z⟩ => ⟨z, y, x⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+  map_mul' _ _ := rfl
+
+/-- Add the second coordinate to the first in `(C₂)³`. -/
+private def c2_3_add_2_to_1 :
+    (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) where
+  toFun := fun ⟨x, y, z⟩ => ⟨x * y, y, z⟩
+  invFun := fun ⟨x, y, z⟩ => ⟨x * y, y, z⟩
+  left_inv _ := by simp [mul_assoc, sq_eq_one_cyclicGroup2]
+  right_inv _ := by simp [mul_assoc, sq_eq_one_cyclicGroup2]
+  map_mul' _ _ := by ext <;> simp [mul_mul_mul_comm]
+
+/-- Add the third coordinate to the first in `(C₂)³`. -/
+private def c2_3_add_3_to_1 :
+    (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) where
+  toFun := fun ⟨x, y, z⟩ => ⟨x * z, y, z⟩
+  invFun := fun ⟨x, y, z⟩ => ⟨x * z, y, z⟩
+  left_inv _ := by simp [mul_assoc, sq_eq_one_cyclicGroup2]
+  right_inv _ := by simp [mul_assoc, sq_eq_one_cyclicGroup2]
+  map_mul' _ _ := by ext <;> simp [mul_mul_mul_comm]
+
 /-- Core linear-algebra fact: any non-trivial `χ : (C₂)³ →* C₂` admits a basis-change
-automorphism `α` of `(C₂)³` such that `fst ∘ α = χ`. (`(C₂)³` is `(F₂)³` viewed
-multiplicatively; non-trivial `χ` is a non-zero linear functional, so its kernel is
-a 2-dim hyperplane and any complementing vector pulls back to the first standard basis
-vector.) -/
+automorphism `α` of `(C₂)³` such that `fst ∘ α = χ`. -/
 private lemma fst_basis_change_exists
     {χ : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →* CyclicGroup 2}
     (h : χ ≠ 1) :
@@ -168,7 +223,33 @@ private lemma fst_basis_change_exists
           (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2),
       (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2 × CyclicGroup 2)).comp
         α.toMonoidHom = χ := by
-  sorry
+  obtain ⟨a, ha⟩ : ∃ a, a = χ (Multiplicative.ofAdd 1, 1, 1) := ⟨_, rfl⟩
+  obtain ⟨b, hb⟩ : ∃ b, b = χ (1, Multiplicative.ofAdd 1, 1) := ⟨_, rfl⟩
+  obtain ⟨c, hc⟩ : ∃ c, c = χ (1, 1, Multiplicative.ofAdd 1) := ⟨_, rfl⟩
+  -- Reusable: given α matching (a, b, c) on the three generators (verified by `rfl`),
+  -- package the existential.
+  have close (α : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+                  (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2))
+      (h1 : (α (Multiplicative.ofAdd 1, 1, 1)).1 = a := by rfl)
+      (h2 : (α (1, Multiplicative.ofAdd 1, 1)).1 = b := by rfl)
+      (h3 : (α (1, 1, Multiplicative.ofAdd 1)).1 = c := by rfl) :
+      ∃ β : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+            (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2),
+        (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2 × CyclicGroup 2)).comp β.toMonoidHom = χ :=
+    ⟨α, c2_3_hom_ext
+      (f := (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2 × CyclicGroup 2)).comp α.toMonoidHom)
+      (h1.trans ha) (h2.trans hb) (h3.trans hc)⟩
+  rcases cyclicGroup_two_cases a with rfl | rfl <;>
+    rcases cyclicGroup_two_cases b with rfl | rfl <;>
+    rcases cyclicGroup_two_cases c with rfl | rfl
+  · exact absurd (c2_3_hom_ext ha.symm hb.symm hc.symm) h
+  · exact close c2_3_swap_13
+  · exact close c2_3_swap_12
+  · exact close (c2_3_swap_13.trans c2_3_add_2_to_1)
+  · exact close (MulEquiv.refl _)
+  · exact close c2_3_add_3_to_1
+  · exact close c2_3_add_2_to_1
+  · exact close (c2_3_add_3_to_1.trans c2_3_add_2_to_1)
 
 /-- Reduces to `fst_basis_change_exists` via post-composition with the iso
 `c2_mulEquiv_mulAutC3.symm`. -/
