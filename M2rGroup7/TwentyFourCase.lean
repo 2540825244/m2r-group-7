@@ -139,9 +139,22 @@ private def dihedralThree_iso_sdp :
       congr 1; ring
 
 /-- The canonical iso `CyclicGroup 2 ≃* MulAut (CyclicGroup 3)`, sending the generator
-to inversion. Built by upgrading `c2OnCqInv 3` via bijectivity. -/
-private def c2_mulEquiv_mulAutC3 : CyclicGroup 2 ≃* MulAut (CyclicGroup 3) := by
-  sorry
+to inversion. -/
+private noncomputable def c2_mulEquiv_mulAutC3 : CyclicGroup 2 ≃* MulAut (CyclicGroup 3) := by
+  have h_gen : c2OnCqInv 3 (Multiplicative.ofAdd 1) = MulEquiv.inv (CyclicGroup 3) := by
+    rw [c2OnCqInv_apply]; rfl
+  have h_inv_ne : (MulEquiv.inv (CyclicGroup 3)) ≠ 1 := fun h =>
+    absurd (DFunLike.ext_iff.mp h (Multiplicative.ofAdd (1 : ZMod 3))) (by decide)
+  refine MulEquiv.ofBijective (c2OnCqInv 3) ⟨?_, ?_⟩
+  · rw [injective_iff_map_eq_one]
+    intro x hx
+    rcases cyclicGroup_two_cases x with rfl | rfl
+    · rfl
+    · exact absurd (h_gen.symm.trans hx) h_inv_ne
+  · intro a
+    rcases mulAut_cyclicGroup_three_cases a with h | h
+    · exact ⟨1, by rw [map_one, h]⟩
+    · exact ⟨Multiplicative.ofAdd 1, by rw [h_gen, h]⟩
 
 /-- For any non-trivial action `φ : (C₂)³ →* MulAut(C₃)`, the basis-change automorphism
 of `(C₂)³` that lines `ker φ` up with the standard `{1} × (C₂)²` hyperplane. -/
