@@ -131,7 +131,7 @@ lemma orderOf_cpcpInvSecond {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 2) :
   have h_two_zero : (2 : ZMod p) = 0 := by linear_combination -h_zmod_eq
   -- p ∣ 2 because (2 : ZMod p) = 0
   have h_two_cast : ((2 : ℕ) : ZMod p) = 0 := by exact_mod_cast h_two_zero
-  have h_p_dvd : p ∣ 2 := (ZMod.natCast_zmod_eq_zero_iff_dvd 2 p).mp h_two_cast
+  have h_p_dvd : p ∣ 2 := (ZMod.natCast_eq_zero_iff 2 p).mp h_two_cast
   have h_p_eq : p = 2 :=
     (Nat.prime_dvd_prime_iff_eq hp.out Nat.prime_two).mp h_p_dvd
   exact hp_ne_2 h_p_eq
@@ -159,7 +159,7 @@ lemma orderOf_cpcpInvBoth {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 2) :
     exact (Multiplicative.ofAdd.injective this)
   have h_two_zero : (2 : ZMod p) = 0 := by linear_combination -h_zmod_eq
   have h_two_cast : ((2 : ℕ) : ZMod p) = 0 := by exact_mod_cast h_two_zero
-  have h_p_dvd : p ∣ 2 := (ZMod.natCast_zmod_eq_zero_iff_dvd _ _).mp h_two_cast
+  have h_p_dvd : p ∣ 2 := (ZMod.natCast_eq_zero_iff 2 p).mp h_two_cast
   exact hp_ne_2 ((Nat.prime_dvd_prime_iff_eq hp.out Nat.prime_two).mp h_p_dvd)
 
 lemma canonicalC2OnCpCpAction_r1_range_card {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 2) :
