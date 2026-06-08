@@ -360,7 +360,9 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
       obtain ⟨vec, hvec⟩ := h_surj (Additive.ofMul h)
       have hvec_eq : vec = ![vec 0, vec 1] := by ext i; fin_cases i <;> rfl
       have h_decomp : Additive.ofMul h = vec 0 • u_add + vec 1 • v_add := by
-        rw [← hvec, hvec_eq, h_φ_map_apply]
+        calc Additive.ofMul h = φ_map vec := hvec.symm
+          _ = φ_map ![vec 0, vec 1] := by rw [hvec_eq]
+          _ = vec 0 • u_add + vec 1 • v_add := h_φ_map_apply (vec 0) (vec 1)
       -- Convert (r : ZMod p) • x to (r.val : ℤ) • x for both terms
       have h_smul_u : (vec 0) • u_add = ((vec 0).val : ℤ) • u_add := by
         rw [← Int.cast_smul_eq_zsmul (ZMod p), Int.cast_natCast, ZMod.natCast_zmod_val]
@@ -369,10 +371,7 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
       -- Now convert to multiplicative form
       have h_mul : h = u ^ ((vec 0).val : ℤ) * v ^ ((vec 1).val : ℤ) := by
         apply Additive.ofMul.injective
-        rw [h_decomp, h_smul_u, h_smul_v, ofMul_mul]
-        congr 1
-        · exact (ofMul_zpow _ u).symm
-        · exact (ofMul_zpow _ v).symm
+        rw [h_decomp, h_smul_u, h_smul_v, ofMul_mul, ← ofMul_zpow, ← ofMul_zpow]
       rw [h_mul]
       exact mul_mem
         (Subgroup.mem_sup_left (Subgroup.zpow_mem _ (Subgroup.mem_zpowers u) _))
@@ -425,15 +424,21 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
       obtain ⟨i, hi⟩ := Subgroup.mem_zpowers_iff.mp (h_ofAdd_gen a)
       obtain ⟨j, hj⟩ := Subgroup.mem_zpowers_iff.mp (h_ofAdd_gen b)
       have h_g₁_pow : (g₁ ^ i : H) = (a, 1) := by
-        change (g₁.1 ^ i, g₁.2 ^ i) = (a, 1)
-        show ((Multiplicative.ofAdd (1 : ZMod p) : CyclicGroup p) ^ i,
-              (1 : CyclicGroup p) ^ i) = (a, 1)
-        rw [one_zpow, hi]
+        have : (g₁ ^ i : H) = (g₁.1 ^ i, g₁.2 ^ i) := rfl
+        rw [this]
+        refine Prod.ext ?_ ?_
+        · show (Multiplicative.ofAdd (1 : ZMod p) : CyclicGroup p) ^ i = a
+          exact hi
+        · show (1 : CyclicGroup p) ^ i = 1
+          exact one_zpow i
       have h_g₂_pow : (g₂ ^ j : H) = (1, b) := by
-        change (g₂.1 ^ j, g₂.2 ^ j) = (1, b)
-        show ((1 : CyclicGroup p) ^ j,
-              (Multiplicative.ofAdd (1 : ZMod p) : CyclicGroup p) ^ j) = (1, b)
-        rw [one_zpow, hj]
+        have : (g₂ ^ j : H) = (g₂.1 ^ j, g₂.2 ^ j) := rfl
+        rw [this]
+        refine Prod.ext ?_ ?_
+        · show (1 : CyclicGroup p) ^ j = 1
+          exact one_zpow j
+        · show (Multiplicative.ofAdd (1 : ZMod p) : CyclicGroup p) ^ j = b
+          exact hj
       have hab_eq : (a, b) = g₁ ^ i * g₂ ^ j := by
         rw [h_g₁_pow, h_g₂_pow, Prod.mk_mul_mk, mul_one, one_mul]
       rw [hab_eq]
