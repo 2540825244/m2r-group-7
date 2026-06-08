@@ -64,10 +64,7 @@ private def sdp_prodEquivOfFstAction
 /-- `CyclicGroup 2` has only two elements: `1` and `ofAdd 1`. -/
 private lemma cyclicGroup_two_cases (k : CyclicGroup 2) :
     k = 1 ∨ k = Multiplicative.ofAdd (1 : ZMod 2) := by
-  change Multiplicative.ofAdd (Multiplicative.toAdd k) = 1 ∨
-    Multiplicative.ofAdd (Multiplicative.toAdd k) = Multiplicative.ofAdd (1 : ZMod 2)
-  generalize Multiplicative.toAdd k = m
-  fin_cases m <;> [exact Or.inl rfl; exact Or.inr rfl]
+  revert k; decide
 
 /-- A hom out of `CyclicGroup n` is determined by its value at the generator `ofAdd 1`. -/
 private lemma cyclicHom_ext
@@ -103,40 +100,9 @@ private def dihedralThree_iso_sdp :
     | DihedralGroup.r i => ⟨Multiplicative.ofAdd i, 1⟩
     | DihedralGroup.sr i =>
         ⟨Multiplicative.ofAdd (-i), Multiplicative.ofAdd (1 : ZMod 2)⟩
-  left_inv := by
-    rintro ⟨c, k⟩
-    rcases cyclicGroup_two_cases k with hk | hk <;> subst hk
-    · rfl
-    · ext
-      · change Multiplicative.ofAdd (-(-Multiplicative.toAdd c)) = c
-        rw [neg_neg]; rfl
-      · rfl
-  right_inv := by
-    rintro (i | i)
-    · rfl
-    · change DihedralGroup.sr (-(-i)) = DihedralGroup.sr i
-      rw [neg_neg]
-  map_mul' := by
-    rintro ⟨c₁, k₁⟩ ⟨c₂, k₂⟩
-    have h_inv : ∀ c : CyclicGroup 3,
-        (c2OnCqInv 3) (Multiplicative.ofAdd (1 : ZMod 2)) c = c⁻¹ := fun c => by
-      rw [c2OnCqInv_apply]; rfl
-    rcases cyclicGroup_two_cases k₁ with hk1 | hk1 <;>
-      rcases cyclicGroup_two_cases k₂ with hk2 | hk2 <;>
-      subst hk1 <;> subst hk2 <;>
-      simp only [SemidirectProduct.mul_def, h_inv, map_one, MulAut.one_apply,
-        mul_one, one_mul]
-    · rfl
-    · change DihedralGroup.sr (-(Multiplicative.toAdd c₁ + Multiplicative.toAdd c₂)) =
-          DihedralGroup.sr (-Multiplicative.toAdd c₂ - Multiplicative.toAdd c₁)
-      congr 1; ring
-    · change DihedralGroup.sr
-              (-(Multiplicative.toAdd c₁ + -Multiplicative.toAdd c₂)) =
-          DihedralGroup.sr (-Multiplicative.toAdd c₁ + Multiplicative.toAdd c₂)
-      congr 1; ring
-    · change DihedralGroup.r (Multiplicative.toAdd c₁ + -Multiplicative.toAdd c₂) =
-          DihedralGroup.r (-Multiplicative.toAdd c₂ - -Multiplicative.toAdd c₁)
-      congr 1; ring
+  left_inv := by decide
+  right_inv := by decide
+  map_mul' := by decide
 
 /-- The canonical iso `CyclicGroup 2 ≃* MulAut (CyclicGroup 3)`, sending the generator
 to inversion. -/
