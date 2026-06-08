@@ -149,7 +149,6 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
   by_cases h_eq_both : σ = cpcpInvBoth p
   · right
     rw [← h_eq_both]
-    exact IsConj.refl σ
   -- Case B: σ ≠ cpcpInvBoth p
   · left
     -- Step 1: find z with σ z ≠ z⁻¹ (otherwise σ = cpcpInvBoth p)
@@ -176,10 +175,8 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
     have hu_ne : u ≠ 1 := by
       intro h
       apply hz
-      have : σ z = z⁻¹ := by
-        have h_eq : z * σ z = 1 := h
-        exact (mul_eq_one_iff_eq_inv.mp h_eq)
-      exact this
+      have h_eq : z * σ z = 1 := h
+      exact mul_eq_one_iff_eq_inv'.mp h_eq
     have hu_fixed : σ u = u := by
       show σ (z * σ z) = z * σ z
       rw [map_mul, hσσ z]
@@ -223,12 +220,12 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
     let ψ : Additive H ≃+ Additive H := (AddAutAdditive (G := H)).symm σ
     -- ψ u_add = u_add (eigenvalue 1)
     have h_ψ_u : ψ u_add = u_add := by
-      change Additive.ofMul (σ (Additive.toMul (Additive.ofMul u))) = Additive.ofMul u
-      rw [Additive.toMul_ofMul, hu_fixed]
+      show Additive.ofMul (σ u) = Additive.ofMul u
+      rw [hu_fixed]
     -- ψ v_add = -v_add (eigenvalue -1)
     have h_ψ_v : ψ v_add = -v_add := by
-      change Additive.ofMul (σ (Additive.toMul (Additive.ofMul v))) = -Additive.ofMul v
-      rw [Additive.toMul_ofMul, hv_inv]
+      show Additive.ofMul (σ v) = -Additive.ofMul v
+      rw [hv_inv]
       rfl
     -- ψ is ZMod p-linear
     have h_ψ_smul : ∀ (r : ZMod p) (x : Additive H), ψ (r • x) = r • ψ x := by
@@ -269,23 +266,17 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
       -- 2 is invertible in ZMod p (since p ≠ 2)
       have h2_ne_zero : (2 : ZMod p) ≠ 0 := by
         intro h2
-        have : (2 : ℕ) % p = 0 := by
-          have hcast : ((2 : ℕ) : ZMod p) = 0 := by exact_mod_cast h2
-          exact (ZMod.natCast_zmod_eq_zero_iff_dvd 2 p).mp hcast |>.symm ▸
-            Nat.mod_eq_zero_of_dvd ((ZMod.natCast_zmod_eq_zero_iff_dvd 2 p).mp hcast)
-        have h_dvd : p ∣ 2 := (ZMod.natCast_zmod_eq_zero_iff_dvd 2 p).mp
-          (by exact_mod_cast h2)
+        have hcast : ((2 : ℕ) : ZMod p) = 0 := by exact_mod_cast h2
+        have h_dvd : p ∣ 2 := (ZMod.natCast_eq_zero_iff 2 p).mp hcast
         have h_p_eq : p = 2 :=
           (Nat.prime_dvd_prime_iff_eq hp.out Nat.prime_two).mp h_dvd
         exact hp_ne_2 h_p_eq
       have ha : a = 0 := by
-        have : (2 * a) • u_add = (0 : ZMod p) • u_add := by
-          rw [zero_smul]; exact h_sum
         have h2a : (2 * a) = 0 := by
           by_contra h2a_ne
           -- if 2a ≠ 0 then 2a • u_add = 0 ⇒ u_add = 0 (since (ZMod p) is a field)
           have : u_add = 0 := by
-            have h_inv := mul_inv_cancel₀ h2a_ne
+            have h_inv : (2 * a)⁻¹ * (2 * a) = 1 := inv_mul_cancel₀ h2a_ne
             calc u_add = ((2 * a)⁻¹ * (2 * a)) • u_add := by rw [h_inv, one_smul]
               _ = (2 * a)⁻¹ • ((2 * a) • u_add) := by rw [mul_smul]
               _ = (2 * a)⁻¹ • (0 : Additive H) := by rw [h_sum]
@@ -298,7 +289,7 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
         have h2b : (2 * b) = 0 := by
           by_contra h2b_ne
           have : v_add = 0 := by
-            have h_inv := mul_inv_cancel₀ h2b_ne
+            have h_inv : (2 * b)⁻¹ * (2 * b) = 1 := inv_mul_cancel₀ h2b_ne
             calc v_add = ((2 * b)⁻¹ * (2 * b)) • v_add := by rw [h_inv, one_smul]
               _ = (2 * b)⁻¹ • ((2 * b) • v_add) := by rw [mul_smul]
               _ = (2 * b)⁻¹ • (0 : Additive H) := by rw [h_sub]
@@ -365,41 +356,23 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
     have h_gen_uv : Subgroup.zpowers u ⊔ Subgroup.zpowers v = ⊤ := by
       rw [eq_top_iff]
       intro h _
-      -- write Additive.ofMul h = a • u_add + b • v_add
+      -- write Additive.ofMul h = a • u_add + b • v_add via surjectivity of φ_map
       obtain ⟨vec, hvec⟩ := h_surj (Additive.ofMul h)
+      have hvec_eq : vec = ![vec 0, vec 1] := by ext i; fin_cases i <;> rfl
       have h_decomp : Additive.ofMul h = vec 0 • u_add + vec 1 • v_add := by
-        rw [← hvec]
-        have hvec_eq : vec = ![vec 0, vec 1] := by ext i; fin_cases i <;> rfl
-        rw [hvec_eq, h_φ_map_apply]
-      -- Convert to multiplicative form
-      -- a • u_add corresponds to u^(vec 0).val (as integer power)
-      -- vec 0 : ZMod p; we use Nat representative
+        rw [← hvec, hvec_eq, h_φ_map_apply]
+      -- Convert (r : ZMod p) • x to (r.val : ℤ) • x for both terms
+      have h_smul_u : (vec 0) • u_add = ((vec 0).val : ℤ) • u_add := by
+        rw [← Int.cast_smul_eq_zsmul (ZMod p), Int.cast_natCast, ZMod.natCast_zmod_val]
+      have h_smul_v : (vec 1) • v_add = ((vec 1).val : ℤ) • v_add := by
+        rw [← Int.cast_smul_eq_zsmul (ZMod p), Int.cast_natCast, ZMod.natCast_zmod_val]
+      -- Now convert to multiplicative form
       have h_mul : h = u ^ ((vec 0).val : ℤ) * v ^ ((vec 1).val : ℤ) := by
-        have h_unfold : Additive.ofMul h = Additive.ofMul (u ^ ((vec 0).val : ℤ) *
-            v ^ ((vec 1).val : ℤ)) := by
-          rw [h_decomp]
-          rw [ofMul_mul]
-          congr 1
-          · -- vec 0 • u_add = Additive.ofMul (u ^ ((vec 0).val : ℤ))
-            have : Additive.ofMul (u ^ ((vec 0).val : ℤ)) =
-                ((vec 0).val : ℤ) • u_add := ofMul_zpow _ u
-            rw [this]
-            rw [Int.cast_smul_eq_zsmul]
-            -- vec 0 • u_add via ZMod p action equals (vec 0).val • u_add (ℕ action)
-            -- which equals ((vec 0).val : ℤ) • u_add (ℤ action)
-            -- Use the standard fact: in a ZMod p-module from zmodModule,
-            -- (r : ZMod p) • x = (r.val : ℤ) • x
-            have h_smul_val : (vec 0) • u_add = ((vec 0).val : ℤ) • u_add := by
-              rw [← Int.cast_smul_eq_zsmul (ZMod p), Int.cast_natCast, ZMod.natCast_zmod_val]
-            exact h_smul_val
-          · have : Additive.ofMul (v ^ ((vec 1).val : ℤ)) =
-                ((vec 1).val : ℤ) • v_add := ofMul_zpow _ v
-            rw [this]
-            rw [Int.cast_smul_eq_zsmul]
-            have h_smul_val : (vec 1) • v_add = ((vec 1).val : ℤ) • v_add := by
-              rw [← Int.cast_smul_eq_zsmul (ZMod p), Int.cast_natCast, ZMod.natCast_zmod_val]
-            exact h_smul_val
-        exact Additive.ofMul.injective h_unfold
+        apply Additive.ofMul.injective
+        rw [h_decomp, h_smul_u, h_smul_v, ofMul_mul]
+        congr 1
+        · exact (ofMul_zpow _ u).symm
+        · exact (ofMul_zpow _ v).symm
       rw [h_mul]
       exact mul_mem
         (Subgroup.mem_sup_left (Subgroup.zpow_mem _ (Subgroup.mem_zpowers u) _))
