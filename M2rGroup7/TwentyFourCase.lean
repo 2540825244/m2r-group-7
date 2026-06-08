@@ -317,6 +317,65 @@ private noncomputable def c3_sdp_c2cubed_nontrivial
   -- Step 3: identify the surviving `C₃ ⋊_inv C₂` as `D₃`
   dihedralThree_iso_sdp.prodCongr (MulEquiv.refl _)
 
+/-- The standard non-trivial action `Q_8 →* MulAut (C_3)`: sends `a i` to identity and
+`xa i` to inversion. Its kernel is `⟨a⟩ ≃ C_4`. -/
+private def q8OnC3Inv : QuaternionGroup 2 →* MulAut (CyclicGroup 3) where
+  toFun := fun
+    | .a _ => 1
+    | .xa _ => MulEquiv.inv (CyclicGroup 3)
+  map_one' := rfl
+  map_mul' p q := by
+    rcases p with _ | _ <;> rcases q with _ | _ <;> first
+      | rfl
+      | (ext x; exact (inv_inv x).symm)
+
+/-- Existence of a basis-change automorphism of `Q_8` transporting any non-trivial
+`φ : Q_8 →* MulAut(C_3)` to the standard `q8OnC3Inv`. -/
+private lemma q8_basis_change_exists
+    {φ : QuaternionGroup 2 →* MulAut (CyclicGroup 3)} (h : φ ≠ 1) :
+    ∃ α : QuaternionGroup 2 ≃* QuaternionGroup 2,
+      q8OnC3Inv.comp α.toMonoidHom = φ := by
+  sorry
+
+/-- The basis-change automorphism (chosen non-constructively). -/
+private noncomputable def q8_basis_change
+    {φ : QuaternionGroup 2 →* MulAut (CyclicGroup 3)} (h : φ ≠ 1) :
+    QuaternionGroup 2 ≃* QuaternionGroup 2 :=
+  (q8_basis_change_exists h).choose
+
+/-- The basis change transports `φ` to `q8OnC3Inv`. -/
+private lemma q8_basis_change_eq
+    {φ : QuaternionGroup 2 →* MulAut (CyclicGroup 3)} (h : φ ≠ 1) :
+    q8OnC3Inv.comp (q8_basis_change h).toMonoidHom = φ :=
+  (q8_basis_change_exists h).choose_spec
+
+/-- Step 1 (basis change): any non-trivial action `φ` of `Q_8` on `C_3` produces a
+semidirect product isomorphic to the same with the standard action `q8OnC3Inv`. -/
+private noncomputable def c3_sdp_q8_iso_standard
+    {φ : QuaternionGroup 2 →* MulAut (CyclicGroup 3)} (h_nontriv : φ ≠ 1) :
+    CyclicGroup 3 ⋊[φ] QuaternionGroup 2 ≃*
+      CyclicGroup 3 ⋊[q8OnC3Inv] QuaternionGroup 2 :=
+  SemidirectProduct.congr (MulEquiv.refl _) (q8_basis_change h_nontriv) (by
+    intro g
+    have h := DFunLike.ext_iff.mp (q8_basis_change_eq h_nontriv) g
+    ext n
+    simp only [MulEquiv.trans_apply, MulEquiv.refl_apply]
+    exact (congrArg (fun a : MulAut _ => a n) h).symm)
+
+/-- Step 2 (identification): the semidirect product `C_3 ⋊[q8OnC3Inv] Q_8` is isomorphic
+to `Q_24`. In `Q_24`, `⟨a 4⟩ ≃ C_3` is the normal Sylow-3 subgroup and `⟨a 3, xa 0⟩ ≃ Q_8`
+is a complement. -/
+private noncomputable def c3_sdp_q8_iso_q24 :
+    CyclicGroup 3 ⋊[q8OnC3Inv] QuaternionGroup 2 ≃* QuaternionGroup 6 := by
+  sorry
+
+/-- Any non-trivial action of `Q_8` on `C_3` gives `C_3 ⋊[φ] Q_8 ≃* Q_24`, by combining
+the basis-change `c3_sdp_q8_iso_standard` with the identification `c3_sdp_q8_iso_q24`. -/
+private noncomputable def c3_sdp_q8_nontrivial
+    {φ : QuaternionGroup 2 →* MulAut (CyclicGroup 3)} (h_nontriv : φ ≠ 1) :
+    CyclicGroup 3 ⋊[φ] QuaternionGroup 2 ≃* QuaternionGroup 6 :=
+  (c3_sdp_q8_iso_standard h_nontriv).trans c3_sdp_q8_iso_q24
+
 /-- The only non-trivial homomorphism `CyclicGroup 8 →* MulAut (CyclicGroup 3)` is
     `c8OnCqInv 3` (inversion on the generator). -/
 private lemma c8_to_mulAutC3_nontrivial_eq
@@ -385,7 +444,12 @@ private lemma order24_1_sylow3_nontrivial
     --   ker = reflection V_4 → (C_6 × C_2) ⋊ C_2 (needs def; lands in True)
     sorry
   · -- K ≃* Q_8: target Q_24
-    sorry
+    obtain ⟨eK⟩ := hQ8
+    let : G ≃* QuaternionGroup 6 :=
+      h_iso.symm.trans <|
+      (SemidirectProduct.congr' eP eK).trans <|
+      c3_sdp_q8_nontrivial (transported_action_ne_one eP eK h_phi_nontriv)
+    tauto
 
 /-- A group of order `24` with a unique Sylow 3-subgroup is isomorphic to one of
     the 12 normal-Sylow-3 groups (5 from a trivial conjugation action, 7 from a
