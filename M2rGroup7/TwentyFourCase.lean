@@ -81,6 +81,26 @@ private lemma cyclicGroup_two_cases (k : CyclicGroup 2) :
   generalize Multiplicative.toAdd k = m
   fin_cases m <;> [exact Or.inl rfl; exact Or.inr rfl]
 
+/-- A hom out of `CyclicGroup n` is determined by its value at the generator `ofAdd 1`. -/
+private lemma cyclicHom_ext
+    {n : Nat} [NeZero n] {G : Type*} [Group G]
+    (ψ : CyclicGroup n →* G) {a : G} (ha : a ^ n = 1)
+    (h_gen : ψ (Multiplicative.ofAdd (1 : ZMod n)) = a) :
+    ψ = cyclicHom n a ha := by
+  refine MonoidHom.ext fun x => ?_
+  rw [cyclicHom_apply_eq_zpow, ← h_gen, ← ψ.map_zpow]
+  congr 1
+  change Multiplicative.ofAdd (Multiplicative.toAdd x) =
+    Multiplicative.ofAdd (((Multiplicative.toAdd x).val : ℤ) • (1 : ZMod n))
+  congr 1
+  rw [zsmul_eq_mul, mul_one]
+  exact_mod_cast (ZMod.natCast_zmod_val _).symm
+
+/-- `MulAut (CyclicGroup 3)` has exactly two elements: identity and inversion. -/
+private lemma mulAut_cyclicGroup_three_cases (a : MulAut (CyclicGroup 3)) :
+    a = 1 ∨ a = MulEquiv.inv (CyclicGroup 3) := by
+  revert a; decide
+
 /-- Step 3 (dihedral identification): `C₃ ⋊_inv C₂ ≃* D₃`.
 The map: `(c, 1) ↦ r(toAdd c)`, `(c, k) ↦ sr(-toAdd c)` for `k ≠ 1`. -/
 private def dihedralThree_iso_sdp :
@@ -143,6 +163,22 @@ private def c3_sdp_c2cubed_nontrivial
   -- Step 3: identify the surviving `C₃ ⋊_inv C₂` as `D₃`
   dihedralThree_iso_sdp.prodCongr (MulEquiv.refl _)
 
+/-- The only non-trivial homomorphism `CyclicGroup 8 →* MulAut (CyclicGroup 3)` is
+    `c8OnCqInv 3` (inversion on the generator). -/
+private lemma c8_to_mulAutC3_nontrivial_eq
+    {ψ : CyclicGroup 8 →* MulAut (CyclicGroup 3)} (h_nontriv : ψ ≠ 1) :
+    ψ = c8OnCqInv 3 := by
+  have h_inv_pow : (MulEquiv.inv (CyclicGroup 3)) ^ 8 = 1 := by
+    change MulEquiv.inv (CyclicGroup 3) ^ (2 * 4) = 1
+    rw [pow_mul, inv_aut_pow_two_eq_one]; exact one_pow 4
+  have h_gen : ψ (Multiplicative.ofAdd (1 : ZMod 8)) = MulEquiv.inv (CyclicGroup 3) := by
+    rcases mulAut_cyclicGroup_three_cases (ψ (Multiplicative.ofAdd (1 : ZMod 8))) with h1 | hinv
+    · refine absurd (?_ : ψ = 1) h_nontriv
+      rw [cyclicHom_ext ψ (one_pow 8) h1]; ext x
+      rw [cyclicHom_apply_eq_zpow]; simp
+    · exact hinv
+  rw [cyclicHom_ext ψ h_inv_pow h_gen]; rfl
+
 /-- Non-trivial-action branch of the normal-Sylow-3 classification. Given a
     semidirect-product iso `↥P ⋊[φ] ↥K ≃* G` with `|P| = 3` and `|K| = 8`,
     dispatch on `order8_classification` of `K`. Six of the seven possible
@@ -168,32 +204,27 @@ private lemma order24_1_sylow3_nontrivial
     Nonempty (G ≃* DihedralGroup 12) ∨
     Nonempty (G ≃* QuaternionGroup 6) ∨
     True := by
+  haveI : IsCyclic ↥P := isCyclic_of_prime_card h_P_card
+  have eP : ↥P ≃* CyclicGroup 3 :=
+    mulEquivOfCyclicCardEq (h_P_card.trans (card_cyclicGroup 3).symm)
   rcases order8_classification (G := ↥K) hK_card with hC8 | hC4C2 | hC2sq3 | hD4 | hQ8
   · -- K ≃* C_8: target `C_3 ⋊[c8OnCqInv 3] C_8`
-    sorry
+    obtain ⟨eK⟩ := hC8
+    have h_psi_eq := c8_to_mulAutC3_nontrivial_eq
+      (transported_action_ne_one eP eK h_phi_nontriv)
+    let : G ≃* CyclicGroup 3 ⋊[c8OnCqInv 3] CyclicGroup 8 :=
+      h_iso.symm.trans (h_psi_eq ▸ SemidirectProduct.congr' eP eK)
+    tauto
   · -- K ≃* C_4 × C_2: two sub-cases by `ker φ`
     --   ker = C_4  → D_3 × C_4
     --   ker = V_4  → C_2 × Q_12
     sorry
   · -- K ≃* C_2^3: target `D_3 × V_4`
     obtain ⟨eK⟩ := hC2sq3
-    haveI : IsCyclic ↥P := isCyclic_of_prime_card h_P_card
-    have eP : ↥P ≃* CyclicGroup 3 :=
-      mulEquivOfCyclicCardEq (h_P_card.trans (card_cyclicGroup 3).symm)
-    -- The transported action `ψ : (C₂)³ →* MulAut(C₃)` is non-trivial since `φ` is.
-    have h_psi_nontriv :
-        (MulAut.congr eP).toMonoidHom.comp (φ.comp eK.symm.toMonoidHom) ≠ 1 := by
-      intro h
-      apply h_phi_nontriv
-      refine MonoidHom.ext fun k => ?_
-      have hk := DFunLike.ext_iff.mp h (eK k)
-      simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-        MulEquiv.symm_apply_apply, MonoidHom.one_apply] at hk
-      exact (MulEquiv.map_eq_one_iff (MulAut.congr eP)).mp hk
     let : G ≃* DihedralGroup 3 × (CyclicGroup 2 × CyclicGroup 2) :=
       h_iso.symm.trans <|
       (SemidirectProduct.congr' eP eK).trans <|
-      c3_sdp_c2cubed_nontrivial h_psi_nontriv
+      c3_sdp_c2cubed_nontrivial (transported_action_ne_one eP eK h_phi_nontriv)
     tauto
   · -- K ≃* D_4: two sub-cases by `ker φ`
     --   ker = rotation C_4  → D_12
