@@ -219,7 +219,10 @@ lemma classify_sdp_C2C2_on_Cq
                   (canonicalC2C2OnCqAction h_q_ne_2)) := by
   haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
   by_cases h_triv : φ = 1
-  · exact Or.inl ⟨SemidirectProduct.mulEquivOfTrivialAction h_triv⟩
+  · have : CyclicGroup q ⋊[φ] CyclicGroup 2 × CyclicGroup 2
+      ≃* CyclicGroup q × CyclicGroup 2 × CyclicGroup 2 :=
+      SemidirectProduct.mulEquivOfTrivialAction h_triv
+    tauto
   · right
     have h_range_dvd : Nat.card φ.range ∣ 2 := range_card_dvd_two_of_C2C2_hom φ
     have h_range_card : Nat.card φ.range = 2 := by
@@ -401,7 +404,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
             (MulEquiv.prodComm.trans (CyclicGroup.prodMulEquiv h4q)))
         tauto
       · -- r = 1: matches `canonicalC4OnCqAction` (definitionally).
-        exact Or.inr (Or.inr (Or.inl ⟨pre⟩))
+        tauto
       · -- r = 2: forces `q ≡ 1 (mod 4)`, matches `canonicalC4OnCqAction_r2`.
         have hp := h_q_prime.out
         have h4_dvd : (4 : ℕ) ∣ q - 1 := by
@@ -409,7 +412,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
             (by have := hp.one_lt; omega)).mpr (by have := hr_le.trans (min_le_right _ _); omega)
           simpa using this
         have h_1_mod_4 : q ≡ 1 [MOD 4] := by have := hp.pos; unfold Nat.ModEq; omega
-        exact Or.inr (Or.inr (Or.inr (Or.inl ⟨h_1_mod_4, ⟨pre⟩⟩)))
+        tauto
     · -- K ≅ C_2 × C_2: bridge φ across `eQ, eK` and dispatch via `classify_sdp_C2C2_on_Cq`.
       let eK := h_K_C2C2.some
       let φ_inter : CyclicGroup 2 × CyclicGroup 2 →* MulAut (CyclicGroup q) :=
