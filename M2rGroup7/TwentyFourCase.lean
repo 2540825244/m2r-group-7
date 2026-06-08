@@ -28,27 +28,12 @@ private lemma order24_1_sylow3_trivial
     Nonempty (G ≃* CyclicGroup 3 × (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)) ∨
     Nonempty (G ≃* CyclicGroup 3 × DihedralGroup 4) ∨
     Nonempty (G ≃* CyclicGroup 3 × QuaternionGroup 2) := by
-  rcases order8_classification (G := Q) hQ_card with hC8 | hC4C2 | hC2sq3 | hD4 | hQ8
-  · obtain ⟨e⟩ := hC8
-    let : G ≃* CyclicGroup 3 × CyclicGroup 8 :=
-      h_iso.trans ((MulEquiv.refl (CyclicGroup 3)).prodCongr e)
-    tauto
-  · obtain ⟨e⟩ := hC4C2
-    let : G ≃* CyclicGroup 3 × (CyclicGroup 4 × CyclicGroup 2) :=
-      h_iso.trans ((MulEquiv.refl (CyclicGroup 3)).prodCongr e)
-    tauto
-  · obtain ⟨e⟩ := hC2sq3
-    let : G ≃* CyclicGroup 3 × (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) :=
-      h_iso.trans ((MulEquiv.refl (CyclicGroup 3)).prodCongr e)
-    tauto
-  · obtain ⟨e⟩ := hD4
-    let : G ≃* CyclicGroup 3 × DihedralGroup 4 :=
-      h_iso.trans ((MulEquiv.refl (CyclicGroup 3)).prodCongr e)
-    tauto
-  · obtain ⟨e⟩ := hQ8
-    let : G ≃* CyclicGroup 3 × QuaternionGroup 2 :=
-      h_iso.trans ((MulEquiv.refl (CyclicGroup 3)).prodCongr e)
-    tauto
+  -- Each leaf: lift `e : Q ≃* X` to `G ≃* CyclicGroup 3 × X` via `h_iso`, then dispatch.
+  have mk : ∀ {X : Type} [Group X],
+      Nonempty (Q ≃* X) → Nonempty (G ≃* CyclicGroup 3 × X) :=
+    fun ⟨e⟩ => ⟨h_iso.trans ((MulEquiv.refl _).prodCongr e)⟩
+  rcases order8_classification (G := Q) hQ_card with h | h | h | h | h <;>
+    (have := mk h; tauto)
 
 /-- Step 2 (factor split): in a semidirect product whose action factors through the first
     projection `A × B → A`, the `B` factor splits off as a direct factor. -/
@@ -518,13 +503,11 @@ lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
   haveI hPnormal : (↑P : Subgroup G).Normal := Sylow.normal_of_subsingleton P
   -- |P| = 3 and [G : P] = 8
   have h_P_card : Nat.card ↥(P : Subgroup G) = 3 := by
-    have := sylow_card_eq (p := 3) (q := 2) (by decide)
+    simpa using sylow_card_eq (p := 3) (q := 2) (by decide)
       (show Nat.card G = 3 ^ 1 * 2 ^ 3 by rw [h]; ring) P
-    simpa using this
   have h_P_idx : (↑P : Subgroup G).index = 8 := by
-    have := sylow_index_eq (p := 3) (q := 2) (by decide)
+    simpa using sylow_index_eq (p := 3) (q := 2) (by decide)
       (show Nat.card G = 3 ^ 1 * 2 ^ 3 by rw [h]; ring) P
-    simpa using this
   -- Schur-Zassenhaus: a complement K of order 8 exists
   obtain ⟨K, hK⟩ := Subgroup.exists_right_complement'_of_coprime
     (N := (↑P : Subgroup G)) (by rw [h_P_card, h_P_idx]; decide)
@@ -532,11 +515,8 @@ lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
   have h_iso := SemidirectProduct.mulEquivSubgroup hK
   -- |K| = 8
   have hK_card : Nat.card ↥K = 8 := by
-    have h1 : Nat.card G = Nat.card ↥(↑P : Subgroup G) * Nat.card ↥K := by
-      have heq := Nat.card_congr h_iso.toEquiv
-      rw [SemidirectProduct.card] at heq
-      exact heq.symm
-    rw [h_P_card, h] at h1
+    have := (Nat.card_congr h_iso.toEquiv).symm
+    rw [SemidirectProduct.card, h_P_card, h] at this
     omega
   -- Conjugation action φ : K →* MulAut P
   let φ : ↥K →* MulAut ↥(↑P : Subgroup G) :=
@@ -545,17 +525,14 @@ lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
   classical
   by_cases h_triv : φ = 1
   · -- Trivial action: extract `G ≃* C_3 × K`, dispatch via the trivial sub-lemma
-    have h_iso_one :
-        ((↑P : Subgroup G) ⋊[(1 : ↥K →* MulAut ↥(↑P : Subgroup G))] ↥K) ≃* G := by
-      rw [← h_triv]
-      exact h_iso
-    have h_g_to_prod : G ≃* ↥(↑P : Subgroup G) × ↥K :=
-      (SemidirectProduct.mulEquivProd.symm.trans h_iso_one).symm
+    have h_iso_one : (↑P : Subgroup G) ⋊[(1 : ↥K →* MulAut ↥(↑P : Subgroup G))] ↥K ≃* G := by
+      rw [← h_triv]; exact h_iso
     haveI : IsCyclic ↥(↑P : Subgroup G) := isCyclic_of_prime_card h_P_card
     have hP_iso : ↥(↑P : Subgroup G) ≃* CyclicGroup 3 :=
       mulEquivOfCyclicCardEq (h_P_card.trans (card_cyclicGroup 3).symm)
     have h_g_clean : G ≃* CyclicGroup 3 × ↥K :=
-      h_g_to_prod.trans (hP_iso.prodCongr (MulEquiv.refl _))
+      h_iso_one.symm.trans <|
+        SemidirectProduct.mulEquivProd.trans (hP_iso.prodCongr (MulEquiv.refl _))
     exact Or.inl (order24_1_sylow3_trivial h_g_clean hK_card)
   · -- Non-trivial action: pass setup state to the sub-lemma
     exact Or.inr (order24_1_sylow3_nontrivial h_P_card hK_card h_iso h_triv)
