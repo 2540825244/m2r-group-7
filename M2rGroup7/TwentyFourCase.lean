@@ -362,12 +362,28 @@ private noncomputable def c3_sdp_q8_iso_standard
     simp only [MulEquiv.trans_apply, MulEquiv.refl_apply]
     exact (congrArg (fun a : MulAut _ => a n) h).symm)
 
-/-- Step 2 (identification): the semidirect product `C_3 ⋊[q8OnC3Inv] Q_8` is isomorphic
-to `Q_24`. In `Q_24`, `⟨a 4⟩ ≃ C_3` is the normal Sylow-3 subgroup and `⟨a 3, xa 0⟩ ≃ Q_8`
-is a complement. -/
-private noncomputable def c3_sdp_q8_iso_q24 :
-    CyclicGroup 3 ⋊[q8OnC3Inv] QuaternionGroup 2 ≃* QuaternionGroup 6 := by
-  sorry
+/-- Step 2 (identification): `C_3 ⋊[q8OnC3Inv] Q_8 ≃* Q_24`.
+
+The iso sends `(c, a i) ↦ a (4c + 3i)` and `(c, xa i) ↦ xa (3i - 4c)`, where `c : ZMod 3`
+and `i : ZMod 4` are cast to `ZMod 12`. -/
+private def c3_sdp_q8_iso_q24 :
+    CyclicGroup 3 ⋊[q8OnC3Inv] QuaternionGroup 2 ≃* QuaternionGroup 6 where
+  toFun x :=
+    let c : ZMod 12 := ((Multiplicative.toAdd x.left : ZMod 3).val : ZMod 12)
+    match x.right with
+    | .a i => .a (4 * c + 3 * ((i.val : ZMod 12)))
+    | .xa i => .xa (3 * ((i.val : ZMod 12)) - 4 * c)
+  invFun y :=
+    match y with
+    | .a j =>
+        ⟨Multiplicative.ofAdd ((j.val : ZMod 3)),
+         .a ((-j.val : ZMod 4))⟩
+    | .xa j =>
+        ⟨Multiplicative.ofAdd ((-j.val : ZMod 3)),
+         .xa ((-j.val : ZMod 4))⟩
+  left_inv := by rintro ⟨c, i | i⟩ <;> revert c i <;> decide
+  right_inv := by rintro (j | j) <;> revert j <;> decide
+  map_mul' := by rintro ⟨c₁, i | i⟩ ⟨c₂, j | j⟩ <;> revert c₁ c₂ i j <;> decide
 
 /-- Any non-trivial action of `Q_8` on `C_3` gives `C_3 ⋊[φ] Q_8 ≃* Q_24`, by combining
 the basis-change `c3_sdp_q8_iso_standard` with the identification `c3_sdp_q8_iso_q24`. -/
