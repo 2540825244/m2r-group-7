@@ -361,7 +361,7 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
       have hvec_eq : vec = ![vec 0, vec 1] := by ext i; fin_cases i <;> rfl
       have h_decomp : Additive.ofMul h = vec 0 • u_add + vec 1 • v_add := by
         calc Additive.ofMul h = φ_map vec := hvec.symm
-          _ = φ_map ![vec 0, vec 1] := by rw [hvec_eq]
+          _ = φ_map ![vec 0, vec 1] := by rw [← hvec_eq]
           _ = vec 0 • u_add + vec 1 • v_add := h_φ_map_apply (vec 0) (vec 1)
       -- Convert (r : ZMod p) • x to (r.val : ℤ) • x for both terms
       have h_smul_u : (vec 0) • u_add = ((vec 0).val : ℤ) • u_add := by
@@ -535,9 +535,10 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
       show β (cpcpInvSecond p g₁) = σ (β g₁)
       have h_inv_g₁ : cpcpInvSecond p g₁ = g₁ := by
         show ((g₁.1, g₁.2⁻¹) : H) = g₁
-        change ((Multiplicative.ofAdd (1 : ZMod p), (1 : CyclicGroup p)⁻¹) : H) =
-          (Multiplicative.ofAdd (1 : ZMod p), (1 : CyclicGroup p))
-        rw [inv_one]
+        refine Prod.ext rfl ?_
+        change (g₁.2 : CyclicGroup p)⁻¹ = g₁.2
+        rw [hg₁_def]
+        exact inv_one
       rw [h_inv_g₁, h_β_g₁, hu_fixed]
     have h_at_g₂ : (β * cpcpInvSecond p) g₂ = (σ * β) g₂ := by
       rw [MulAut.mul_apply, MulAut.mul_apply]
@@ -546,7 +547,7 @@ lemma mulAut_cpcp_order_two_conj {p : ℕ} [hp : Fact p.Prime] (hp_ne_2 : p ≠ 
         show ((g₂.1, g₂.2⁻¹) : H) = g₂⁻¹
         change ((1 : CyclicGroup p), (Multiplicative.ofAdd (1 : ZMod p))⁻¹) =
           ((1 : CyclicGroup p)⁻¹, (Multiplicative.ofAdd (1 : ZMod p))⁻¹)
-        rw [inv_one]
+        simp
       rw [h_inv_g₂, map_inv, h_β_g₂, hv_inv]
     -- Extract pointwise equalities from h_at_g₁, h_at_g₂
     have hβσ_g₁ : β (cpcpInvSecond p g₁) = σ (β g₁) := by
