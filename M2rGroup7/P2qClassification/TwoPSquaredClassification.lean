@@ -48,6 +48,33 @@ def canonicalC2OnCpCpAction_r2 (p : ℕ) [Fact p.Prime] :
 
 /-! ## Main classification of groups of order `2p^2`. -/
 
+/-- Bridging helper for the `C_p × C_p` nontrivial-action branch of
+`classification_2p2`: if `f g₂` is conjugate to `φ_inter g₂` for a generator
+`g₂`, then the two semidirect products are isomorphic. -- (extracted by Fuse golfer) -/
+private lemma cpcp_semidirect_iso_of_isConj_at_gen
+    {p : ℕ} [Fact p.Prime]
+    {φ_inter f : CyclicGroup 2 →* MulAut (CyclicGroup p × CyclicGroup p)}
+    {g₂ : CyclicGroup 2} (hg₂_gen : ∀ x : CyclicGroup 2, x ∈ Subgroup.zpowers g₂)
+    (h_conj : IsConj (f g₂) (φ_inter g₂)) :
+    Nonempty (SemidirectProduct (CyclicGroup p × CyclicGroup p) (CyclicGroup 2) φ_inter ≃*
+      SemidirectProduct (CyclicGroup p × CyclicGroup p) (CyclicGroup 2) f) := by
+  obtain ⟨cu, hcu⟩ := h_conj
+  let c : MulAut (CyclicGroup p × CyclicGroup p) := (cu : MulAut _)
+  let conj_hom : CyclicGroup 2 →* MulAut (CyclicGroup p × CyclicGroup p) :=
+    { toFun := fun x => c * f x * c⁻¹
+      map_one' := by simp
+      map_mul' := fun a b => by simp only [map_mul]; group }
+  have h_eq_on_g₂ : φ_inter g₂ = conj_hom g₂ := by
+    show φ_inter g₂ = c * f g₂ * c⁻¹
+    have h1 : c * f g₂ = φ_inter g₂ * c := hcu
+    calc φ_inter g₂ = φ_inter g₂ * c * c⁻¹ := by rw [mul_inv_cancel_right]
+      _ = c * f g₂ * c⁻¹ := by rw [h1]
+  have h_eq : φ_inter = conj_hom :=
+    monoidHom_eq_of_generator_eq hg₂_gen h_eq_on_g₂
+  obtain ⟨e_iso⟩ := semidirectProduct_iso_of_conjugate_action (f_1 := f) (f_2 := φ_inter) c 1
+    (fun x => by simpa using congr_fun (congr_arg DFunLike.coe h_eq) x)
+  exact ⟨e_iso.symm⟩
+
 set_option maxHeartbeats 400000 in
 theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
     (h_ge_3 : p ≥ 3) (h : Nat.card G = p ^ 2 * 2)
@@ -199,85 +226,41 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
         -- Transport σ to GL₂(F_p) and apply the GL₂ order-2 classification.
         let e := cpcpEquivGL2 p
         let σ' : GL (Fin 2) (ZMod p) := e σ
-        have hσ'_sq : σ' ^ 2 = 1 := by
-          show e σ ^ 2 = 1; rw [← map_pow, hσ_sq, map_one]
-        have hσ'_ne_one : σ' ≠ 1 := by
-          intro h
-          apply hσ_ne_one
-          apply e.injective
-          rw [map_one]; exact h
-        have hσ'_order : orderOf σ' = 2 := orderOf_eq_prime hσ'_sq hσ'_ne_one
+        have hσ'_order : orderOf σ' = 2 := by
+          show orderOf (e σ) = 2; rw [e.orderOf_eq]; exact hσ_order
         have hval_g₂ : ((Multiplicative.toAdd g₂).val : ℤ) = 1 := by
           change ((1 : ZMod 2).val : ℤ) = 1
           rw [ZMod.val_one_eq_one_mod]; norm_num
+        -- Common helper: transport `IsConj σ' m` back to `IsConj (canon g₂) σ` for canon g₂ = e.symm m.
+        have h_back_of : ∀ {m : GL (Fin 2) (ZMod p)} {canon_g₂ : MulAut (CyclicGroup p × CyclicGroup p)},
+            canon_g₂ = (cpcpEquivGL2 p).symm m → IsConj σ' m → IsConj canon_g₂ σ := by
+          intro m canon_g₂ hcanon hconj
+          rw [hcanon]
+          have h := e.symm.toMonoidHom.map_isConj hconj.symm
+          change IsConj ((cpcpEquivGL2 p).symm m) (e.symm (e σ)) at h
+          rwa [e.symm_apply_apply] at h
         rcases gl2_order_two_classification hp_ne_2 σ' hσ'_order with h_conj1 | h_conj2
         · -- σ' ≈ diag(1,-1): transport back to σ ≈ canonical r1 action at g₂.
           have hr1 : canonicalC2OnCpCpAction_r1 hp_ne_2 g₂
               = (cpcpEquivGL2 p).symm (gl2Diag1NegOne hp_ne_2) := by
             show cyclicHom 2 ((cpcpEquivGL2 p).symm (gl2Diag1NegOne hp_ne_2)) _ g₂ = _
             rw [cyclicHom_apply_eq_zpow, hval_g₂]; exact zpow_one _
-          have h_back : IsConj ((cpcpEquivGL2 p).symm (gl2Diag1NegOne hp_ne_2)) σ := by
-            have h := e.symm.toMonoidHom.map_isConj h_conj1.symm
-            change IsConj ((cpcpEquivGL2 p).symm (gl2Diag1NegOne hp_ne_2)) (e.symm (e σ)) at h
-            rwa [e.symm_apply_apply] at h
-          obtain ⟨cu, hcu⟩ := h_back
-          let c : MulAut (CyclicGroup p × CyclicGroup p) := (cu : MulAut _)
-          have hc_eq : σ = c * canonicalC2OnCpCpAction_r1 hp_ne_2 g₂ * c⁻¹ := by
-            rw [hr1]
-            have h1 : c * (cpcpEquivGL2 p).symm (gl2Diag1NegOne hp_ne_2) = σ * c := hcu
-            calc σ = σ * c * c⁻¹ := by rw [mul_inv_cancel_right]
-              _ = c * (cpcpEquivGL2 p).symm (gl2Diag1NegOne hp_ne_2) * c⁻¹ := by rw [h1]
-          let conj_hom : CyclicGroup 2 →* MulAut (CyclicGroup p × CyclicGroup p) :=
-            { toFun := fun x => c * canonicalC2OnCpCpAction_r1 hp_ne_2 x * c⁻¹
-              map_one' := by simp
-              map_mul' := fun a b => by simp only [map_mul]; group }
-          have h_eq_on_g₂ : φ_inter g₂ = conj_hom g₂ := hc_eq
-          have h_eq : φ_inter = conj_hom :=
-            monoidHom_eq_of_generator_eq hg₂_gen h_eq_on_g₂
-          have h_action_eq : ∀ x : CyclicGroup 2,
-              φ_inter x = c * canonicalC2OnCpCpAction_r1 hp_ne_2 x * c⁻¹ :=
-            fun x => congr_fun (congr_arg DFunLike.coe h_eq) x
-          obtain ⟨e_iso⟩ := semidirectProduct_iso_of_conjugate_action
-            (f_1 := canonicalC2OnCpCpAction_r1 hp_ne_2)
-            (f_2 := φ_inter) c 1
-            (fun x => by simpa using h_action_eq x)
+          obtain ⟨e_iso⟩ := cpcp_semidirect_iso_of_isConj_at_gen
+            (f := canonicalC2OnCpCpAction_r1 hp_ne_2) hg₂_gen (h_back_of hr1 h_conj1)
           have : G ≃* SemidirectProduct (CyclicGroup p × CyclicGroup p) (CyclicGroup 2)
                        (canonicalC2OnCpCpAction_r1 hp_ne_2) :=
-            h_iso_g_n_k.symm.trans (h_congr.trans e_iso.symm)
+            h_iso_g_n_k.symm.trans (h_congr.trans e_iso)
           tauto
         · -- σ' ≈ -I: transport back to σ ≈ canonical r2 action at g₂.
           have hr2 : canonicalC2OnCpCpAction_r2 p g₂
               = (cpcpEquivGL2 p).symm gl2DiagNeg1Neg1 := by
             show cyclicHom 2 ((cpcpEquivGL2 p).symm gl2DiagNeg1Neg1) _ g₂ = _
             rw [cyclicHom_apply_eq_zpow, hval_g₂]; exact zpow_one _
-          have h_back : IsConj ((cpcpEquivGL2 p).symm gl2DiagNeg1Neg1) σ := by
-            have h := e.symm.toMonoidHom.map_isConj h_conj2.symm
-            change IsConj ((cpcpEquivGL2 p).symm gl2DiagNeg1Neg1) (e.symm (e σ)) at h
-            rwa [e.symm_apply_apply] at h
-          obtain ⟨cu, hcu⟩ := h_back
-          let c : MulAut (CyclicGroup p × CyclicGroup p) := (cu : MulAut _)
-          have hc_eq : σ = c * canonicalC2OnCpCpAction_r2 p g₂ * c⁻¹ := by
-            rw [hr2]
-            have h1 : c * (cpcpEquivGL2 p).symm gl2DiagNeg1Neg1 = σ * c := hcu
-            calc σ = σ * c * c⁻¹ := by rw [mul_inv_cancel_right]
-              _ = c * (cpcpEquivGL2 p).symm gl2DiagNeg1Neg1 * c⁻¹ := by rw [h1]
-          let conj_hom : CyclicGroup 2 →* MulAut (CyclicGroup p × CyclicGroup p) :=
-            { toFun := fun x => c * canonicalC2OnCpCpAction_r2 p x * c⁻¹
-              map_one' := by simp
-              map_mul' := fun a b => by simp only [map_mul]; group }
-          have h_eq_on_g₂ : φ_inter g₂ = conj_hom g₂ := hc_eq
-          have h_eq : φ_inter = conj_hom :=
-            monoidHom_eq_of_generator_eq hg₂_gen h_eq_on_g₂
-          have h_action_eq : ∀ x : CyclicGroup 2,
-              φ_inter x = c * canonicalC2OnCpCpAction_r2 p x * c⁻¹ :=
-            fun x => congr_fun (congr_arg DFunLike.coe h_eq) x
-          obtain ⟨e_iso⟩ := semidirectProduct_iso_of_conjugate_action
-            (f_1 := canonicalC2OnCpCpAction_r2 p)
-            (f_2 := φ_inter) c 1
-            (fun x => by simpa using h_action_eq x)
+          obtain ⟨e_iso⟩ := cpcp_semidirect_iso_of_isConj_at_gen
+            (f := canonicalC2OnCpCpAction_r2 p) hg₂_gen (h_back_of hr2 h_conj2)
           have : G ≃* SemidirectProduct (CyclicGroup p × CyclicGroup p) (CyclicGroup 2)
                        (canonicalC2OnCpCpAction_r2 p) :=
-            h_iso_g_n_k.symm.trans (h_congr.trans e_iso.symm)
+            h_iso_g_n_k.symm.trans (h_congr.trans e_iso)
           tauto
   · -- n_2 = 1: Sylow 2-subgroup Q (order 2) is normal, complement K of order p²
     let Q : Sylow 2 G := default
