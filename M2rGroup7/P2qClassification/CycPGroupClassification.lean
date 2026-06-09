@@ -3,6 +3,12 @@ import «M2rGroup7».Lemmas.GroupTheoryLemmas
 import «M2rGroup7».Lemmas.ClassificationUtils
 import «M2rGroup7».Lemmas.HomomorphismUtils
 
+/-- Computable isomorphism `MulAut (CyclicGroup n) ≃* (ZMod n)ˣ`. This composes
+`MulAutMultiplicative (ZMod n)` (which converts `MulAut (Multiplicative (ZMod n))` to
+`AddAut (ZMod n)`) with `ZMod.AddAutEquivUnits n`. Both factors are computable. -/
+def cyclicGroupAutEquivUnits (n : ℕ) [NeZero n] : MulAut (CyclicGroup n) ≃* (ZMod n)ˣ :=
+  (MulAutMultiplicative (ZMod n)).trans (ZMod.AddAutEquivUnits n)
+
 /-- Core existence: for each r ≤ v_p(q-1), there is an element of Aut(C_{q^n}) of order exactly p^r.
     Construction: Aut(C_{q^n}) ≃* (ZMod q^n)ˣ is cyclic of order q^{n-1}(q-1);
     a generator α raised to the power |Aut|/p^r has order exactly p^r. -/
@@ -52,39 +58,210 @@ private lemma canonicalAutElement_exists
     exact Nat.mul_div_cancel_left (p ^ r) h_pos
   exact ⟨α ^ (aut_card / p ^ r), h_orderOf_target⟩
 
-/-- The canonical element of Aut(C_{q^n}) of order p^r, for r ≤ v_p(q-1). -/
-noncomputable def canonicalAutElement
+/-- Computable predicate: a unit has order exactly `p^r` (for prime `p`). We use the
+    characterization: `u^(p^r) = 1` and either `r = 0` (then we need `u = 1`, i.e. `u^p^0 = u = 1`)
+    or `u^(p^(r-1)) ≠ 1` (so the order is exactly `p^r`, not smaller dividing). -/
+private def hasOrderPrimePow {n : ℕ} (p r : ℕ) (u : (ZMod n)ˣ) : Bool :=
+  decide (u ^ (p ^ r) = 1) && decide (r = 0 ∨ u ^ (p ^ (r - 1)) ≠ 1)
+
+/-- Helper: pick the first unit u ∈ list with order = p^r (using `hasOrderPrimePow`). -/
+private def findFirstUnitWithOrder {n : ℕ} (p r : ℕ) :
+    List (ZMod n)ˣ → (ZMod n)ˣ
+  | [] => 1
+  | u :: tl => if hasOrderPrimePow p r u then u else findFirstUnitWithOrder p r tl
+
+/-- Computable enumeration: pick the first unit `u : (ZMod (q^n))ˣ` whose order equals `p^r`.
+    Falls back to `1` when none exists (unreachable under the canonical hypotheses). -/
+private def canonicalAutElement_unit (p q n r : ℕ) [Fact q.Prime] (hn : 0 < n) :
+    (ZMod (q ^ n))ˣ :=
+  -- Enumerate i ∈ {0, ..., q^n - 1}, keep those coprime to q^n (these give units),
+  -- and pick the first unit with order = p^r.
+  let candidates : List (ZMod (q^n))ˣ :=
+    (List.range (q^n)).filterMap (fun i =>
+      if h : Nat.Coprime i (q^n) then some (ZMod.unitOfCoprime i h) else none)
+  findFirstUnitWithOrder p r candidates
+
+/-- The canonical element of Aut(C_{q^n}) of order p^r, for r ≤ v_p(q-1). Computable. -/
+def canonicalAutElement
     (p q n r : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
     (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n)
     (hr : r ≤ (q - 1).factorization p) :
     MulAut (CyclicGroup (q ^ n)) :=
-  (canonicalAutElement_exists p q n r hpq hq_odd hn hr).choose
+  haveI : NeZero (q ^ n) := ⟨pow_ne_zero n hq.out.ne_zero⟩
+  (cyclicGroupAutEquivUnits (q ^ n)).symm (canonicalAutElement_unit p q n r hn)
+
+/-- Characterization: for prime `p`, `hasOrderPrimePow p r u = true ↔ orderOf u = p^r`. -/
+private lemma hasOrderPrimePow_iff {n : ℕ} (p r : ℕ) [hp : Fact p.Prime] (u : (ZMod n)ˣ) :
+    hasOrderPrimePow p r u = true ↔ orderOf u = p ^ r := by
+  unfold hasOrderPrimePow
+  simp only [Bool.and_eq_true, decide_eq_true_eq]
+  constructor
+  · rintro ⟨h1, h2⟩
+    -- orderOf u divides p^r (from h1), and is either p^r (good) or smaller (then divides
+    -- p^(r-1), contradicting h2 unless r=0).
+    have h_dvd : orderOf u ∣ p ^ r := orderOf_dvd_iff_pow_eq_one.mpr h1
+    rcases (Nat.dvd_prime_pow hp.out).mp h_dvd with ⟨k, hkle, hk_eq⟩
+    rcases Nat.lt_or_ge k r with hlt | hge
+    · -- k < r → orderOf u | p^(r-1), so u^(p^(r-1)) = 1, contradicting h2 (unless r = 0)
+      rcases h2 with hr0 | hne
+      · -- r = 0: then k ≤ r = 0, so k = 0, so orderOf u = p^0 = 1
+        rw [hr0]; rw [hr0] at hkle; interval_cases k; simp [hk_eq]
+      · exfalso; apply hne
+        rw [← orderOf_dvd_iff_pow_eq_one, hk_eq]
+        exact pow_dvd_pow p (Nat.le_sub_one_of_lt hlt)
+    · -- k ≥ r and k ≤ r, so k = r
+      rw [hk_eq, show k = r from le_antisymm hkle hge]
+  · intro h_ord
+    refine ⟨?_, ?_⟩
+    · rw [← h_ord]; exact pow_orderOf_eq_one u
+    · rcases Nat.eq_zero_or_pos r with rfl | hr_pos
+      · left; rfl
+      · right
+        intro h_eq
+        have h_dvd : orderOf u ∣ p ^ (r - 1) := orderOf_dvd_iff_pow_eq_one.mpr h_eq
+        rw [h_ord] at h_dvd
+        -- p^r ∣ p^(r-1) is false
+        have : r ≤ r - 1 := (Nat.pow_dvd_pow_iff_le_right hp.out.one_lt).mp h_dvd
+        omega
+
+/-- If a list contains some unit with order `p^r`, then `findFirstUnitWithOrder` returns
+    a unit whose order equals `p^r`. -/
+private lemma findFirstUnitWithOrder_orderOf {n : ℕ} (p r : ℕ) [Fact p.Prime]
+    (L : List (ZMod n)ˣ) (h : ∃ u ∈ L, orderOf u = p ^ r) :
+    orderOf (findFirstUnitWithOrder p r L) = p ^ r := by
+  induction L with
+  | nil => obtain ⟨u, hu, _⟩ := h; exact absurd hu (List.not_mem_nil)
+  | cons u tl ih =>
+    unfold findFirstUnitWithOrder
+    split_ifs with hcase
+    · exact (hasOrderPrimePow_iff p r u).mp hcase
+    · apply ih
+      obtain ⟨v, hv_mem, hv_ord⟩ := h
+      rw [List.mem_cons] at hv_mem
+      rcases hv_mem with rfl | hv_tl
+      · exact absurd ((hasOrderPrimePow_iff p r v).mpr hv_ord) hcase
+      · exact ⟨v, hv_tl, hv_ord⟩
 
 lemma canonicalAutElement_orderOf
     (p q n r : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
     (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n)
     (hr : r ≤ (q - 1).factorization p) :
-    orderOf (canonicalAutElement p q n r hpq hq_odd hn hr) = p ^ r :=
-  (canonicalAutElement_exists p q n r hpq hq_odd hn hr).choose_spec
-
+    orderOf (canonicalAutElement p q n r hpq hq_odd hn hr) = p ^ r := by
+  haveI : NeZero (q ^ n) := ⟨pow_ne_zero n hq.out.ne_zero⟩
+  -- Bridge to the existence proof: transport to (ZMod (q^n))ˣ.
+  show orderOf ((cyclicGroupAutEquivUnits (q ^ n)).symm (canonicalAutElement_unit p q n r hn))
+      = p ^ r
+  rw [(cyclicGroupAutEquivUnits (q ^ n)).symm.orderOf_eq]
+  show orderOf (canonicalAutElement_unit p q n r hn) = p ^ r
+  -- The unit comes from the candidates list; we show the candidates list contains some
+  -- unit with order p^r (transported from canonicalAutElement_exists), then apply
+  -- findFirstUnitWithOrder_orderOf.
+  obtain ⟨τ, hτ⟩ := canonicalAutElement_exists p q n r hpq hq_odd hn hr
+  let u₀ : (ZMod (q^n))ˣ := cyclicGroupAutEquivUnits (q^n) τ
+  have hu₀ : orderOf u₀ = p ^ r := by
+    show orderOf (cyclicGroupAutEquivUnits (q^n) τ) = p ^ r
+    rw [(cyclicGroupAutEquivUnits (q^n)).orderOf_eq]; exact hτ
+  -- Show u₀ appears in the candidates list. Let i = u₀.val.val (the underlying ℕ).
+  set i : ℕ := (u₀.val.val) with hi_def
+  have hi_lt : i < q ^ n := by
+    rw [hi_def]; exact ZMod.val_lt (u₀.val)
+  -- u₀ corresponds to a unit, so i is coprime with q^n.
+  have hcop : Nat.Coprime i (q ^ n) := by
+    rw [hi_def]
+    exact (ZMod.val_coe_unit_coprime u₀)
+  -- ZMod.unitOfCoprime i hcop = u₀
+  have h_unit_eq : ZMod.unitOfCoprime i hcop = u₀ := by
+    apply Units.ext
+    show ((ZMod.unitOfCoprime i hcop : ZMod (q ^ n)) : ZMod (q ^ n)) = (u₀ : ZMod (q ^ n))
+    rw [ZMod.coe_unitOfCoprime]
+    rw [hi_def]
+    exact (ZMod.natCast_zmod_val (u₀ : ZMod (q ^ n)))
+  -- Build the candidates list and show u₀ is in it.
+  show orderOf (canonicalAutElement_unit p q n r hn) = p ^ r
+  unfold canonicalAutElement_unit
+  apply findFirstUnitWithOrder_orderOf
+  refine ⟨u₀, ?_, hu₀⟩
+  rw [List.mem_filterMap]
+  refine ⟨i, ?_, ?_⟩
+  · exact List.mem_range.mpr hi_lt
+  · simp only [dif_pos hcop, h_unit_eq]
 
 /-- For each r ≤ min(m, d) where d = v_p(q-1), the canonical action
-    φ_r : C_{p^m} →* Aut(C_{q^n}) with image of order p^r. -/
-noncomputable def canonicalAction
+    φ_r : C_{p^m} →* Aut(C_{q^n}) with image of order p^r. Computable.
+
+    Built via `cyclicHom (p^m)` applied to `canonicalAutElement r`, whose `p^m`-th power
+    is `1` because its order divides `p^m`. -/
+def canonicalAction
     (p q n m : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
     (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n)
     (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
-    CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n)) := by
-  let k := (IsCyclic.exists_generator (α := CyclicGroup (p ^ m))).choose
-  have hk := (IsCyclic.exists_generator (α := CyclicGroup (p ^ m))).choose_spec
-  have h_orderOf_k : orderOf k = p ^ m := by
-    have hzpow_top : (Subgroup.zpowers k : Subgroup _) = ⊤ :=
-      (Subgroup.eq_top_iff' _).mpr hk
-    rw [← Nat.card_zpowers, hzpow_top, Nat.card_congr Subgroup.topEquiv.toEquiv, card_cyclicGroup]
-  have h_dvd : orderOf (canonicalAutElement p q n r hpq hq_odd hn (hr.trans (min_le_right m _))) ∣ orderOf k := by
-    rw [canonicalAutElement_orderOf, h_orderOf_k]
-    exact pow_dvd_pow p (hr.trans (min_le_left m _))
-  exact monoidHomOfForallMemZpowers hk h_dvd
+    CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n)) :=
+  haveI : NeZero (p ^ m) := ⟨pow_ne_zero m hp.out.ne_zero⟩
+  let τ := canonicalAutElement p q n r hpq hq_odd hn (hr.trans (min_le_right m _))
+  cyclicHom (p ^ m) τ (by
+    have h_ord : orderOf τ = p ^ r := canonicalAutElement_orderOf p q n r hpq hq_odd hn _
+    have h_dvd : τ ^ p ^ m = 1 := by
+      apply orderOf_dvd_iff_pow_eq_one.mp
+      rw [h_ord]
+      exact pow_dvd_pow p (hr.trans (min_le_left m _))
+    exact h_dvd)
+
+/-- For any `cyclicHom n a h`, applied at `x : CyclicGroup n`, we get `a ^ (toAdd x).val`. -/
+lemma cyclicHom_apply_eq_zpow
+    (n : Nat) [NeZero n] {G : Type*} [Group G] (a : G) (h : a ^ n = 1) (x : CyclicGroup n) :
+    cyclicHom n a h x = a ^ ((Multiplicative.toAdd x).val : ℤ) := by
+  show Additive.toMul ((ZMod.lift n
+      ⟨zmultiplesHom (Additive G) (Additive.ofMul a),
+        by change (n : ℤ) • Additive.ofMul a = 0
+           rw [← ofMul_zpow, zpow_natCast, h, ofMul_one]⟩) (Multiplicative.toAdd x))
+      = a ^ ((Multiplicative.toAdd x).val : ℤ)
+  set m : ℕ := (Multiplicative.toAdd x).val with hm
+  conv_lhs => rw [show (Multiplicative.toAdd x : ZMod n) = (((m : ℤ) : ZMod n)) from by
+    push_cast; exact (ZMod.natCast_zmod_val _).symm]
+  rw [ZMod.lift_coe]
+  rw [zmultiplesHom_apply, ← ofMul_zpow]
+  rfl
+
+/-- Helper: `Multiplicative.ofAdd 1` generates `CyclicGroup n` as zpowers. -/
+private lemma ofAdd_one_zpowers_top (n : Nat) [NeZero n] :
+    (Subgroup.zpowers (Multiplicative.ofAdd (1 : ZMod n)) : Subgroup (CyclicGroup n)) = ⊤ := by
+  rw [Subgroup.eq_top_iff']
+  intro x
+  refine Subgroup.mem_zpowers_iff.mpr ⟨((Multiplicative.toAdd x).val : ℤ), ?_⟩
+  show Multiplicative.ofAdd (1 : ZMod n) ^ ((Multiplicative.toAdd x).val : ℤ) = x
+  rw [← Multiplicative.ofAdd.apply_symm_apply x]
+  show Multiplicative.ofAdd (1 : ZMod n) ^ ((Multiplicative.toAdd x).val : ℤ)
+      = Multiplicative.ofAdd (Multiplicative.toAdd x)
+  rw [← ofAdd_zsmul, zsmul_one]
+  congr 1
+  push_cast
+  exact ZMod.natCast_zmod_val _
+
+/-- The range of `cyclicHom n a h` equals `Subgroup.zpowers a`. -/
+lemma cyclicHom_range (n : Nat) [NeZero n] {G : Type*} [Group G] (a : G) (h : a ^ n = 1) :
+    (cyclicHom n a h).range = Subgroup.zpowers a := by
+  rw [MonoidHom.range_eq_map, ← ofAdd_one_zpowers_top n, MonoidHom.map_zpowers]
+  congr 1
+  -- cyclicHom n a h (ofAdd 1) = a^1 = a
+  rw [cyclicHom_apply_eq_zpow]
+  -- need: a ^ ((toAdd (ofAdd (1 : ZMod n))).val : ℤ) = a
+  -- when n > 1, (1 : ZMod n).val = 1. When n = 1, (1 : ZMod n).val = 0 and a = a^0 since a^1 = 1.
+  have hn_pos : 0 < n := Nat.pos_of_ne_zero (NeZero.ne n)
+  by_cases hn1 : n = 1
+  · -- n = 1: (1 : ZMod 1) = 0, so val = 0
+    subst hn1
+    show a ^ ((Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 1))).val : ℤ) = a
+    have hval : (Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 1))).val = 0 := by
+      simp [Subsingleton.elim (Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 1))) 0]
+    rw [hval]
+    -- a = 1 since a^1 = 1
+    simpa using h.symm
+  · show a ^ ((Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod n))).val : ℤ) = a
+    have h2 : 2 ≤ n := by omega
+    have hval : (Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod n))).val = 1 := by
+      change (1 : ZMod n).val = 1
+      rw [ZMod.val_one_eq_one_mod, Nat.one_mod_eq_one.mpr (by omega)]
+    rw [hval]; simp
 
 /-- The range of canonicalAction r has cardinality p^r. -/
 lemma canonicalAction_range_card
@@ -92,25 +269,50 @@ lemma canonicalAction_range_card
     (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n)
     (hr : r ≤ min m ((q - 1).factorization p)) :
     Nat.card (canonicalAction p q n m hpq hq_odd hn r hr).range = p ^ r := by
-  set k := (IsCyclic.exists_generator (α := CyclicGroup (p ^ m))).choose
-  have hk : ∀ x, x ∈ Subgroup.zpowers k :=
-    (IsCyclic.exists_generator (α := CyclicGroup (p ^ m))).choose_spec
-  -- range of a hom from a cyclic group equals zpowers of the generator's image
-  have hrange : (canonicalAction p q n m hpq hq_odd hn r hr).range =
-      Subgroup.zpowers ((canonicalAction p q n m hpq hq_odd hn r hr) k) := by
-    rw [MonoidHom.range_eq_map, ← (Subgroup.eq_top_iff' _).mpr hk, MonoidHom.map_zpowers]
-  -- canonicalAction sends the generator k to canonicalAutElement
-  have h_orderOf_k : orderOf k = p ^ m := by
-    have hzpow_top : (Subgroup.zpowers k : Subgroup _) = ⊤ :=
-      (Subgroup.eq_top_iff' _).mpr hk
-    rw [← Nat.card_zpowers, hzpow_top, Nat.card_congr Subgroup.topEquiv.toEquiv, card_cyclicGroup]
-  have h_dvd : orderOf (canonicalAutElement p q n r hpq hq_odd hn (hr.trans (min_le_right m _))) ∣ orderOf k := by
-    rw [canonicalAutElement_orderOf, h_orderOf_k]; exact pow_dvd_pow p (hr.trans (min_le_left m _))
-  have happ : (canonicalAction p q n m hpq hq_odd hn r hr) k =
-      canonicalAutElement p q n r hpq hq_odd hn (hr.trans (min_le_right m _)) := by
-    show (monoidHomOfForallMemZpowers hk h_dvd) k = _
-    exact monoidHomOfForallMemZpowers_apply_gen hk h_dvd
-  rw [hrange, happ, Nat.card_zpowers, canonicalAutElement_orderOf]
+  haveI : NeZero (p ^ m) := ⟨pow_ne_zero m hp.out.ne_zero⟩
+  set τ := canonicalAutElement p q n r hpq hq_odd hn (hr.trans (min_le_right m _))
+  have h_pm : τ ^ p ^ m = 1 := by
+    have h_ord : orderOf τ = p ^ r := canonicalAutElement_orderOf p q n r hpq hq_odd hn _
+    apply orderOf_dvd_iff_pow_eq_one.mp
+    rw [h_ord]
+    exact pow_dvd_pow p (hr.trans (min_le_left m _))
+  -- canonicalAction = cyclicHom applied to τ, so its range = zpowers τ.
+  have hrange : (canonicalAction p q n m hpq hq_odd hn r hr).range = Subgroup.zpowers τ := by
+    show (cyclicHom (p ^ m) τ h_pm).range = Subgroup.zpowers τ
+    exact cyclicHom_range (p ^ m) τ h_pm
+  rw [hrange, Nat.card_zpowers, canonicalAutElement_orderOf]
+
+/-- Generic transport: for `CyclicGroup` types parameterized by ℕ with `NeZero`,
+    along `p1 = p` and `q1 = q` (with `NeZero p1`, `NeZero q1` already in scope, and
+    `NeZero p`, `NeZero q` derived from primality below). Both endpoints have `NeZero`
+    so the transport via `Eq.rec` on each is well-typed.
+
+    This is computable: `Eq.mpr` on a propositionally-equal type is a computational
+    no-op at the byte-code level once both indices match. -/
+def transportCpCqHom {p q p1 q1 : ℕ} [NeZero p] [NeZero q] [NeZero p1] [NeZero q1]
+    (hp : p1 = p) (hq : q1 = q)
+    (f : CyclicGroup p1 →* MulAut (CyclicGroup q1)) :
+    CyclicGroup p →* MulAut (CyclicGroup q) := by
+  subst hp
+  subst hq
+  exact f
+
+/-- Range cardinality is invariant under `transportCpCqHom`. -/
+lemma transportCpCqHom_range_card {p q p1 q1 : ℕ}
+    [NeZero p] [NeZero q] [NeZero p1] [NeZero q1]
+    (hp : p1 = p) (hq : q1 = q)
+    (f : CyclicGroup p1 →* MulAut (CyclicGroup q1)) :
+    Nat.card (transportCpCqHom hp hq f).range = Nat.card f.range := by
+  subst hp; subst hq; rfl
+
+/-- Transport the SDP across the parameter changes `p1 = p` and `q1 = q`. -/
+def SemidirectProduct.transportCpCqIso {p q p1 q1 : ℕ}
+    [NeZero p] [NeZero q] [NeZero p1] [NeZero q1]
+    (hp : p1 = p) (hq : q1 = q)
+    (f : CyclicGroup p1 →* MulAut (CyclicGroup q1)) :
+    SemidirectProduct (CyclicGroup q1) (CyclicGroup p1) f ≃*
+      SemidirectProduct (CyclicGroup q) (CyclicGroup p) (transportCpCqHom hp hq f) := by
+  subst hp; subst hq; rfl
 
 /-- Subgroup of N fixed pointwise by every automorphism in Im(f). -/
 def fixedPointsSubgroup {N H : Type*} [Group N] [Group H] (f : H →* MulAut N) : Subgroup N where
@@ -449,7 +651,11 @@ theorem classify_Cqn_rtimes_Cpm_exists
 /-- The canonical action on abstract cyclic groups N, K: conjugates `canonicalAction p q n m r`
     through the unique isos N ≃* CyclicGroup (q^n) and K ≃* CyclicGroup (p^m).
     This lets `classify_sdp` output an iso back to `N ⋊ K` rather than to the concrete
-    CyclicGroup types, eliminating transport bridges at call sites. -/
+    CyclicGroup types, eliminating transport bridges at call sites.
+
+    Note: this remains `noncomputable` because `mulEquivOfCyclicCardEq` is noncomputable.
+    The downstream wrappers (`canonicalCpOnCqAction`, etc.) use `canonicalAction` directly
+    on the concrete `CyclicGroup` types, so they remain computable. -/
 noncomputable def sdpCanonicalAction
     {N K : Type*} [Group N] [Group K] [IsCyclic N] [IsCyclic K]
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
