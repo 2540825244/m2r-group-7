@@ -59,7 +59,7 @@ def canonicalC2C2OnCqAction
 
 private instance instFactPrimeThree : Fact (Nat.Prime 3) := ⟨by norm_num⟩
 
-private lemma sq_eq_one_cyclicGroup2 (x : CyclicGroup 2) : x * x = 1 := by
+lemma sq_eq_one_cyclicGroup2 (x : CyclicGroup 2) : x * x = 1 := by
   have h := pow_card_eq_one' (G := CyclicGroup 2) (x := x)
   rwa [card_cyclicGroup, sq] at h
 

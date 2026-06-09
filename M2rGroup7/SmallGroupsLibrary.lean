@@ -3,6 +3,7 @@ import Mathlib.GroupTheory.SpecificGroups.Quaternion
 import Mathlib.GroupTheory.SpecificGroups.Alternating
 import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.GroupTheory.OrderOfElement
+import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
 import «M2rGroup7».CyclicGroup
 import «M2rGroup7».P2qClassification.PqClassification
 import «M2rGroup7».P2qClassification.FourQClassification
@@ -13,12 +14,20 @@ import Mathlib.RingTheory.ZMod.UnitsCyclic
 
 -- The generic Group (retrieve n i) instance uses split + infer_instance across ~70 arms;
 -- importing FourQClassification enlarges the instance environment enough to push past 200k.
-set_option maxHeartbeats 400000
+set_option maxHeartbeats 800000
 
 abbrev maximumOrder : Nat := 31
 
 /-- Alternating group generator -/
 def AlternatingGroup (n : Nat) [NeZero n] := ↥(alternatingGroup (Fin n))
+  deriving DecidableEq, Group, Fintype
+
+/-- Symmetric group generator -/
+def SymmetricGroup (n : Nat) := Equiv.Perm (Fin n)
+  deriving DecidableEq, Group, Fintype
+
+/-- Special linear group `SL(2, ZMod p)` (order `p(p²-1)` for prime `p`). -/
+def SL2 (p : Nat) [NeZero p] := Matrix.SpecialLinearGroup (Fin 2) (ZMod p)
   deriving DecidableEq, Group, Fintype
 
 instance {p : ℕ} [h : Fact p.Prime] {n : ℕ} : NeZero (p ^ n) := by
@@ -122,12 +131,67 @@ instance : Group Unit where
   inv_mul_cancel _ := by rfl
 
 -- Fact instances for the primes used in retrieve's pq semidirect product entries.
-private instance : Fact (Nat.Prime 2) := ⟨by norm_num⟩
-private instance : Fact (Nat.Prime 3) := ⟨by norm_num⟩
-private instance : Fact (Nat.Prime 5) := ⟨by norm_num⟩
-private instance : Fact (Nat.Prime 7) := ⟨by norm_num⟩
-private instance : Fact (Nat.Prime 11) := ⟨by norm_num⟩
-private instance : Fact (Nat.Prime 13) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 3) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 5) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 7) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 11) := ⟨by norm_num⟩
+instance : Fact (Nat.Prime 13) := ⟨by norm_num⟩
+
+-- ─── Computable surrogate actions for `retrieve` ──────────────────────────────
+-- The canonical actions used by the classification theorems
+-- (`canonicalCpOnCqAction`, `canonicalC4OnCqAction`, `canonicalC2C2OnCqAction`,
+-- `canonicalC3OnC2C2Action`) are noncomputable (they rely on `Classical.choice`
+-- via `IsCyclic.exists_generator` / `canonicalAutElement`). To keep `retrieve`
+-- computable — so `native_decide` works for the invariant checks in
+-- `Uniqueness.lean` — we use the surrogate actions below. Bridging between the
+-- canonical actions and these surrogates is done once per family in
+-- `Classification.lean`.
+
+/-- The order-2 action `C_2 →* Aut(C_q)` sending the generator to inversion. -/
+def c2OnCqInv (q : Nat) [NeZero q] : CyclicGroup 2 →* MulAut (CyclicGroup q) :=
+  let inv : MulAut (CyclicGroup q) := MulEquiv.inv (CyclicGroup q)
+  cyclicHom 2 inv (by
+    ext x
+    change (x⁻¹)⁻¹ = x
+    exact inv_inv x)
+
+/-- Inversion on `CyclicGroup q` squared equals identity. -/
+lemma inv_aut_pow_two_eq_one (q : ℕ) [NeZero q] :
+    (MulEquiv.inv (CyclicGroup q)) ^ 2 = 1 := by
+  ext x; change (x⁻¹)⁻¹ = x; exact inv_inv x
+
+/-- For the surrogate `c2OnCqInv q`, applied at `x`, the value is `inv^(toAdd x).val`. -/
+lemma c2OnCqInv_apply (q : ℕ) [NeZero q] (x : CyclicGroup 2) :
+    c2OnCqInv q x = (MulEquiv.inv (CyclicGroup q)) ^ ((Multiplicative.toAdd x).val : ℤ) :=
+  cyclicHom_apply_eq_zpow 2 (MulEquiv.inv (CyclicGroup q)) (inv_aut_pow_two_eq_one q) x
+
+/-- The order-2 action `C_8 →* Aut(C_q)` factoring through `C_8 / C_4`, sending
+the generator to inversion. -/
+def c8OnCqInv (q : Nat) [NeZero q] : CyclicGroup 8 →* MulAut (CyclicGroup q) :=
+  let inv : MulAut (CyclicGroup q) := MulEquiv.inv (CyclicGroup q)
+  cyclicHom 8 inv (by
+    have h2 : inv ^ 2 = 1 := by
+      ext x
+      change (x⁻¹)⁻¹ = x
+      exact inv_inv x
+    change inv ^ (2 * 4) = 1
+    rw [pow_mul, h2, one_pow])
+
+/-- The hom `D_4 → C_2` projecting through `D_4/V_4 = C_2`, with kernel the V_4
+subgroup `{r 0, r 2, sr 0, sr 2}`. Sends an element to the parity of its index. -/
+def d4ToC2 : DihedralGroup 4 →* CyclicGroup 2 where
+  toFun
+    | .r i => Multiplicative.ofAdd (i.val : ZMod 2)
+    | .sr i => Multiplicative.ofAdd (i.val : ZMod 2)
+  map_one' := rfl
+  map_mul' p q := by
+    rcases p with i | i <;> rcases q with j | j <;> revert i j <;> decide
+
+/-- The order-2 action `D_4 →* Aut(C_q)` factoring through `D_4 / V_4 = C_2`, sending
+the non-V_4 elements (`{r 1, r 3, sr 1, sr 3}`) to inversion. -/
+def d4OnCqInv (q : Nat) [NeZero q] : DihedralGroup 4 →* MulAut (CyclicGroup q) :=
+  (c2OnCqInv q).comp d4ToC2
 
 /-- Small groups database. Computable: each entry is built from `CyclicGroup`,
 direct products, `DihedralGroup`, `QuaternionGroup`, or a semidirect product
@@ -212,7 +276,21 @@ with one of the explicit computable actions defined above (or in this file). -/
         (by native_decide : 1 ≤ min 1 ((11 - 1 : ℕ).factorization 2)))
   | 22, 2 => CyclicGroup 22
   | 23, 1 => CyclicGroup 23
-  | 24, 1 => CyclicGroup 24
+  | 24, 1 => CyclicGroup 3 ⋊[c8OnCqInv 3] CyclicGroup 8
+  | 24, 2 => CyclicGroup 24
+  | 24, 3 => SL2 3
+  | 24, 4 => QuaternionGroup 6
+  | 24, 5 => DihedralGroup 3 × CyclicGroup 4
+  | 24, 6 => DihedralGroup 12
+  | 24, 7 => CyclicGroup 2 × QuaternionGroup 3
+  | 24, 8 => CyclicGroup 3 ⋊[d4OnCqInv 3] DihedralGroup 4
+  | 24, 9 => CyclicGroup 2 × CyclicGroup 12
+  | 24, 10 => CyclicGroup 3 × DihedralGroup 4
+  | 24, 11 => CyclicGroup 3 × QuaternionGroup 2
+  | 24, 12 => SymmetricGroup 4
+  | 24, 13 => CyclicGroup 2 × AlternatingGroup 4
+  | 24, 14 => DihedralGroup 3 × (CyclicGroup 2 × CyclicGroup 2)
+  | 24, 15 => CyclicGroup 3 × (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)
   | 25, 1 => CyclicGroup 25
   | 25, 2 => CyclicGroup 5 × CyclicGroup 5
   | 26, 1 => SemidirectProduct (CyclicGroup 13) (CyclicGroup 2)
@@ -260,7 +338,7 @@ def num_entries (n : Nat) : Nat :=
   | 21 => 2
   | 22 => 2
   | 23 => 1
-  | 24 => 1 -- It is 15 actually, will fill rest later
+  | 24 => 15
   | 25 => 2
   | 26 => 2
   | 27 => 1 -- It is 5 actually, will fill rest later
