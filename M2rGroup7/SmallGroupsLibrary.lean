@@ -3,6 +3,7 @@ import Mathlib.GroupTheory.SpecificGroups.Quaternion
 import Mathlib.GroupTheory.SpecificGroups.Alternating
 import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.GroupTheory.OrderOfElement
+import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
 import «M2rGroup7».CyclicGroup
 import «M2rGroup7».P2qClassification.PqClassification
 import «M2rGroup7».P2qClassification.FourQClassification
@@ -17,6 +18,14 @@ abbrev maximumOrder : Nat := 31
 
 /-- Alternating group generator -/
 def AlternatingGroup (n : Nat) [NeZero n] := ↥(alternatingGroup (Fin n))
+  deriving DecidableEq, Group, Fintype
+
+/-- Symmetric group generator -/
+def SymmetricGroup (n : Nat) := Equiv.Perm (Fin n)
+  deriving DecidableEq, Group, Fintype
+
+/-- Special linear group `SL(2, ZMod p)` (order `p(p²-1)` for prime `p`). -/
+def SL2 (p : Nat) [NeZero p] := Matrix.SpecialLinearGroup (Fin 2) (ZMod p)
   deriving DecidableEq, Group, Fintype
 
 instance {p : ℕ} [h : Fact p.Prime] {n : ℕ} : NeZero (p ^ n) := by
@@ -173,6 +182,21 @@ def c8OnCqInv (q : Nat) [NeZero q] : CyclicGroup 8 →* MulAut (CyclicGroup q) :
 and then inverting. -/
 def c2c2OnCqInv (q : Nat) [NeZero q] : (CyclicGroup 2 × CyclicGroup 2) →* MulAut (CyclicGroup q) :=
   (c2OnCqInv q).comp (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))
+
+/-- The hom `D_4 → C_2` projecting through `D_4/V_4 = C_2`, with kernel the V_4
+subgroup `{r 0, r 2, sr 0, sr 2}`. Sends an element to the parity of its index. -/
+def d4ToC2 : DihedralGroup 4 →* CyclicGroup 2 where
+  toFun
+    | .r i => Multiplicative.ofAdd (i.val : ZMod 2)
+    | .sr i => Multiplicative.ofAdd (i.val : ZMod 2)
+  map_one' := rfl
+  map_mul' p q := by
+    rcases p with i | i <;> rcases q with j | j <;> revert i j <;> decide
+
+/-- The order-2 action `D_4 →* Aut(C_q)` factoring through `D_4 / V_4 = C_2`, sending
+the non-V_4 elements (`{r 1, r 3, sr 1, sr 3}`) to inversion. -/
+def d4OnCqInv (q : Nat) [NeZero q] : DihedralGroup 4 →* MulAut (CyclicGroup q) :=
+  (c2OnCqInv q).comp d4ToC2
 
 /-- The order-3 action `C_3 →* Aut(C_7)` sending the generator to `x ↦ x^2`
 (an element of order 3 in `(ZMod 7)^×`). -/
