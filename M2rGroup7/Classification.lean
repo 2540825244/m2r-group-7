@@ -4,6 +4,7 @@ import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».CpSqAction
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
+import «M2rGroup7».SixteenCase
 import «M2rGroup7».P2qClassification.P2qClassification
 import «M2rGroup7».P2qClassification.PqClassification
 import «M2rGroup7».UT3
@@ -948,7 +949,7 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_pq_cyclic 3 5 h
 
   -- n = 16
-  · sorry
+  · exact OrderSixteen.order_sixteen_retrieve h
 
   -- n = 17
   · classify_prime 17 h
