@@ -6,6 +6,7 @@ import Mathlib.GroupTheory.OrderOfElement
 import «M2rGroup7».CyclicGroup
 import «M2rGroup7».P2qClassification.PqClassification
 import «M2rGroup7».P2qClassification.FourQClassification
+import «M2rGroup7».P2qClassification.TwoPSquaredClassification
 import Mathlib.Tactic
 import Mathlib.RingTheory.ZMod.UnitsCyclic
 
@@ -185,6 +186,13 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 16, 14 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
   | 17, 1 => CyclicGroup 17
   | 18, 1 => CyclicGroup 18
+  | 18, 2 => CyclicGroup 3 × CyclicGroup 3 × CyclicGroup 2
+  | 18, 3 => SemidirectProduct (CyclicGroup (3 ^ 2)) (CyclicGroup 2)
+      (canonicalC2OnCp2Action (by norm_num : (3:ℕ) ≠ 2))
+  | 18, 4 => SemidirectProduct (CyclicGroup 3 × CyclicGroup 3) (CyclicGroup 2)
+      (canonicalC2OnCpCpAction_r1 (by norm_num : (3:ℕ) ≠ 2))
+  | 18, 5 => SemidirectProduct (CyclicGroup 3 × CyclicGroup 3) (CyclicGroup 2)
+      (canonicalC2OnCpCpAction_r2 3)
   | 19, 1 => CyclicGroup 19
   | 20, 1 => CyclicGroup 20
   | 20, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 5
@@ -242,7 +250,7 @@ def num_entries (n : Nat) : Nat :=
   | 15 => 1
   | 16 => 14
   | 17 => 1
-  | 18 => 1 -- It is 5 actually, will fill rest later
+  | 18 => 5
   | 19 => 1
   | 20 => 5
   | 21 => 2

@@ -851,6 +851,22 @@ theorem order20_classification {G : Type*} [Group G] (h : Nat.card G = 20) :
   · exact Or.inr (Or.inr (Or.inr (Or.inr h5)))
   · exact absurd h5eq3 (by decide)
 
+theorem order18_classification {G : Type*} [Group G] (h : Nat.card G = 18) :
+    Nonempty (G ≃* retrieve 18 1) ∨
+    Nonempty (G ≃* retrieve 18 2) ∨
+    Nonempty (G ≃* retrieve 18 3) ∨
+    Nonempty (G ≃* retrieve 18 4) ∨
+    Nonempty (G ≃* retrieve 18 5) := by
+  haveI : Fact (Nat.Prime 3) := ⟨by norm_num⟩
+  rcases classification_2p2 (p := 3) (h_ge_3 := by norm_num)
+      (h := h.trans (by norm_num)) with
+    h1 | h2 | h3 | h4 | h5
+  · exact Or.inl h1
+  · exact Or.inr (Or.inl h2)
+  · exact Or.inr (Or.inr (Or.inl h3))
+  · exact Or.inr (Or.inr (Or.inr (Or.inl h4)))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr h5)))
+
 theorem order28_classification {G : Type*} [Group G] (h : Nat.card G = 28) :
     Nonempty (G ≃* retrieve 28 1) ∨
     Nonempty (G ≃* retrieve 28 2) ∨
@@ -953,7 +969,12 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime 17 h
 
   -- n = 18
-  · sorry
+  · rcases order18_classification h with h1 | h2 | h3 | h4 | h5
+    · exact ⟨1, by decide, h1⟩
+    · exact ⟨2, by decide, h2⟩
+    · exact ⟨3, by decide, h3⟩
+    · exact ⟨4, by decide, h4⟩
+    · exact ⟨5, by decide, h5⟩
 
   -- n = 19
   · classify_prime 19 h
