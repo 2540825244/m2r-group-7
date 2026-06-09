@@ -24,16 +24,19 @@ eliminating the old bridge infrastructure (cycGrpPowOne, _canonicalCpOnCqAction,
 -- ─── Canonical action C_p →* Aut(C_q) ──────────────────────────────────────
 
 /-- The canonical non-trivial action `C_p →* Aut(C_q)` with image of order p.
-    Exists when `p ∣ q - 1`, encoded by `hr : 1 ≤ min 1 ((q-1).factorization p)`. -/
-noncomputable def canonicalCpOnCqAction
+    Exists when `p ∣ q - 1`, encoded by `hr : 1 ≤ min 1 ((q-1).factorization p)`.
+    Built by transporting `canonicalAction p q 1 1 r=1` across `p^1 = p` and `q^1 = q`. -/
+def canonicalCpOnCqAction
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
     (hpq : p ≠ q) (hq2 : q ≠ 2)
     (hr : 1 ≤ min 1 ((q - 1).factorization p)) :
     CyclicGroup p →* MulAut (CyclicGroup q) :=
-  sdpCanonicalAction hpq hq2 1 1 Nat.one_pos
-    (by rw [card_cyclicGroup, pow_one])
-    (by rw [card_cyclicGroup, pow_one])
-    1 hr
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : NeZero (p^1) := ⟨pow_ne_zero 1 hp.out.ne_zero⟩
+  haveI : NeZero (q^1) := ⟨pow_ne_zero 1 hq.out.ne_zero⟩
+  transportCpCqHom (pow_one p) (pow_one q)
+    (canonicalAction p q 1 1 hpq hq2 Nat.one_pos 1 hr)
 
 -- ─── General: non-trivial action → non-cyclic SDP ───────────────────────────
 
@@ -78,14 +81,19 @@ lemma canonicalSDP_not_isCyclic
     ¬IsCyclic (SemidirectProduct (CyclicGroup q) (CyclicGroup p)
                 (canonicalCpOnCqAction hpq hq2 hr)) := by
   apply sdp_not_isCyclic_of_action_ne_one
-  -- canonicalCpOnCqAction = sdpCanonicalAction with r=1, so its range has card p^1 = p ≥ 2.
-  have h_card := sdpCanonicalAction_range_card (N := CyclicGroup q) (K := CyclicGroup p)
-    hpq hq2 1 1 Nat.one_pos
-    (by rw [card_cyclicGroup, pow_one]) (by rw [card_cyclicGroup, pow_one]) 1 hr
-  simp only [pow_one] at h_card
-  -- Rebind at the canonicalCpOnCqAction type (definitionally equal to sdpCanonicalAction ...).
-  have h_card' : Nat.card (canonicalCpOnCqAction hpq hq2 hr).range = p := h_card
-  -- If the action were trivial, range would have card 1, contradicting p ≥ 2.
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : NeZero (p^1) := ⟨pow_ne_zero 1 hp.out.ne_zero⟩
+  haveI : NeZero (q^1) := ⟨pow_ne_zero 1 hq.out.ne_zero⟩
+  -- canonicalCpOnCqAction transports canonicalAction p q 1 1 r=1 across pow_one rewrites;
+  -- the range card is p^1 = p (after transport), so ≠ 1, hence the action is not trivial.
+  have h_card_orig : Nat.card (canonicalAction p q 1 1 hpq hq2 Nat.one_pos 1 hr).range = p := by
+    have h := canonicalAction_range_card p q 1 1 1 hpq hq2 Nat.one_pos hr
+    simpa using h
+  have h_card' : Nat.card (canonicalCpOnCqAction hpq hq2 hr).range = p := by
+    unfold canonicalCpOnCqAction
+    rw [transportCpCqHom_range_card]
+    exact h_card_orig
   intro heq
   have h_range : (1 : CyclicGroup p →* MulAut (CyclicGroup q)).range = ⊥ := by
     ext x; simp [Subgroup.mem_bot]

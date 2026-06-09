@@ -796,27 +796,17 @@ macro "classify_prime_sq" p:num h:term : tactic => `(tactic|(
   · exact ⟨1, by decide , hiso⟩
   · exact ⟨2, by decide, hiso⟩))
 
--- For n = 2*q where BOTH cyclic and non-cyclic groups exist (q odd prime, so 2 ∣ q - 1).
--- The non-cyclic SDP is bridged to `DihedralGroup q` which is `retrieve (2*q) 1`.
-macro "classify_pq_p2" q:num h:term : tactic => `(tactic|(
-  haveI : Fact (Nat.Prime 2) := ⟨by norm_num⟩
+-- For n = p*q where BOTH cyclic and non-cyclic groups exist (p ∣ q - 1).
+-- The non-cyclic SDP in `retrieve (p*q) 1` is built from the same
+-- `canonicalCpOnCqAction`, so the bridge is `rfl` (proof irrelevance).
+macro "classify_pq" p:num q:num h:term : tactic => `(tactic|(
+  haveI : Fact (Nat.Prime $p) := ⟨by norm_num⟩
   haveI : Fact (Nat.Prime $q) := ⟨by norm_num⟩
-  rcases pq_classification (p := 2) (q := $q) (by norm_num)
+  rcases pq_classification (p := $p) (q := $q) (by norm_num)
       (Eq.trans $h (by norm_num)) with ⟨⟨e⟩⟩ | ⟨hr, ⟨e⟩⟩
   · exact ⟨2, by decide, ⟨e⟩⟩
-  · obtain ⟨bridge⟩ := canonicalSDP_iso_DihedralGroup $q (by norm_num) hr
-    exact ⟨1, by decide, ⟨e.trans bridge⟩⟩))
-
--- For n = 3 * 7: BOTH cyclic and non-cyclic groups exist (3 ∣ 7 - 1).
--- The non-cyclic SDP is bridged to the computable surrogate `retrieve 21 1`.
-macro "classify_pq_3_7" h:term : tactic => `(tactic|(
-  haveI : Fact (Nat.Prime 3) := ⟨by norm_num⟩
-  haveI : Fact (Nat.Prime 7) := ⟨by norm_num⟩
-  rcases pq_classification (p := 3) (q := 7) (by norm_num)
-      (Eq.trans $h (by norm_num)) with ⟨⟨e⟩⟩ | ⟨hr, ⟨e⟩⟩
-  · exact ⟨2, by decide, ⟨e⟩⟩
-  · obtain ⟨bridge⟩ := canonicalSDP_iso_retrieve_21 hr
-    exact ⟨1, by decide, ⟨e.trans bridge⟩⟩))
+  · refine ⟨1, by decide, ⟨e.trans ?_⟩⟩
+    exact MulEquiv.refl _))
 
 -- For n = p*q where p ∤ q - 1, so only the cyclic group exists.
 macro "classify_pq_cyclic" p:num q:num h:term : tactic => `(tactic|(
@@ -833,25 +823,10 @@ theorem order12_classification {G : Type*} [Group G] (h : Nat.card G = 12) :
     Nonempty (G ≃* retrieve 12 3) ∨
     Nonempty (G ≃* retrieve 12 4) ∨
     Nonempty (G ≃* retrieve 12 5) := by
-  haveI : Fact (Nat.Prime 3) := ⟨by norm_num⟩
   rcases classification_4q (q := 3) (h_ge_3 := by norm_num)
       (h := h.trans (by norm_num)) with
-    h1 | h2 | h3 | ⟨h1mod4, _⟩ | h5 | ⟨_, h6⟩
-  · exact Or.inl h1
-  · exact Or.inr (Or.inl h2)
-  · obtain ⟨e3⟩ := h3
-    obtain ⟨bridge⟩ :=
-      canonicalC4OnCqAction_iso_c4OnCqInv 3 (by norm_num) c4OnCqInv_range_card_3
-    exact Or.inr (Or.inr (Or.inl ⟨e3.trans bridge⟩))
-  · exact absurd h1mod4 (by decide)
-  · obtain ⟨e5⟩ := h5
-    obtain ⟨bridge⟩ :=
-      canonicalC2C2OnCqAction_iso_c2c2OnCqInv 3 (by norm_num) (by norm_num)
-        c2c2OnCqInv_range_card_3
-    exact Or.inr (Or.inr (Or.inr (Or.inl ⟨e5.trans bridge⟩)))
-  · obtain ⟨e6⟩ := h6
-    obtain ⟨bridge⟩ := canonicalC3OnC2C2Action_iso_c3OnC2C2
-    exact Or.inr (Or.inr (Or.inr (Or.inr ⟨e6.trans bridge⟩)))
+    h1 | h2 | h3 | ⟨h1mod4, _⟩ | h5 | ⟨_, h6⟩ <;>
+  · tauto
 
 theorem order20_classification {G : Type*} [Group G] (h : Nat.card G = 20) :
     Nonempty (G ≃* retrieve 20 1) ∨
@@ -859,48 +834,31 @@ theorem order20_classification {G : Type*} [Group G] (h : Nat.card G = 20) :
     Nonempty (G ≃* retrieve 20 3) ∨
     Nonempty (G ≃* retrieve 20 4) ∨
     Nonempty (G ≃* retrieve 20 5) := by
-  haveI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
   rcases classification_4q (q := 5) (h_ge_3 := by norm_num)
       (h := h.trans (by norm_num)) with
-    h1 | h2 | h3 | ⟨h1mod4, h4⟩ | h5 | ⟨h5eq3, _⟩
-  · exact Or.inl h1
-  · exact Or.inr (Or.inl h2)
-  · obtain ⟨e3⟩ := h3
-    obtain ⟨bridge⟩ :=
-      canonicalC4OnCqAction_iso_c4OnCqInv 5 (by norm_num) c4OnCqInv_range_card_5
-    exact Or.inr (Or.inr (Or.inl ⟨e3.trans bridge⟩))
-  · obtain ⟨e4⟩ := h4
-    obtain ⟨bridge⟩ := canonicalC4OnCqAction_r2_iso_c4OnC5Pow2 h1mod4
-    exact Or.inr (Or.inr (Or.inr (Or.inl ⟨e4.trans bridge⟩)))
-  · obtain ⟨e5⟩ := h5
-    obtain ⟨bridge⟩ :=
-      canonicalC2C2OnCqAction_iso_c2c2OnCqInv 5 (by norm_num) (by norm_num)
-        c2c2OnCqInv_range_card_5
-    exact Or.inr (Or.inr (Or.inr (Or.inr ⟨e5.trans bridge⟩)))
-  · exact absurd h5eq3 (by decide)
+    h1 | h2 | h3 | ⟨_, h4⟩ | h5 | ⟨h5eq3, _⟩ <;>
+  · tauto
+
+theorem order18_classification {G : Type*} [Group G] (h : Nat.card G = 18) :
+    Nonempty (G ≃* retrieve 18 1) ∨
+    Nonempty (G ≃* retrieve 18 2) ∨
+    Nonempty (G ≃* retrieve 18 3) ∨
+    Nonempty (G ≃* retrieve 18 4) ∨
+    Nonempty (G ≃* retrieve 18 5) := by
+  rcases classification_2p2 (p := 3) (h_ge_3 := by norm_num)
+      (h := h.trans (by norm_num)) with
+    h1 | h2 | h3 | h4 | h5 <;>
+  · tauto
 
 theorem order28_classification {G : Type*} [Group G] (h : Nat.card G = 28) :
     Nonempty (G ≃* retrieve 28 1) ∨
     Nonempty (G ≃* retrieve 28 2) ∨
     Nonempty (G ≃* retrieve 28 3) ∨
     Nonempty (G ≃* retrieve 28 4) := by
-  haveI : Fact (Nat.Prime 7) := ⟨by norm_num⟩
   rcases classification_4q (q := 7) (h_ge_3 := by norm_num)
       (h := h.trans (by norm_num)) with
-    h1 | h2 | h3 | ⟨h1mod4, _⟩ | h5 | ⟨h7eq3, _⟩
-  · exact Or.inl h1
-  · exact Or.inr (Or.inl h2)
-  · obtain ⟨e3⟩ := h3
-    obtain ⟨bridge⟩ :=
-      canonicalC4OnCqAction_iso_c4OnCqInv 7 (by norm_num) c4OnCqInv_range_card_7
-    exact Or.inr (Or.inr (Or.inl ⟨e3.trans bridge⟩))
-  · exact absurd h1mod4 (by decide)
-  · obtain ⟨e5⟩ := h5
-    obtain ⟨bridge⟩ :=
-      canonicalC2C2OnCqAction_iso_c2c2OnCqInv 7 (by norm_num) (by norm_num)
-        c2c2OnCqInv_range_card_7
-    exact Or.inr (Or.inr (Or.inr ⟨e5.trans bridge⟩))
-  · exact absurd h7eq3 (by decide)
+    h1 | h2 | h3 | ⟨h1mod4, _⟩ | h5 | ⟨h7eq3, _⟩ <;>
+  · tauto
 
 theorem order30_classification {G : Type*} [Group G] (h : Nat.card G = 30) :
     Nonempty (G ≃* retrieve 30 1) ∨
@@ -950,7 +908,7 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime 5 h
 
   -- n = 6 = 2 * 3
-  · classify_pq_p2 3 h
+  · classify_pq 2 3 h
 
   -- n = 7
   · classify_prime 7 h
@@ -967,7 +925,7 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime_sq 3 h
 
   -- n = 10 = 2 * 5
-  · classify_pq_p2 5 h
+  · classify_pq 2 5 h
 
   -- n = 11
   · classify_prime 11 h
@@ -984,7 +942,7 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime 13 h
 
   -- n = 14 = 2 * 7
-  · classify_pq_p2 7 h
+  · classify_pq 2 7 h
 
   -- n = 15 = 3 * 5  (only cyclic: 3 ∤ 4)
   · classify_pq_cyclic 3 5 h
@@ -996,7 +954,12 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime 17 h
 
   -- n = 18
-  · sorry
+  · rcases order18_classification h with h1 | h2 | h3 | h4 | h5
+    · exact ⟨1, by decide, h1⟩
+    · exact ⟨2, by decide, h2⟩
+    · exact ⟨3, by decide, h3⟩
+    · exact ⟨4, by decide, h4⟩
+    · exact ⟨5, by decide, h5⟩
 
   -- n = 19
   · classify_prime 19 h
@@ -1010,10 +973,10 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
     · exact ⟨5, by decide, h5⟩
 
   -- n = 21
-  · classify_pq_3_7 h
+  · classify_pq 3 7 h
 
   -- n = 22
-  · classify_pq_p2 11 h
+  · classify_pq 2 11 h
 
   -- n = 23
   · classify_prime 23 h
@@ -1025,7 +988,7 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime_sq 5 h
 
   -- n = 26
-  · classify_pq_p2 13 h
+  · classify_pq 2 13 h
 
   -- n = 27
   · sorry

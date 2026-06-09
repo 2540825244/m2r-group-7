@@ -242,7 +242,10 @@ theorem uniqueness (n i n' i' : Nat)
     · -- n = 17
       by_single_group
     · -- n = 18
-      by_single_group
+      by_invariant i i'
+        isAbelianInv ⊗
+        (numElementsOfOrderInv 2) ⊗
+        (numElementsOfOrderInv 9)
     · -- n = 19
       by_single_group
     · -- n = 20
