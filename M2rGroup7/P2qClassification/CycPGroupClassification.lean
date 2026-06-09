@@ -74,7 +74,6 @@ private def findFirstUnitWithOrder {n : ℕ} (p r : ℕ) :
     Falls back to `1` when none exists (unreachable under the canonical hypotheses). -/
 private def canonicalAutElement_unit (p q n r : ℕ) [Fact q.Prime] (hn : 0 < n) :
     (ZMod (q ^ n))ˣ :=
-  haveI : NeZero (q ^ n) := ⟨pow_ne_zero n (Fact.out (p := q.Prime)).ne_zero⟩
   -- Enumerate i ∈ {0, ..., q^n - 1}, keep those coprime to q^n (these give units),
   -- and pick the first unit with order = p^r.
   let candidates : List (ZMod (q^n))ˣ :=
