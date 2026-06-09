@@ -1,5 +1,4 @@
 import Mathlib
-import «M2rGroup7».Lemmas.GroupTheoryLemmas
 import «M2rGroup7».Lemmas.NumberTheoryUtils
 
 variable (G : Type*) [Group G]
@@ -358,3 +357,177 @@ lemma p2q_group_has_normal_sylow_subgroup {p : ℕ} {q : ℕ}
         linarith [h_q_prime.out.one_lt]
   tauto
 
+/-- Every group G of order pqr with p < q < r has either a normal Sylow q-group or normal Sylow r-group -/
+lemma pqr_group_has_normal_sylow_qr_subgroup {p : ℕ} {q : ℕ} {r : ℕ}
+    [h_p_prime : Fact p.Prime] [h_q_prime : Fact q.Prime] [h_r_prime : Fact r.Prime]
+    (h_p_le_q : p < q) (h_q_le_r : q < r) (h : Nat.card G = p * q * r)
+    : Nat.card (Sylow q G) = 1 ∨ Nat.card (Sylow r G) = 1 := by
+  haveI hfin : Finite G := Nat.finite_of_card_ne_zero (h ▸
+    Nat.mul_ne_zero (Nat.mul_ne_zero h_p_prime.out.ne_zero h_q_prime.out.ne_zero)
+      h_r_prime.out.ne_zero)
+  have h_p_ne_q : p ≠ q := Nat.ne_of_lt h_p_le_q
+  have h_q_ne_r : q ≠ r := Nat.ne_of_lt h_q_le_r
+  have h_p_ne_r : p ≠ r := Nat.ne_of_lt (Nat.lt_trans h_p_le_q h_q_le_r)
+  have hp2 : 2 ≤ p := h_p_prime.out.two_le
+  have hq2 : 2 ≤ q := h_q_prime.out.two_le
+  have hr2 : 2 ≤ r := h_r_prime.out.two_le
+  have hp_pos := h_p_prime.out.pos
+  have hq_pos := h_q_prime.out.pos
+  have hr_pos := h_r_prime.out.pos
+  have h_p_lt_r : p < r := Nat.lt_trans h_p_le_q h_q_le_r
+  -- Sylow card facts via factorization
+  have hQ_card : ∀ Q : Sylow q G, Nat.card (Q : Subgroup G) = q := fun Q => by
+    rw [Sylow.card_eq_multiplicity, h,
+        Nat.factorization_mul (Nat.mul_ne_zero h_p_prime.out.ne_zero h_q_prime.out.ne_zero)
+                               h_r_prime.out.ne_zero,
+        Nat.factorization_mul h_p_prime.out.ne_zero h_q_prime.out.ne_zero,
+        h_p_prime.out.factorization, h_q_prime.out.factorization, h_r_prime.out.factorization]
+    simp [Finsupp.add_apply, h_p_ne_q, Ne.symm h_q_ne_r]
+  have hR_card : ∀ R : Sylow r G, Nat.card (R : Subgroup G) = r := fun R => by
+    rw [Sylow.card_eq_multiplicity, h,
+        Nat.factorization_mul (Nat.mul_ne_zero h_p_prime.out.ne_zero h_q_prime.out.ne_zero)
+                               h_r_prime.out.ne_zero,
+        Nat.factorization_mul h_p_prime.out.ne_zero h_q_prime.out.ne_zero,
+        h_p_prime.out.factorization, h_q_prime.out.factorization, h_r_prime.out.factorization]
+    simp [Finsupp.add_apply, h_q_ne_r, h_p_ne_r]
+  -- Indices
+  have hQ_idx : ∀ Q : Sylow q G, (Q : Subgroup G).index = p * r := fun Q => by
+    have hcard := Subgroup.index_mul_card (Q : Subgroup G)
+    rw [hQ_card Q, h] at hcard
+    exact Nat.eq_of_mul_eq_mul_right hq_pos (hcard.trans (by ring))
+  have hR_idx : ∀ R : Sylow r G, (R : Subgroup G).index = p * q := fun R => by
+    have hcard := Subgroup.index_mul_card (R : Subgroup G)
+    rw [hR_card R, h] at hcard
+    exact Nat.eq_of_mul_eq_mul_right hr_pos hcard
+  obtain ⟨Q₀⟩ : Nonempty (Sylow q G) := inferInstance
+  obtain ⟨R₀⟩ : Nonempty (Sylow r G) := inferInstance
+  have h_n_r_div : Nat.card (Sylow r G) ∣ p * q := by
+    have := Sylow.card_dvd_index R₀
+    rwa [hR_idx R₀] at this
+  have h_n_q_div : Nat.card (Sylow q G) ∣ p * r := by
+    have := Sylow.card_dvd_index Q₀
+    rwa [hQ_idx Q₀] at this
+  have h_n_r_mod : Nat.card (Sylow r G) ≡ 1 [MOD r] := card_sylow_modEq_one r G
+  have h_n_q_mod : Nat.card (Sylow q G) ≡ 1 [MOD q] := card_sylow_modEq_one q G
+  -- Show n_r = 1 or n_r = p*q
+  have h_n_r_cases : Nat.card (Sylow r G) = 1 ∨ Nat.card (Sylow r G) = p * q := by
+    set n_r := Nat.card (Sylow r G) with h_n_r_def
+    obtain ⟨a, b, ha_dvd, hb_dvd, hab⟩ := Nat.dvd_mul.mp h_n_r_div
+    rcases (Nat.dvd_prime h_p_prime.out).mp ha_dvd with ha1 | hap
+    · rcases (Nat.dvd_prime h_q_prime.out).mp hb_dvd with hb1 | hbq
+      · left; rw [← hab, ha1, hb1, mul_one]
+      · exfalso
+        have hnr_eq : n_r = q := by rw [← hab, ha1, hbq, one_mul]
+        rw [hnr_eq] at h_n_r_mod
+        have hmod : q % r = 1 % r := h_n_r_mod
+        rw [Nat.mod_eq_of_lt h_q_le_r, Nat.mod_eq_of_lt hr2] at hmod
+        omega
+    · rcases (Nat.dvd_prime h_q_prime.out).mp hb_dvd with hb1 | hbq
+      · exfalso
+        have hnr_eq : n_r = p := by rw [← hab, hap, hb1, mul_one]
+        rw [hnr_eq] at h_n_r_mod
+        have hmod : p % r = 1 % r := h_n_r_mod
+        rw [Nat.mod_eq_of_lt h_p_lt_r, Nat.mod_eq_of_lt hr2] at hmod
+        omega
+      · right; rw [← hab, hap, hbq]
+  rcases h_n_r_cases with h_nr1 | h_nr_pq
+  · right; exact h_nr1
+  · -- n_r = p*q. Need to show n_q = 1, else derive contradiction.
+    have h_n_q_cases : Nat.card (Sylow q G) = 1 ∨ r ≤ Nat.card (Sylow q G) := by
+      set n_q := Nat.card (Sylow q G) with h_n_q_def
+      obtain ⟨a, b, ha_dvd, hb_dvd, hab⟩ := Nat.dvd_mul.mp h_n_q_div
+      rcases (Nat.dvd_prime h_p_prime.out).mp ha_dvd with ha1 | hap
+      · rcases (Nat.dvd_prime h_r_prime.out).mp hb_dvd with hb1 | hbr
+        · left; rw [← hab, ha1, hb1, mul_one]
+        · right; rw [← hab, ha1, hbr, one_mul]
+      · rcases (Nat.dvd_prime h_r_prime.out).mp hb_dvd with hb1 | hbr
+        · exfalso
+          have hnq_eq : n_q = p := by rw [← hab, hap, hb1, mul_one]
+          rw [hnq_eq] at h_n_q_mod
+          have hmod : p % q = 1 % q := h_n_q_mod
+          rw [Nat.mod_eq_of_lt h_p_le_q, Nat.mod_eq_of_lt hq2] at hmod
+          omega
+        · right
+          rw [← hab, hap, hbr]
+          exact Nat.le_mul_of_pos_left _ hp_pos
+    rcases h_n_q_cases with h_nq1 | h_nq_ge_r
+    · left; exact h_nq1
+    · exfalso
+      -- Count elements of order r and order q
+      have h_count_r : Nat.card {x : G | orderOf x = r} = p * q * (r - 1) := by
+        rw [sylow_elements_order_p_card hR_card, h_nr_pq]
+      have h_count_q : Nat.card {x : G | orderOf x = q} =
+          Nat.card (Sylow q G) * (q - 1) := sylow_elements_order_p_card hQ_card
+      haveI hFinG : Fintype G := Fintype.ofFinite G
+      haveI hDecEq : DecidableEq G := Classical.decEq G
+      let S_r : Finset G := ({x | orderOf x = r} : Set G).toFinset
+      let S_q : Finset G := ({x | orderOf x = q} : Set G).toFinset
+      have hSr_card : S_r.card = p * q * (r - 1) := by
+        have heq : S_r.card = Nat.card {x : G | orderOf x = r} := by
+          change ({x : G | orderOf x = r} : Set G).toFinset.card = _
+          rw [Set.toFinset_card, Nat.card_eq_fintype_card]
+        rw [heq, h_count_r]
+      have hSq_card : S_q.card = Nat.card (Sylow q G) * (q - 1) := by
+        have heq : S_q.card = Nat.card {x : G | orderOf x = q} := by
+          change ({x : G | orderOf x = q} : Set G).toFinset.card = _
+          rw [Set.toFinset_card, Nat.card_eq_fintype_card]
+        rw [heq, h_count_q]
+      have h1_notin_Sr : (1 : G) ∉ S_r := by
+        simp only [S_r, Set.mem_toFinset, Set.mem_setOf_eq, orderOf_one]
+        omega
+      have h1_notin_Sq : (1 : G) ∉ S_q := by
+        simp only [S_q, Set.mem_toFinset, Set.mem_setOf_eq, orderOf_one]
+        omega
+      have hSrq_disj : Disjoint S_r S_q := by
+        rw [Finset.disjoint_left]
+        intro x hxr hxq
+        simp only [S_r, Set.mem_toFinset, Set.mem_setOf_eq] at hxr
+        simp only [S_q, Set.mem_toFinset, Set.mem_setOf_eq] at hxq
+        rw [hxr] at hxq
+        exact h_q_ne_r.symm hxq
+      have h1_S_disj : Disjoint ({(1 : G)} : Finset G) (S_r ∪ S_q) := by
+        rw [Finset.disjoint_left]
+        intro x hx hxun
+        rw [Finset.mem_singleton] at hx
+        subst hx
+        rcases Finset.mem_union.mp hxun with h | h
+        · exact h1_notin_Sr h
+        · exact h1_notin_Sq h
+      have h_union_card : (({(1 : G)} : Finset G) ∪ (S_r ∪ S_q)).card =
+          1 + S_r.card + S_q.card := by
+        rw [Finset.card_union_of_disjoint h1_S_disj,
+            Finset.card_union_of_disjoint hSrq_disj, Finset.card_singleton]
+        ring
+      have h_le : (({(1 : G)} : Finset G) ∪ (S_r ∪ S_q)).card ≤ Fintype.card G :=
+        Finset.card_le_card (Finset.subset_univ _)
+      rw [h_union_card, hSr_card, hSq_card,
+          ← Nat.card_eq_fintype_card, h] at h_le
+      -- 1 + p*q*(r-1) + n_q*(q-1) ≤ p*q*r and r ≤ n_q so:
+      have h_aux : 1 + p * q * (r - 1) + r * (q - 1) ≤ p * q * r := by
+        calc 1 + p * q * (r - 1) + r * (q - 1)
+            ≤ 1 + p * q * (r - 1) + Nat.card (Sylow q G) * (q - 1) := by
+                  have := Nat.mul_le_mul_right (q - 1) h_nq_ge_r
+                  omega
+          _ ≤ p * q * r := h_le
+      -- Rewrite using Nat.mul_sub_one
+      have h_pq_expand : p * q * (r - 1) = p * q * r - p * q := Nat.mul_sub_one (p * q) r
+      have h_r_expand : r * (q - 1) = r * q - r := Nat.mul_sub_one r q
+      have h_pq_le_pqr : p * q ≤ p * q * r := Nat.le_mul_of_pos_right _ hr_pos
+      -- Key claim: (q - 1) * r ≥ p * q
+      have h_key : (q - 1) * r ≥ p * q := by
+        calc (q - 1) * r ≥ (q - 1) * q := Nat.mul_le_mul_left _ (le_of_lt h_q_le_r)
+          _ ≥ p * q := Nat.mul_le_mul_right _ (by omega)
+      have h_key2 : q * r - r ≥ p * q := by
+        have := h_key
+        rw [Nat.sub_one_mul] at this
+        exact this
+      rw [h_pq_expand, h_r_expand] at h_aux
+      have hcomm : r * q = q * r := mul_comm r q
+      rw [hcomm] at h_aux
+      set A := p * q with hA
+      set B := q * r with hB
+      set D := p * q * r with hD
+      have hr_le_B : r ≤ B := by rw [hB]; exact Nat.le_mul_of_pos_left _ hq_pos
+      have hA_le_D : A ≤ D := by rw [hA, hD]; exact h_pq_le_pqr
+      have h_B_minus_r_ge_A : B - r ≥ A := by rw [hB]; exact h_key2
+      omega

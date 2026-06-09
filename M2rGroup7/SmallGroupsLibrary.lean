@@ -7,6 +7,7 @@ import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
 import «M2rGroup7».CyclicGroup
 import «M2rGroup7».P2qClassification.PqClassification
 import «M2rGroup7».P2qClassification.FourQClassification
+import «M2rGroup7».Order30.Order30Classification
 import Mathlib.Tactic
 import Mathlib.RingTheory.ZMod.UnitsCyclic
 
@@ -331,6 +332,9 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 28, 4 => CyclicGroup 7 ⋊[c2c2OnCqInv 7] (CyclicGroup 2 × CyclicGroup 2)
   | 29, 1 => CyclicGroup 29
   | 30, 1 => CyclicGroup 30
+  | 30, 2 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 14 (by decide)] CyclicGroup 2
+  | 30, 3 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 11 (by decide)] CyclicGroup 2
+  | 30, 4 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 4 (by decide)] CyclicGroup 2
   | 31, 1 => CyclicGroup 31
   | _, _ => PUnit -- Fallback to make retrieve total
 
@@ -366,7 +370,7 @@ def num_entries (n : Nat) : Nat :=
   | 27 => 1 -- It is 5 actually, will fill rest later
   | 28 => 4
   | 29 => 1
-  | 30 => 1 -- It is 4 actually, will fill rest later
+  | 30 => 4
   | 31 => 1
   | _ => 0
 
