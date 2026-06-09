@@ -1,0 +1,776 @@
+Follow the Order 30 section of this document:
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Mathematics Final Year Research Projects
+% LaTeX Template
+% Version 1.0 (31/01/24)
+%
+% This template has been adapted from: https://www.overleaf.com/latex/templates/imperial-college-report-template/wncnzptkhnbc
+% Students should feel free to adapt this template to their needs.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%----------------------------------------------------------------------------------------
+% PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+\documentclass[a4paper,11pt, titlepage]{article}
+
+%% Language and font encodings
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+%% Sets page size and margins
+\usepackage[a4paper,top=1in,bottom=1in,left=1in,right=1in,marginparwidth=1.75cm]{geometry}
+
+\usepackage{xcolor}
+
+%% Useful packages
+\usepackage{afterpage}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{thmtools}
+\usepackage{mdframed}
+\usepackage{csquotes}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{lipsum}
+\usepackage{booktabs}
+\usepackage{unicode-math}
+\usepackage[table]{xcolor} % Required for \cellcolor
+\usepackage{microtype}
+\usepackage{fontspec}
+\usepackage{minted}
+\usepackage{titlesec}
+
+% Define a soft, professional green for cell backgrounds
+\definecolor{softgreen}{HTML}{E2F0D9} 
+
+% Switch to a monospace font supporting Unicode characters
+\newfontfamily{\leanCodeFont}{JuliaMono}[NFSSFamily=leanfont]
+
+\mdfdefinestyle{fancycode}{
+  linewidth=2pt,
+  rightline=false, topline=false, bottomline=false,
+  linecolor=gray!60!black,       % A neutral dark gray bar for code
+  backgroundcolor=gray!5!white,  % Subtle light gray background
+  innerbottommargin=8pt,
+  innertopmargin=8pt,
+  leftmargin=1.5em,              % Matches the indent of your Definitions
+  rightmargin=1.5em,
+}
+
+\usemintedstyle{tango}
+\newmintinline[lean]{lean4}{fontfamily=leanfont, bgcolor=gray!5!white}
+\newminted[leancode]{lean4}{fontfamily=leanfont, fontsize=\footnotesize, breaklines=true}
+\surroundwithmdframed[style=fancycode]{leancode}
+
+
+% Listings (for displaying code):
+\usepackage{listings}
+\lstset{
+    frame = single, 
+    framexleftmargin=15pt
+}
+
+% Center figure captions:
+\usepackage{caption}
+\captionsetup[figure]{labelfont={bf},name={Figure},labelsep=quad}
+\captionsetup[table]{labelfont={bf},name={Table},labelsep=quad}
+
+
+% ----------- Algorithm2e setup
+\usepackage[ruled,vlined]{algorithm2e}
+\makeatletter
+\renewcommand{\SetKwInOut}[2]{%
+  \sbox\algocf@inoutbox{\KwSty{#2}\algocf@typo:}%
+  \expandafter\ifx\csname InOutSizeDefined\endcsname\relax% if first time used
+    \newcommand\InOutSizeDefined{}\setlength{\inoutsize}{\wd\algocf@inoutbox}%
+    \sbox\algocf@inoutbox{\parbox[t]{\inoutsize}{\KwSty{#2}\algocf@typo:\hfill}~}\setlength{\inoutindent}{\wd\algocf@inoutbox}%
+  \else% else keep the larger dimension
+    \ifdim\wd\algocf@inoutbox>\inoutsize%
+    \setlength{\inoutsize}{\wd\algocf@inoutbox}%
+    \sbox\algocf@inoutbox{\parbox[t]{\inoutsize}{\KwSty{#2}\algocf@typo:\hfill}~}\setlength{\inoutindent}{\wd\algocf@inoutbox}%
+    \fi%
+  \fi% the dimension of the box is now defined.
+  \algocf@newcommand{#1}[1]{%
+    \ifthenelse{\boolean{algocf@inoutnumbered}}{\relax}{\everypar={\relax}}%
+%     {\let\\\algocf@newinout\hangindent=\wd\algocf@inoutbox\hangafter=1\parbox[t]{\inoutsize}{\KwSty{#2}\algocf@typo\hfill:}~##1\par}%
+    {\let\\\algocf@newinout\hangindent=\inoutindent\hangafter=1\parbox[t]{\inoutsize}{\KwSty{#2}\algocf@typo:\hfill}~##1\par}%
+    \algocf@linesnumbered% reset the numbering of the lines
+  }}%
+\makeatother
+% --------- end algorithm2e setup
+
+% \bm allows typing bold math:
+\usepackage{bm}
+\usepackage[normalem]{ulem}
+
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+
+\renewcommand*{\rmdefault}{bch}
+\renewcommand*{\ttdefault}{lmtt}
+\newcommand{\citationneeded}{\textcolor{red}{[citation-needed]}}
+
+\DeclareMathOperator*{\argmin}{\arg\!\min}
+\DeclareMathOperator*{\argmax}{\arg\!\max}
+
+% Add bigger skip between paragraphs, makes reading easier:
+\setlength{\parskip}{0.5em}
+
+% Bibliography
+\usepackage[numbers, comma, square, sort&compress]{natbib}
+\bibliographystyle{abbrvunsrtnat.bst}
+
+
+% Theorem, Lemma, Corollary and Proofs
+% \theoremstyle{definition}
+% \newtheorem{definition}{Definition}[section]
+% \theoremstyle{plain}
+% \newtheorem{theorem}{Theorem}[section]
+% \newtheorem{corollary}{Corollary}[theorem]
+% \newtheorem{lemma}[theorem]{Lemma}
+% \theoremstyle{remark}
+% \newtheorem*{remark}{Remark}
+% --- Define the style ---
+\declaretheoremstyle[
+  headfont=\bfseries\color{blue!70!black},
+  bodyfont=\itshape,
+  mdframed={
+    linewidth=2pt,
+    rightline=false, topline=false, bottomline=false, % Only left line
+    linecolor=blue!70!black,
+    backgroundcolor=blue!5!white,
+    innerbottommargin=8pt,
+    innertopmargin=8pt,
+  }
+]{fancytheorem}
+
+\declaretheoremstyle[
+  headfont=\bfseries\color{green!50!black},
+  bodyfont=\normalfont,
+  mdframed={
+    linewidth=2pt,
+    rightline=false, topline=false, bottomline=false,
+    linecolor=green!50!black,
+    backgroundcolor=green!5!white,
+  }
+]{fancydef}
+
+% --- Apply the styles ---
+\declaretheorem[style=fancytheorem, name=Theorem, numberwithin=section]{theorem}
+\declaretheorem[style=fancytheorem, name=Lemma, sibling=theorem]{lemma}
+\declaretheorem[style=fancytheorem, name=Corollary, sibling=theorem]{corollary}
+\declaretheorem[style=fancydef, name=Definition, numberwithin=section]{definition}
+
+% --- Keep Remark Simple ---
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+
+\titlespacing*{\section}{0pt}{3.5ex plus 1ex minus .2ex}{2ex plus .2ex}
+\titlespacing*{\subsection}{0pt}{2.5ex plus 1ex minus .2ex}{1ex plus .2ex}
+
+% --- Section: Blue with matching underline ---
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{black}} % Font and color
+  {\thesection}                                     % The section number
+  {1em}                                             % Space between number and text
+  {}                                                % Code applied to the title text
+  [\vspace{2pt}\color{blue!70!black}\titlerule]     % The line underneath
+
+% --- Subsection: Matching color, no line ---
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{black}}
+  {\thesubsection}
+  {1em}
+  {}
+
+% paragraph headings
+\setcounter{secnumdepth}{4}
+
+% Custom symbols
+\newcommand{\isom}{\stackrel{\sim}{\smash{\rightarrow}\rule{0pt}{0.8ex}}}
+
+%----------------------------------------------------------------------------------------
+% END OF DOCUMENT CONFIGURATION
+%----------------------------------------------------------------------------------------
+
+%----------------------------------------------------------------------------------------
+% IMPORTANT INFORMATION TO MODIFY FOR THE TITLE PAGE
+%----------------------------------------------------------------------------------------
+
+% Kevin: we should maybe call this formalising a databse of small groups
+\newcommand{\reporttitle}{Formalising Groups of Small Order}
+\newcommand{\reportauthorA}{Sevin Fernando (CID: 02568398)}
+\newcommand{\reportauthorD}{Jay Lees-Maffei (CID: 02595674)}
+\newcommand{\reportauthorC}{Tianyu Qi (CID: 02556308)}
+\newcommand{\reportauthorB}{Agamjeet Singh (CID: 02593148)}
+\newcommand{\supervisor}{Kevin Buzzard}
+%----------------------------------------------------------------------------------------
+
+%----------------------------------------------------------------------------------------
+% To compile this file, use the following sequence: 
+%	latex main.tex
+%	bibtex main.tex
+%	latex main.tex
+%	latex main.tex
+%----------------------------------------------------------------------------------------
+
+%----------------------------------------------------------------------------------------
+% START OF DOCUMENT
+%----------------------------------------------------------------------------------------
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Title page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{titlepage}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}} % Defines a new command for the horizontal lines, change thickness here
+%----------------------------------------------------------------------------------------
+%	LOGO SECTION
+%----------------------------------------------------------------------------------------
+\includegraphics[width=8cm]{Imperial_logo.png}\\[1cm] % Include a department/university logo - this will require the graphicx package
+%----------------------------------------------------------------------------------------
+\center % Center everything on the page
+%----------------------------------------------------------------------------------------
+%	HEADING SECTIONS
+%----------------------------------------------------------------------------------------
+% For M3R or M4R reports, comment out as appropriate
+\textsc{\LARGE Imperial College London}\\[0.5cm] 
+\textsc{\Large Department of Mathematics}\\[1.5cm] 
+\textsc{\Large Second-year Group Research Project}\\[0.5cm]
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+\makeatletter
+\HRule \\[0.6cm]
+{ \huge \bfseries \reporttitle}\\[0.6cm] % Title of your document
+\HRule \\[1.5cm]
+%----------------------------------------------------------------------------------------
+%	AUTHOR SECTION
+%----------------------------------------------------------------------------------------
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\emph{Author:}\\
+\reportauthorA \\
+\reportauthorB \\
+\reportauthorC \\
+\reportauthorD
+\end{flushleft}
+\end{minipage}
+~
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\emph{Supervisor:} \\
+\supervisor % Supervisor's name
+\end{flushright}
+\end{minipage}\\[2cm]
+\makeatother
+%----------------------------------------------------------------------------------------
+%	FOOTER & DATE SECTION
+%----------------------------------------------------------------------------------------
+\vfill
+\makeatletter
+{\large \today}\\[2cm] % Date, change the \today to a set date if you want to be precise
+\makeatother
+\end{titlepage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Abstract
+\begin{abstract}
+Computer-assisted formalisation of mathematics is a highly active field of research which focuses on translating mathematical statements into computer verifiable code in order to ensure correctness, conciseness, and allows the possibility for new proofs to be discovered manually or automatically. On the other hand, classifying finite groups up to isomorphism is an important result in group theory that, while heavily cross-checked amongst computer algebra systems such as GAP or MAGMA, has not been formally proven.
+This project aims to reduce the gap by formalising the classification of finite groups of small order in the Lean 4 programming language.
+To achieve this goal, we constructed a library of explicit groups which represent the isomorphism classes. We adapted/translated existing proofs into two main theorems to prove completeness and uniqueness. In doing this, we employed novel methodology and tooling such as Claude Code, Numina Fuse, and Google Gemini to leverage the mathematical reasoning and auto-proving capability of modern large language models.
+[WIP]
+\end{abstract}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Table of contents
+\tableofcontents
+\clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Main sections
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+\label{sec:introduction}
+
+
+%The introduction should attempt to set your work in the context of other work done in the field. It
+%should demonstrate that you are aware of what you are doing, and how it relates to other work
+%(with references). It should also provide an overview of the contents of the project. You should
+%highlight your individual contributions and any novel result: which of the calculations, theorems,
+%examples, proofs, conjectures, codes etc. are your own?
+
+
+
+% Kevin: we are not formalising the GAP small groups library, this is too big
+In this project we aim to formalise the GAP small groups library \cite{noauthor_gap_nodate}.
+This involves implementing the groups in a proof assistant and proving two theorems:
+\begin{itemize}
+\item Any group of small enough order is isomorphic to a group in the library (classification).
+\item No two groups in the library are isomorphic (uniqueness).
+\end{itemize}
+
+To do this we will use Lean, a proof assistant and dependently typed programming language \cite{noauthor_lean_nodate}.
+
+There have been other proofs classifying groups of small order in Lean, but none operating
+on a library of concrete groups.
+(Of particular use in our project is Harper and Wu's classification of groups of order \(pq\)
+for prime \(p, q\) \cite{harper_classifying_2025}.)
+However, most proofs are missing from Lean's Mathlib \cite{noauthor_mathlib4_nodate}
+and we have had to formalise these ourselves.
+This includes classification theorems for groups of order \(p^2q\) and \(p^3\) for prime \(p, q\).
+These newly formalised classification theorems make up the bulk of our project and are results
+that we hope will be of use to other group theorists interested in formalisation.
+
+Other important results from our project include the formalised classification theorems
+for groups of order \(16\) and \(24\).
+These are not general cases, so we do not expect them to be of much interest to other mathematicians,
+but they are still necessary part of our overall classification theorem. 
+
+\begin{table}[htbp]
+\centering
+\caption{Classification of Groups of Order 1 to 31}
+\label{tab:groups_1_31_clean}
+\small
+\begin{tabular}{ccc | ccc | ccc}
+\hline
+Order & Pattern & Reference & Order & Pattern & Reference & Order & Pattern & Reference \\
+\hline
+1  & —      & —                                      & 12 & $p^2 q$ & \ref{$p^2 q$ for distinct primes $p, q$} & 23 & $p$     & \ref{$p$ for prime $p$} \\
+2  & $p$    & \ref{$p$ for prime $p$}                & 13 & $p$     & \ref{$p$ for prime $p$}                & 24 & $p^3 q$ & \ref{Order $24$} \\
+3  & $p$    & \ref{$p$ for prime $p$}                & 14 & $pq$    & \ref{$pq$ for distinct primes $p, q$}  & 25 & $p^2$   & \ref{$p^2$ for prime $p$} \\
+4  & $p^2$  & \ref{$p^2$ for prime $p$}              & 15 & $pq$    & \ref{$pq$ for distinct primes $p, q$}  & 26 & $pq$    & \ref{$pq$ for distinct primes $p, q$} \\
+5  & $p$    & \ref{$p$ for prime $p$}                & 16 & $p^4$   & \ref{Order $16$}                       & 27 & $p^3$   & \ref{$p^3$ for prime $p$} \\
+6  & $pq$   & \ref{$pq$ for distinct primes $p, q$}  & 17 & $p$     & \ref{$p$ for prime $p$}                & 28 & $p^2 q$ & \ref{$p^2 q$ for distinct primes $p, q$} \\
+7  & $p$    & \ref{$p$ for prime $p$}                & 18 & $p^2 q$ & \ref{$p^2 q$ for distinct primes $p, q$} & 29 & $p$     & \ref{$p$ for prime $p$} \\
+8  & $p^3$  & \ref{$p^3$ for prime $p$}              & 19 & $p$     & \ref{$p$ for prime $p$}                & 30 & $p q r$ & \ref{Order $30$} \\
+9  & $p^2$  & \ref{$p^2$ for prime $p$}              & 20 & $p^2 q$ & \ref{$p^2 q$ for distinct primes $p, q$} & 31 & $p$     & \ref{$p$ for prime $p$} \\
+10 & $pq$   & \ref{$pq$ for distinct primes $p, q$}  & 21 & $pq$    & \ref{$pq$ for distinct primes $p, q$}  &    &         & \\
+11 & $p$    & \ref{$p$ for prime $p$}                & 22 & $pq$    & \ref{$pq$ for distinct primes $p, q$}  &    &         & \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Lean}
+We wrote earlier that Lean is dependently typed.
+
+\subsection{Semidirect Product}
+
+\subsection{Sylow's Theorem}
+
+We extensively employ Sylow's theorems for the classification of groups of orders $pq, p^2q, 24$ and $30$. A standard notation we use frequently in this report is that $v_p(n)$ denotes the highest power of a prime $p$ dividing $n$.
+
+We state the results and their consequences briefly:
+
+\begin{theorem}[First Sylow Theorem]
+    Let $G$ be a finite group and $p$ be a prime such that $p \mid |G|$. Then $G$ has a subgroup of order $p^{v_p(|G|)}$.
+\end{theorem}
+
+We would use the standard notation that $n_p(G)$ represents the number of Sylow-$p$ groups of $G$.
+
+\begin{theorem}[Second Sylow Theorem]
+    Let $G$ be a finite group and $p$ be a prime such that $p \mid |G|$. Then $n_p(G) \equiv 1 \pmod p$.
+\end{theorem}
+\begin{theorem}[Fourth Sylow Theorem]
+    Let $G$ be a finite group and $p$ be a prime such that $p \mid |G|$. The Sylow-$p$ groups of $G$ form a single conjugacy class.
+\end{theorem}
+A very useful corollary of the above theorem is (using Orbit-Stabiliser theorem):
+\begin{corollary}
+    Let $G$ be a finite group and $p$ be a prime such that $p \mid |G|$. Then $n_p(G) \mid |G|$.
+\end{corollary}
+
+A further corollary is that $n_p(G) \mid \frac{|G|}{p^{v_p(|G|)}}$ as $n_p(G) \equiv 1 \pmod p$ implies $p \nmid n_p(G)$.
+
+If the group $G$ is clear from context, we would often abbreviate $n_p(G)$ as just $n_p$.
+
+The constraints $n_p \equiv 1 \pmod p$ and $n_p \mid |G|$ in particular are extremely useful and will be employed frequently.
+
+In conjunction with these, we would use the following corollary often too (follows from Fourth Sylow Theorem and definition of normality)
+\begin{corollary}
+    Let $G$ be a finite group. If $n_p(G) = 1$, then the unique Sylow-$p$ group of $G$ is normal.
+\end{corollary}
+
+\subsection{Schur-zassenhaus's theorem}
+
+The Schur-zassenhaus's theorem is useful in showing that a group $G$ must be a semi-direct product when given a normal subgroup $N$.
+
+\begin{theorem}[Schur-zassenhaus]
+    Let $G$ be a finite group and let $N$ be a normal subgroup. Further suppose that $|N|$ and $|G/N|$ are co-prime. Then $G$ is isomorphic to some semi-direct product $N \rtimes G/N$.
+\end{theorem}
+
+This theorem is extremely useful in the proofs for groups of order $pq, p^2 q$ and $pqr$ because all such groups are semi-direct products.
+
+\section{Classification}
+
+The classification of groups of a particular order depends on the shape of its prime factorisation. So we divided the classification into the following sections:
+
+\subsection{$p$ for prime $p$}
+\label{$p$ for prime $p$}
+
+\subsection{$p^2$ for prime $p$}
+\label{$p^2$ for prime $p$}
+
+\subsection{$pq$ for distinct primes $p, q$}
+\label{$pq$ for distinct primes $p, q$}
+
+\subsection{$p^3$ for prime $p$}
+\label{$p^3$ for prime $p$}
+
+\subsection{$p^2 q$ for distinct primes $p, q$}
+\label{$p^2 q$ for distinct primes $p, q$}
+
+Classification of groups of order $p^2 q$ can be done solely using semi-direct products because of this result:
+\begin{lemma}[With Claude]\label{Groups of order $p^2 q$ have normal Sylow subgroup}
+    All groups $G$ of order $p^2 q$ have either a normal Sylow-$p$ group or a normal Sylow $q$ group.
+\end{lemma}
+\begin{proof}
+    By Sylow's theorems, $n_p \mid q$, $n_p \equiv 1 \pmod p$, $n_q \mid p^2$, $n_q \equiv 1 \pmod q$. Hence $n_q$ is either $1, p$ or $p^2$ and $n_p$ is either $1$ or $q$.
+    
+    Case 1: $p < q$
+    
+    If $n_q = p$ then $p \equiv 1 \pmod q$, contradicting $p < q$ as $p \neq 1$.
+    If $n_q = p^2$ then we can perform a counting argument. We have $p^2$ Sylow-$q$ groups and they are trivially intersecting as they have prime order. Hence we get $p^2 (q - 1)$ elements of order $q$. As $n_p \geq 1$, the remaining $p^2$ elements must form a Sylow-$p$ group, hence $n_p = 1$, and so there is a normal Sylow-$p$ group.
+
+    Otherwise $n_q = 1$ and so there exists a normal Sylow-$q$ group in that case.
+
+    Case 2: $p > q$
+    
+    If $n_p = q$, then we have a contradiction to $n_p \equiv 1 \pmod p$ as $q < p$ and $q \neq 1$. Hence $n_p = 1$ and there exists a normal Sylow-$p$ group. 
+\end{proof}
+
+\begin{lemma}[With Gemini]\label{$K$ cyclic $p$-group then equal images define isomorphic semi-direct products}
+    If $K$ is a cyclic $p$-group, two homomorphisms $f, g : K \rightarrow \text{Aut}(H)$ define isomorphic semi-direct products $H \rtimes K$ if they have the same image.
+\end{lemma}
+\begin{proof}
+    It suffices to find an automorphism $\beta \in \text{Aut}(H)$ such that $g = f \circ \beta$. Let $k$ be a generator of $K$. We have that $\text{Im}(f) = \langle f(k) \rangle$ and $\text{Im}(g) = \langle g(k) \rangle$. As the images are equal, we get that $g(k) \in \langle f(k) \rangle$ and so there exists $n$ such that $g(k) = f(k)^n$ where $\gcd(n, |\text{Im}(f)|) = 1$. By the first isomorphism theorem, $\text{Im}(f) \cong K / \ker(f)$, hence $\text{Im}(f)$ has order $p^j$ for $0 \leq j \leq m$. 
+    
+    If $j = 0$ then we get that the image of $f, g$ is the trivial group, hence both of them lead to direct products which are clearly isomorphic. 
+    
+    Otherwise $j > 0$ and we get that $\gcd(n, p^j) = 1$ so $p \nmid n$. Hence $\gcd(n, |K|) = 1$. So we can define the automorphism $\beta : K \rightarrow K$ as $\beta(x) = x^n$. It is well defined as $(xy)^n = x^n y^n$ follows from the fact that $K$ is abelian. It is injective because $x^n = 1$ implies $x = 1$ as the order of $x$ would have to divide $n$ and $|K|$ (by Lagrange's theorem) but their gcd is $1$. Surjectivity then follows from the fact that it is injective and that it is a map from a finite group to itself.
+
+    We have $g = f \circ \beta$ as they agree on a generator since $f(\beta(k)) = f(k^n) = f(k)^n = g(k)$.
+\end{proof}
+
+\begin{theorem}[With Gemini and Numina Fuse]\label{Classification of semi-direct products between Cyclic p-group and q-groups}
+    Semi-direct products $C_{q^n} \rtimes C_{p^m}$ ($q$ odd prime, $p \neq q$) are classified up to isomorphism by $r \in \{0, …, \min(m, d)\}$ where $d = v_p(q - 1)$, giving $\min(m, d) + 1$ classes. Every action $f$ belongs to exactly one class.
+\end{theorem}
+\begin{proof}
+    The fact that every action belongs to at least one class is a lot easier than showing that it belongs to exactly one class.
+
+    We know that the semi direct product must have a homomorphism $f : C_{p^m} \rightarrow \text{Aut}(C_{q^n})$. We have $\text{Aut}(C_{q^n}) \cong C_{q^{n-1}(q - 1)}$. Thus, the image of $f$ (by first isomorphism theorem) can have order $p^r$ for some $0 \leq r \leq \min(v_p(q-1), m)$. Then we are done by the fact that a cyclic group has a unique subgroup given an order and that equal images imply isomorphic semi direct products (as $C_{p^m}$ is a cyclic $p$-group). For each $0 \leq r \leq \min(v_p(q-1), m)$ there does exist a homomorphism with image of order $p^r$. This can be constructed by sending the generator of $C_{p^m}$ to the element of $C_{q^{n-1}(q-1)}$ of order $p^r$.
+
+    To show uniqueness, we will compute the orders of the centres given $r$.
+
+    Claim 1: $Z(G) = \text{Fix}(\text{Im}(f)) \times \text{Ker}(f)$
+
+    Proof: Group operation is defined as $(x_1, y_1)(x_2, y_2) = (x_1 \cdot f(y_1)(x_2), y_1y_2)$. Thus $(x, y) \in Z(G) \iff$ for arbitrary $(x', y') \in G$ we have: $(x, y)(x', y') = (x', y')(x, y)$ or $(x \cdot f(y)(x'), yy') = (x' \cdot f(y')(x), y'y)$. As $C_{p^m}$ is abelian, we always have $yy' = y'y$. Thus $(x, y) \in Z(G) \iff x \cdot f(y)(x') = x' \cdot f(y')(x) \forall x' \in C_{q^n}, y' \in C_{p^m}$. 
+    
+    Setting $y' = 1$ we get $x \cdot f(y)(x') = x' \cdot x \implies f(y)(x') = x'$ (as $C_{q^n}$ is abelian) which shows that $y \in \text{Ker}(f)$ as $x'$ is arbitrary.
+
+    Setting $x' = 1$ we get $x = f(y')(x)$ (using $y \in \text{Ker}(f)$). Hence $x \in \text{Fix}(\text{Im}(f))$ as $y'$ is arbitrary.
+
+    These conditions are necessary and sufficient as one can show that $(x, y)(x', y') = (x \cdot x', y \cdot y') = (x' \cdot x, y' \cdot y) = (x', y') (x, y)$. $\blacksquare$
+
+    If $r = 0$, the action is trivial, $\text{Im}(f) = \{\text{id}\}$ so every point gets fixed $\text{Fix}(\text{Im}(f)) = C_{q^n}$. Also $\text{Ker}(f) = C_{p^m}$ so $|Z(G)| = p^m q^n$.
+
+    If $r > 0$, we have $|\text{Im}(f)| = p^r$. By the first Isomorphism theorem, $|\text{Ker}(f)| = \frac{|C_{p^m}|}{|\text{Im}(f)|} = p^{m - r}$.
+
+    Claim 2: If $r > 0$, $|\text{Fix}(\text{Im}(f))| = 1$
+
+    Proof: A well known lemma (\mintinline{lean4}{IsPGroup.smul_mul_inv_trivial_or_surjective} in Mathlib) states that if a group $K$ acts on a cyclic $q$-group $G$ of coprime order, the map $\Psi : K \times G \to G$ defined by $(k, g) \mapsto k \bullet g \cdot g^{-1}$ is either trivial ($\Psi(k, g) = 1 \forall k, g \in K \times G$) or surjective. 
+    
+    In our case, it is not surjective as that would mean $f$ has a trivial image but the image has order $p^r$ with $r > 0$. Hence $\Psi$ must be surjective. 
+    
+    Let $x \in C_{q^n}$ be an arbitrary fixed point of the action. It suffices to show that $x = 1$. Using surjectivity of $\Psi$, there exists $k_0 \in C_{p^m}$ and $q_0 \in C_{q^n}$ satisfty $\Psi(k_0, q_0) = x \implies k_0 \bullet q_0 = x \cdot q_0$. 
+    
+    One can inductively show that $k_0^s \bullet (k_0 \bullet q_0) = x^s \cdot (k_0 \bullet q_0)$ for any $s \geq 0$ (Sketch: $k_0 \bullet (k_0 \bullet q_0) = k_0 \bullet (x \cdot q_0) = (k_0 \bullet x) \cdot (k_0 \bullet q_0) = x \cdot (k_0 \bullet q_0)$). 
+    
+    Substituting $s = p^m$ gives $k_0 \bullet q_0 = x^{p^m} \cdot (k_0 \bullet q_0)$ as $k_0$ has order $p^m$ because $k_0 \in C_{p^m}$. Hence $x^{p^m} = 1$. But $x \in C_{q^n}$ hence $x = 1$ as $p \neq q$. $\blacksquare$
+
+    Hence $|Z(G)| = p^{m - r}$.
+
+    Clearly the order of all centres are distinct, which shows uniqueness.
+\end{proof}
+
+Let $s_m(p)$ represent the number of conjugacy classes of matrices in $GL_2(p)$ of order $m$.
+
+\begin{lemma}[Numina Fuse]
+    $s_2(p) = 2$ if $p$ is an odd prime.
+\end{lemma}
+\begin{proof}
+    We give both a short and elegant proof and a bashy one (by Numina Fuse) that is much simpler to formalise.
+
+    Let $A \in GL_2(p)$ be of order $2$. Then its minimal polynomial divides $x^2 - 1$, hence it is a product of distinct linear factors ($1 \neq -1$ as $p$ is odd) and so is diagonalisable. The only matrix similar to identity is itself (and it doesn't have order $2$). Hence, $A$ must be similar to one of $\text{diag}(-1, -1)$, $\text{diag}(-1, 1)$ ($\text{diag}(1, -1)$ is similar to $\text{diag}(-1, 1)$) giving two similarity or conjugacy classes.
+
+    The proof we used for formalisation is different and was generated  by Numina Fuse:
+    [VERIFY]
+    
+    Assume $A = \begin{pmatrix} a & b \\ c & d \end{pmatrix}$ satisfies $A^2 = I$ and $A \neq I$. If $A = -I$, we are done. Otherwise, assume $A \neq \pm I$. $A^2 = I$ implies: $a^2 + bc = 1$, $c(a + d) = 0$, $b(a + d) = 0$ and $bc + d^2 = 1$. 
+
+    If $c \neq 0$, the equation $c(a + d) = 0$ forces $d = -a$. The matrix $P = \begin{pmatrix} a+1 & a-1 \\ c & c \end{pmatrix}$ satisfies $P^{-1}AP = \text{diag}(1, -1)$.
+
+    If $c = 0$, the equations reduce to $a^2 = 1$ and $d^2 = 1$, so $a, d \in \{1, -1\}$. Since $A \neq I$ and $A \neq -I$, we must have $a \neq d$. This leaves two possible upper triangular matrices: $\begin{pmatrix} 1 & b \\ 0 & -1 \end{pmatrix}$ and $\begin{pmatrix} -1 & b \\ 0 & 1 \end{pmatrix}$. Both are conjugate to $\text{diag}(1, -1)$.
+\end{proof}
+
+\begin{lemma}
+    $s_q(p) = \frac{q+3}{2} \Delta^q_{p-1} + \Delta^q_{p+1}$ if $q$ is an odd prime and $p \neq q$.
+\end{lemma}
+\begin{proof}
+    TODO
+\end{proof}
+
+\begin{lemma}
+    Any two non-trivial semi-direct products $C_q \rtimes (C_p \times C_p)$ arising from homomorphisms with images of order $p$ are isomorphic.
+\end{lemma}
+\begin{proof}
+    Let $f, g : C_p \times C_p \rightarrow C_{q-1}$ be the underlying homomorphisms. It suffices to find an automorphism $\beta \in \text{Aut}(H)$ such that $g = f \circ \beta$. 
+\end{proof}
+
+\subsubsection{Counting arguments in Lean}
+
+It is non-trivial to perform counting arguments in lean. We divide it into the following lemmas:
+
+\begin{leancode}
+/-- Two distinct Sylow p-subgroups, each of prime order p, intersect trivially. -/
+lemma sylow_prime_order_disjoint {p : ℕ} [hp : Fact p.Prime]
+    {G : Type*} [Group G] [Finite G]
+    (h_sylow_card : ∀ P : Sylow p G, Nat.card ↥(P : Subgroup G) = p)
+    {P₁ P₂ : Sylow p G} (hne : P₁ ≠ P₂) :
+    Disjoint (P₁ : Subgroup G) P₂
+\end{leancode}
+
+\begin{leancode}
+/-- The union of all Sylow p-subgroups, when each has prime order p, has
+    cardinality 1 + n_p * (p - 1) where n_p = Nat.card (Sylow p G). -/
+lemma sylow_prime_union_card {p : ℕ} [hp : Fact p.Prime]
+    {G : Type*} [Group G] [Finite G]
+    (h_sylow_card : ∀ P : Sylow p G, Nat.card ↥(P : Subgroup G) = p) :
+    Nat.card (⋃ P : Sylow p G, (P : Subgroup G) : Set G) =
+      1 + Nat.card (Sylow p G) * (p - 1)
+\end{leancode}
+
+We use these to show that $G \backslash U$ has size $p^2 - 1$, where $U$ is the union of all Sylow-$q$ subgroups. Every Sylow-$p$ subgroup has $p^2 - 1$ non-identity elements, all outside $U$. By size, each Sylow-$p$ subgroup's non-identity elements equal $G \backslash U$ exactly $\implies$ all Sylow-$p$ subgroups are equal $\implies n_p = 1$.
+
+This infrastructure would come in handy for proving that any group of order $30$ has a normal Sylow-$5$ subgroup.
+
+\subsubsection{The main proof}
+
+We know that there exists either a normal Sylow-$p$ group or a normal Sylow-$q$ group by \ref{Groups of order $p^2 q$ have normal Sylow subgroup}.
+
+\paragraph{Case 1:} There exists a normal Sylow $p$-group
+
+Let $N$ be the normal Sylow $p$-group. Then $|N| = p^2$ and by Schur-zassenhaus theorem there exists a complementary subgroup $U$ of $G$ with $|U| = q$ such that $G \cong N \rtimes U$. We have $U \cong C_q$ and either $N \cong C_{p^2}$ or $N \cong C_p \times C_p$ (by classification of groups of order $p^2$, TODO - link result).
+
+If $N \cong C_{p^2}$, then we have $\text{Aut}(N) = C_{p(p-1)}$. Let $\phi : C_q \rightarrow C_{p(p-1)}$ be the homomorphism defining the semi direct product. In the case that $p$ is odd, we can apply \ref{Classification of semi-direct products between Cyclic p-group and q-groups} to get $C_{p^2 q}$ and if $q \mid p - 1$ then $C_{p^2} \rtimes C_q$. If $p = 2$, then $\phi : C_q \rightarrow C_2$. So only the trivial homomorphism is possible as $q \nmid 2$, giving us $G \cong C_{4q}$.
+
+If $N \cong C_p \times C_p$, then we have $\text{Aut}(N) = GL_2(p)$. TODO
+
+\paragraph{Case 2:} There exists a normal Sylow $q$-group
+
+Let $N$ be the normal Sylow $p$-group. Then $|N| = q$ and by Schur-zassenhaus theorem there exists a complementary subgroup $U$ of $G$ with $|U| = p^2$ such that $G \cong N \rtimes U$. We have $N \cong C_q$ and either $U \cong C_{p^2}$ or $U \cong C_p \times C_p$ (by classification of groups of order $p^2$, TODO - link result)
+
+If $N \cong C_{p^2}$, then again by \ref{Classification of semi-direct products between Cyclic p-group and q-groups} we get these possible groups:
+\begin{itemize}
+    \item $C_{p^2q}$ always
+    \item $C_q \rtimes_1 C_{p^2}$ if $v_p(q - 1) \geq 1$ or $p 
+    \mid q - 1$ (Image of action is of order $p$)
+    \item $C_q \rtimes_2 C_{p^2}$ if $v_p(q - 1) \geq 2$ or $p^2 \mid q - 1$ (Image of action is of order $p^2$)
+\end{itemize}
+
+If $N \cong C_p \times C_p$, then by first isomorphism theorem, $\text{Im}(\phi) \cong (C_p \times C_p) / \ker(\phi)$ so order of image is either $1, p$ or $p^2$. If it is $1$, then we have the trivial homomorphism giving $G \cong C_p \times C_p \times C_{q}$. If it is $p^2$, then we must have $\ker(\phi) = 1$ but $\text{Im}(\phi) \cong C_p \times C_p$ would then be a non-cyclic subgroup of the cyclic group $C_{q-1}$, impossible. If it is $p$, then we get a unique group because TODO
+
+\subsubsection{Reusability and Ease of use of Lemmas}
+
+One of our results regarding cyclic groups was stated in terms of \mintinline{lean4}{CyclicGroup}s. This was fine until we faced a compatibility issue due to the following theorem:
+
+\begin{leancode}
+    theorem classify_Cqn_rtimes_Cpm
+    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime] ...
+    (f : CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n))) :
+    ∃! r : ... , Nonempty (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m)) f ≃*
+               SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+                 (canonicalAction ...)))
+\end{leancode}
+
+The problem is, \mintinline{lean4}{CyclicGroup q ^ 1} is not definitionally equivalent to \mintinline{lean4}{CyclicGroup q}. The only way to bridge them is an isomorphism which happened to overcomplicate the classification proof. The solution was to create a wrapper that uses \mintinline{lean4}{IsCyclic} and \mintinline{lean4}{Nat.card} to express the same thing but improves reusability a lot as it decouples the code with our own cyclic group implementation. Moreover, now the theorem can be applied to \mintinline{lean4}{CyclicGroup q ^ 1} easily as the $q^1 = q$ calculation happens in \mintinline{lean4}{Nat.card} which is not a problem.
+
+\begin{leancode}
+    theorem classify_sdp
+    {N K : Type*} [Group N] [Group K] [IsCyclic N] [IsCyclic K]
+    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime] ...
+    (hN : Nat.card N = q ^ n) (hK : Nat.card K = p ^ m)
+    (φ : K →* MulAut N) :
+    ∃! r : ...,
+      Nonempty (SemidirectProduct N K φ ≃*
+               SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
+                 (canonicalAction ...)))
+\end{leancode}
+
+The final isomorphism still uses our cyclic group and in theory, we could remove that as well but we didn't think it was worth it because you would need to supply the cyclic group and prove its cyclic each time.
+
+\subsection{Order $16$}
+\label{Order $16$}
+
+For classifying groups of order $16$, we incorporated the mathematical tooling set out by Marcel Wild \cite{wild_groups_2005}, which is specifically designed to rely solely on elementary group theory facts, and operates by considering the possible cyclic extensions to obtain a group of order 16.
+Although such a constructive method may be more verbose, we found that LLM incorporated tools are well suited for generating the required definitions, and can lift most of the burden in the task.
+
+\subsubsection{Overview of Wild's proof}
+
+Here we give an overview of the part of Wild's work which is relevant to our goal, all of which are formalised as a part of our project. Their proofs are temporarily dismissed until we discuss about our implementation in Lean later.
+
+An important machinery Wild defined is the \textit{extension type}.
+
+\begin{definition}[Wild]
+    A quadruple $(N,\ n,\ \tau,\ v)$ is an \textit{extension type} if for group $N$, $v \in N$, $n \in \mathbb{N}^+$,  $\tau \in \text{Aut}(N)$, $\tau (v) = v$ and $\tau^n = t_v$ (conjugate by $v$).
+\end{definition}
+
+\begin{definition}
+    Although not explicitly defined in the text, a group $G$ is said to realise an extension type $(N,\ n,\ \tau,\ v)$ if:
+    \begin{itemize}
+        \item $N \lhd G$;
+        \item There is an inducing element, $a \in G$, such that
+        \item $\tau$ is exactly conjugating by $a$ for elements in $N$;
+        \item $a^n = v$ (or, equivalently, the coset $Na$ has order $n$ in the quotient group $G/N$);
+        \item The quotient group $G/N$ is isomorphic to a cyclic group of order $n$.
+    \end{itemize}
+\end{definition}
+
+Intuitively, a group realising an extension type means that the group can be constructed from $N$ by layering a cyclic group of order $n$, the two layers interact as directed by $\tau$ and coincides at $v$.
+
+In our project, we refer to $\tau$ by \textit{act} and $v$ by \textit{glue}.
+
+\begin{definition}[Wild]
+    Two extension types, $(N,\ n,\ \tau,\ v)$ and $(N',\ n,\ \sigma,\ w)$ are said to be equivalent if there exists isomorphism $\phi : N \isom N'$ such that $\sigma = \phi \circ \tau \circ \phi^{-1}$ and $w = \phi(v)$.
+\end{definition}
+
+This is an equivalence relation, and its importance is signified by the following lemma.
+
+\begin{lemma}[Wild]
+    Groups $G$ and $G'$ that realise equivalent extension types must be isomorphic.
+\end{lemma}
+
+Therefore, by classifying the possible classes of equivalent extension types we can effectively classify the isomorphism classes.
+
+In order to employ this tactic for groups of order 16, further lemmas are established.
+
+\begin{lemma}[Wild]
+    Take a group $N$.
+    For some automorphic elements $v$ and $w$ in $N$ (i.e. there exists an automorphism which maps $v$ to $w$), and a fixed union of conjugacy classes from $\text{Aut}(N)$, $S$.
+    Suppose for $\tau$ ranging over $S$ there is a group $G_\tau$ (and respectively $F_\tau$) which realises the extension type $(N,\ n,\ \tau,\ v)$ (and respectively $(N,\ n,\ \tau,\ w)$) for some $n \in \mathbb{N}$.
+    Then the families $\{G_\tau | \tau \in S\}$ and $\{F_\tau | \tau \in S\}$ comprise the same isomorphism classes.
+\end{lemma}
+
+\begin{lemma}[Wild]
+    Take a group $N$.
+    For some characteristic element $v$ in $N$ (i.e. for any automorphism of $N$, $v$ is a fixed point).
+    For any two groups $G$ and $G'$ such that they realise some extension types $(N,\ n,\ \tau,\ v)$ and $(N,\ n,\ \sigma,\ v)$ (respectively), if $\sigma$ and $\tau$ belongs to the same conjugacy class in $\text{Aut}(N)$, then $G$ and $G'$ are isomorphic.
+\end{lemma}
+
+The above lemmas significantly reduce the choices of equivalent extension type classes for a given base group $N$. This enables the possibility to perform an exhaustive classification across all equivalence classes. However, to apply to groups of order 16, a further lemma is needed to restrict the choice of possible $N$'s.
+
+\begin{lemma}[Wild]
+    If $G$ is a group of order $16$ that is not isomorphic to $C_2 \times C_2 \times C_2 \times C_2$, then either $C_8 \lhd G$ or $C_4 \times C_2 \lhd G$.
+\end{lemma}
+
+Using the above lemmas, it is now possible to do a by case analysis to realise the possible equivalence classes, the main result is stated below.
+
+\begin{lemma}[Wild]
+    Lemma 3
+\end{lemma}
+
+\subsection{Order $24$}
+\label{Order $24$}
+
+\subsection{Order $30$}
+\label{Order $30$}
+
+We follow the general structure of the proof given in the course handout by Deopurkar \cite{deopurkar_modern_2013}. We have generalised some lemmas used in the proof to increase its usefulness.
+
+\begin{theorem}\label{Groups of order $pqr$ have either a normal Sylow-$r$ group or normal Sylow-$q$ group}
+    A group $G$ of order $pqr$ for distinct primes $p < q < r$ must have either a normal Sylow-$r$ group or normal Sylow-$q$ group.
+\end{theorem}
+\begin{proof}
+    By Sylow's theorems, we get $n_r \equiv 1 \pmod r$ and $n_r \mid pq$. If $n_r = 1$  we are done. $n_r = p$ or $q$ cannot hold because $p, q < r$ and $n_r \equiv 1 \pmod r$. Thus $n_r = pq$, and there are $pq(r-1)$ elements of order $r$. We have $n_q \mid pr, n_q \equiv 1 \pmod q$. Thus if $n_q > 1$, then $n_q \geq q + 1 > p + 1$. Hence, there are atleast $(p+1)(q-1) = pq + q - p - 1 \geq pq$ elements of order $q$, a contradiction as we already have $pqr$ elements but the identity has order $1$. Hence, $n_q = 1$ and we are done.
+\end{proof}
+
+To show the next theorem, we use the following well known results:
+\begin{lemma}\label{Product of subgroups is subgroup if one is normal}
+    Let $N$ and $H$ be subgroups of $G$ with $N \lhd G$. Then $NH$ is a subgroup of $G$.
+\end{lemma}
+\begin{lemma}\label{Order of product of subgroups}
+    For subgroups $H, K$ of $G$, we must have $|HK| = \frac{|H||K|}{|H \cap K|}$
+\end{lemma}
+\begin{lemma}\label{Subgroup of index smallest prime is normal}
+    Let $G$ be a finite group and $p$ be the smallest prime dividing $|G|$. Then any subgroup of $G$ of index $p$ is normal.
+\end{lemma}
+
+\begin{theorem}\label{Group of order $pqr$ has a normal subgroup of order $qr$}
+    A group $G$ of order $pqr$ for distinct primes $p < q < r$ has a normal subgroup of order $qr$
+\end{theorem}
+\begin{proof}
+    By \ref{Groups of order $pqr$ have either a normal Sylow-$r$ group or normal Sylow-$q$ group}, we either have a normal Sylow-$r$ group or normal Sylow-$q$ group. If we have a normal Sylow-$r$ group $N$, then $NH$ is a subgroup (by \ref{Product of subgroups is subgroup if one is normal}) of $G$ of order $qr$ (by \ref{Order of product of subgroups} and the fact that groups of prime order are trivially intersecting) where $H$ is any Sylow-$q$ group. Then $NH \lhd G$ follows from \ref{Subgroup of index smallest prime is normal}. An analogous argument holds for the case when there is a normal Sylow-$q$ group.
+\end{proof}
+
+We are now ready to present the main proof (adapted from the course handout by Deopurkar \cite{deopurkar_modern_2013}).
+
+Let $G$ be a group of order $30$. Let $N \lhd G$ be of order $15$, which exists by \ref{Group of order $pqr$ has a normal subgroup of order $qr$}.
+By Schur-zassenhaus theorem there exists a complementary subgroup $U$ of $G$ with $|U| = 2$ such that $G \cong N \rtimes U$. We have $U \cong C_2$ and by the classification of groups of order $pq$ we have $N \cong C_{15}$. 
+
+The underlying homomorphism of the semi-direct product is $\phi : C_2 \rightarrow \text{Aut}(C_{15})$. The image of the homomorphism must have order $1$ or $2$. If the image order is $1$, then $G \cong C_{15} \times C_2 \cong C_{30}$. 
+
+Now suppose image has order $2$. By \ref{$K$ cyclic $p$-group then equal images define isomorphic semi-direct products}, the group $G$ is isomorphic to the semi-direct product defined by $\phi$ whose image is generated by a particular element of order $2$ of $\text{Aut}(C_{15})$. Now $\text{Aut}(C_{15}) \cong (\mathbb{Z}/15\mathbb{Z})^\times$ has exactly $3$ elements of order $2$ (namely $4, 11, 14$), which gives us $3$ non-trivial semi-direct products, giving us a total of $4$ groups. A nice presentation of the groups is: $C_{30}, D_{15}, C_5 \times D_3, C_3 \times D_5$.
+
+\section{Uniqueness}
+
+\section{AI}
+We used AI to write Lean code.
+We used a few different AI: Claude, Claude code, Gemini, Aristotle, Numina Fuse.
+
+\section{Why we cannot do 32}
+The invariant strategy we are using for uniqueness breaks.
+
+% Kevin: the great thing about Lean is that you only have to read the statements
+% so you can get an AI to do the proofs and not read these
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Acknowledgements
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Acknowledgments}
+\addcontentsline{toc}{section}{Acknowledgement}
+Katerina Hristova
+
+Xena Club
+
+Bhavik Mehta
+
+Edison Xie
+
+London Learning Lean
+
+Neil Bhat
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Appendices
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix
+
+\section{First appendix}
+\label{sec:appendix1}
+
+\section{Second appendix}
+\label{sec:appendix2}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliography{bibliography.bib}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

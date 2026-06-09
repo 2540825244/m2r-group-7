@@ -72,3 +72,25 @@ lemma gcd_four_of_prime_three_mod_four {q : ℕ} [Fact q.Prime]
   · rfl
   · exact absurd h_gcd_dvd_4 (by decide)
   · exact absurd h_gcd_dvd_qm1 h_not_4_dvd
+
+/-- For distinct primes p < q < r, the smallest prime factor of p * q * r is p. -/
+lemma minFac_mul_of_prime_triple {p q r : ℕ}
+    [h_p : Fact p.Prime] [h_q : Fact q.Prime] [h_r : Fact r.Prime]
+    (hpq : p < q) (hqr : q < r) : Nat.minFac (p * q * r) = p := by
+  have hf_prime : (p * q * r).minFac.Prime := Nat.minFac_prime (by
+    have : 1 < p * q * r :=
+      calc 1 < p := h_p.out.one_lt
+           _ ≤ p * (q * r) := Nat.le_mul_of_pos_right _ (Nat.mul_pos h_q.out.pos h_r.out.pos)
+           _ = p * q * r := by ring
+    omega)
+  have hf_le_p : (p * q * r).minFac ≤ p :=
+    Nat.minFac_le_of_dvd h_p.out.two_le (dvd_mul_of_dvd_left (dvd_mul_right p q) r)
+  have hf_dvd_p : (p * q * r).minFac ∣ p := by
+    have hf1 := hf_prime.one_lt
+    rcases hf_prime.dvd_mul.mp (Nat.minFac_dvd (p * q * r)) with h | hr'
+    · rcases hf_prime.dvd_mul.mp h with hp' | hq'
+      · exact hp'
+      · rcases h_q.out.eq_one_or_self_of_dvd _ hq' with h1 | h2 <;> omega
+    · rcases h_r.out.eq_one_or_self_of_dvd _ hr' with h1 | h2 <;> omega
+  exact le_antisymm hf_le_p
+    ((h_p.out.eq_one_or_self_of_dvd _ hf_dvd_p).resolve_left hf_prime.one_lt.ne' |>.symm.le)
