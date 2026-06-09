@@ -278,8 +278,8 @@ theorem uniqueness (n i n' i' : Nat)
         (numElementsOfOrderInv 14)
     · -- n = 29
       by_single_group
-    · -- n = 30
-      by_single_group
+    · -- n = 30: distinguished by number of elements of order 2
+      by_invariant i i' (numElementsOfOrderInv 2)
     · -- n = 31
       by_single_group
   · -- n ≠ n'

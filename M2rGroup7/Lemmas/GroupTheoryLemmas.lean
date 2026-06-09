@@ -30,6 +30,7 @@ import Mathlib.Algebra.Module.ZMod
 import Mathlib.LinearAlgebra.GeneralLinearGroup.Basic
 import Mathlib.LinearAlgebra.Pi
 import Mathlib.GroupTheory.Sylow
+import «M2rGroup7».Lemmas.SylowUtils
 
 /-- A group homomorphism out of a cyclic group is fully determined by
     its value on a generator. -/
@@ -197,3 +198,96 @@ theorem prime_classification_of_group [hn : Fact n.Prime] [Group G] (h : Nat.car
   refine (mulEquivOfCyclicCardEq ?_)
   have h_c_card: Nat.card (CyclicGroup n) = n := card_cyclicGroup n
   rw [h_g_card, h_c_card]
+
+open scoped Pointwise in
+theorem pqr_group_has_normal_subgroup_card_qr {p : ℕ} {q : ℕ} {r : ℕ}
+    [Group G] [h_p_prime : Fact p.Prime] [h_q_prime : Fact q.Prime] [h_r_prime : Fact r.Prime]
+    (h_p_le_q : p < q) (h_q_le_r : q < r) (h : Nat.card G = p * q * r)
+    : ∃ H : Subgroup G, Nat.card H = q * r ∧ H.Normal := by
+  haveI hfin : Finite G := Nat.finite_of_card_ne_zero (h ▸
+    Nat.mul_ne_zero (Nat.mul_ne_zero h_p_prime.out.ne_zero h_q_prime.out.ne_zero)
+      h_r_prime.out.ne_zero)
+  have h_p_ne_q : p ≠ q := Nat.ne_of_lt h_p_le_q
+  have h_q_ne_r : q ≠ r := Nat.ne_of_lt h_q_le_r
+  have h_p_ne_r : p ≠ r := Nat.ne_of_lt (Nat.lt_trans h_p_le_q h_q_le_r)
+  -- Cards of Sylow subgroups via Sylow.card_eq_multiplicity + factorization
+  have hQ_card : ∀ Q : Sylow q G, Nat.card (Q : Subgroup G) = q := fun Q => by
+    rw [Sylow.card_eq_multiplicity, h,
+        Nat.factorization_mul (Nat.mul_ne_zero h_p_prime.out.ne_zero h_q_prime.out.ne_zero)
+                               h_r_prime.out.ne_zero,
+        Nat.factorization_mul h_p_prime.out.ne_zero h_q_prime.out.ne_zero,
+        h_p_prime.out.factorization, h_q_prime.out.factorization, h_r_prime.out.factorization]
+    simp [Finsupp.add_apply, h_p_ne_q, Ne.symm h_q_ne_r]
+  have hR_card : ∀ R : Sylow r G, Nat.card (R : Subgroup G) = r := fun R => by
+    rw [Sylow.card_eq_multiplicity, h,
+        Nat.factorization_mul (Nat.mul_ne_zero h_p_prime.out.ne_zero h_q_prime.out.ne_zero)
+                               h_r_prime.out.ne_zero,
+        Nat.factorization_mul h_p_prime.out.ne_zero h_q_prime.out.ne_zero,
+        h_p_prime.out.factorization, h_q_prime.out.factorization, h_r_prime.out.factorization]
+    simp [Finsupp.add_apply, h_q_ne_r, h_p_ne_r]
+  -- Sylow subgroups for different primes are disjoint
+  have hQR_disj : ∀ (Q : Sylow q G) (R : Sylow r G), Disjoint (Q : Subgroup G) R :=
+    fun Q R => IsPGroup.disjoint_of_ne q r h_q_ne_r _ _ Q.isPGroup' R.isPGroup'
+  -- Card of Q ⊔ R when the underlying sets multiply: uses injectivity of mult map
+  have card_sup_eq : ∀ (Q : Sylow q G) (R : Sylow r G),
+      (↑((Q : Subgroup G) ⊔ (R : Subgroup G)) : Set G)
+        = (↑(Q : Subgroup G) : Set G) * (↑(R : Subgroup G) : Set G) →
+      Nat.card ((Q : Subgroup G) ⊔ (R : Subgroup G) : Subgroup G) = q * r := fun Q R hmul => by
+    let f : ↥(Q : Subgroup G) × ↥(R : Subgroup G) →
+        ↥((Q : Subgroup G) ⊔ (R : Subgroup G)) := fun ⟨a, b⟩ =>
+      ⟨(a : G) * b, by
+        have : (a : G) * (b : G) ∈ (↑(Q : Subgroup G) : Set G) * (↑(R : Subgroup G) : Set G) :=
+          Set.mul_mem_mul a.2 b.2
+        rwa [← hmul] at this⟩
+    have hbij : Function.Bijective f := by
+      constructor
+      · intro ⟨a, b⟩ ⟨c, d⟩ heq
+        exact Subgroup.mul_injective_of_disjoint (hQR_disj Q R) (congr_arg Subtype.val heq)
+      · intro ⟨x, hx⟩
+        have hx' : x ∈ (↑(Q : Subgroup G) : Set G) * (↑(R : Subgroup G) : Set G) := by
+          rwa [← hmul]
+        obtain ⟨a, ha, b, hb, rfl⟩ := Set.mem_mul.mp hx'
+        exact ⟨⟨⟨a, ha⟩, ⟨b, hb⟩⟩, Subtype.ext rfl⟩
+    calc Nat.card ((Q : Subgroup G) ⊔ (R : Subgroup G) : Subgroup G)
+        = Nat.card (↥(Q : Subgroup G) × ↥(R : Subgroup G)) :=
+          (Nat.card_congr (Equiv.ofBijective f hbij)).symm
+      _ = Nat.card (Q : Subgroup G) * Nat.card (R : Subgroup G) := Nat.card_prod _ _
+      _ = q * r := by rw [hQ_card Q, hR_card R]
+  -- Index of Q ⊔ R when its card is q * r
+  have index_eq_minfac : ∀ (Q : Sylow q G) (R : Sylow r G),
+      Nat.card (Q ⊔ R : Subgroup G) = q * r →
+      (Q ⊔ R : Subgroup G).index = (Nat.card G).minFac := fun Q R h_card_qr => by
+    have h1 : (Q ⊔ R : Subgroup G).index * (q * r) = p * q * r := by
+      have := Subgroup.index_mul_card (Q ⊔ R : Subgroup G)
+      rw [h_card_qr, h] at this; exact this
+    have h_idx : (Q ⊔ R : Subgroup G).index = p :=
+      Nat.eq_of_mul_eq_mul_right
+        (Nat.mul_pos h_q_prime.out.pos h_r_prime.out.pos)
+        (h1.trans (by ring))
+    rw [h_idx, h]
+    exact (minFac_mul_of_prime_triple h_p_le_q h_q_le_r).symm
+  -- Key: one of Sylow q or Sylow r is unique (hence normal)
+  rcases pqr_group_has_normal_sylow_qr_subgroup (G := G) h_p_le_q h_q_le_r h with
+    hq_unique | hr_unique
+  · -- Case: Sylow q-subgroup is unique → normal
+    haveI hq_ss : Subsingleton (Sylow q G) := (Nat.card_eq_one_iff_unique.mp hq_unique).1
+    obtain ⟨Q⟩ : Nonempty (Sylow q G) := (Nat.card_eq_one_iff_unique.mp hq_unique).2
+    obtain ⟨R⟩ : Nonempty (Sylow r G) := inferInstance
+    haveI hQ_normal : (Q : Subgroup G).Normal := Sylow.normal_of_subsingleton Q
+    have hmul : (↑((Q : Subgroup G) ⊔ (R : Subgroup G)) : Set G)
+        = (↑(Q : Subgroup G) : Set G) * (↑(R : Subgroup G) : Set G) :=
+      Subgroup.normal_mul (Q : Subgroup G) (R : Subgroup G)
+    have h_card_qr := card_sup_eq Q R hmul
+    exact ⟨Q ⊔ R, h_card_qr,
+      Subgroup.normal_of_index_eq_minFac_card (index_eq_minfac Q R h_card_qr)⟩
+  · -- Case: Sylow r-subgroup is unique → normal
+    haveI hr_ss : Subsingleton (Sylow r G) := (Nat.card_eq_one_iff_unique.mp hr_unique).1
+    obtain ⟨R⟩ : Nonempty (Sylow r G) := (Nat.card_eq_one_iff_unique.mp hr_unique).2
+    obtain ⟨Q⟩ : Nonempty (Sylow q G) := inferInstance
+    haveI hR_normal : (R : Subgroup G).Normal := Sylow.normal_of_subsingleton R
+    have hmul : (↑((Q : Subgroup G) ⊔ (R : Subgroup G)) : Set G)
+        = (↑(Q : Subgroup G) : Set G) * (↑(R : Subgroup G) : Set G) :=
+      Subgroup.mul_normal (Q : Subgroup G) (R : Subgroup G)
+    have h_card_qr := card_sup_eq Q R hmul
+    exact ⟨Q ⊔ R, h_card_qr,
+      Subgroup.normal_of_index_eq_minFac_card (index_eq_minfac Q R h_card_qr)⟩

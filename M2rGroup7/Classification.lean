@@ -860,6 +860,14 @@ theorem order28_classification {G : Type*} [Group G] (h : Nat.card G = 28) :
     h1 | h2 | h3 | ⟨h1mod4, _⟩ | h5 | ⟨h7eq3, _⟩ <;>
   · tauto
 
+theorem order30_classification {G : Type*} [Group G] (h : Nat.card G = 30) :
+    Nonempty (G ≃* retrieve 30 1) ∨
+    Nonempty (G ≃* retrieve 30 2) ∨
+    Nonempty (G ≃* retrieve 30 3) ∨
+    Nonempty (G ≃* retrieve 30 4) := by
+  rcases classification_30 h with h1 | h2 | h3 | h4 <;>
+  · tauto
+
 /-- A group of order at most `maximumOrder` is isomorphic to some group obtained by `retrieve`. -/
 theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : Nat.card G = n) :
   ∃ i : Nat, ∃ hv : ValidIndex n i, Nonempty (MulEquiv G (retrieve n i))
@@ -996,7 +1004,11 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_prime 29 h
 
   -- n = 30
-  · sorry
+  · rcases order30_classification h with h1 | h2 | h3 | h4
+    · exact ⟨1, by decide, h1⟩
+    · exact ⟨2, by decide, h2⟩
+    · exact ⟨3, by decide, h3⟩
+    · exact ⟨4, by decide, h4⟩
 
   -- n = 31
   · classify_prime 31 h
