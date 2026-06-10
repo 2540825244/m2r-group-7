@@ -959,6 +959,23 @@ private lemma sylow2_card_one_of_ker_two {G : Type*} [Group G] (h : Nat.card G =
     Nat.card (Sylow 2 G) = 1 := by
   sorry
 
+/-- A group isomorphic to `T × H` with `|T| = 8` and `|H| = 3` has a unique Sylow
+3-subgroup: every order-3 element lies in `1 × H`. -/
+private lemma sylow3_card_one_of_iso_prod_order8 {G T H : Type*} [Group G] [Group T]
+    [Group H] (hT : Nat.card T = 8) (hH : Nat.card H = 3) (e : G ≃* T × H) :
+    Nat.card (Sylow 3 G) = 1 := by
+  sorry
+
+/-- Dispatch on the iso class of the order-8 normal subgroup in `T ⋊[φ] C` with `φ ≠ 1`:
+only `C_2³` and `Q_8` admit an order-3 automorphism, giving `C_2 × A_4` and `SL_2(𝔽_3)`
+respectively. -/
+private lemma order24_4_sdp_dispatch {G : Type*} [Group G]
+    {T C : Subgroup G} (h_T_card : Nat.card ↥T = 8) (h_C_card : Nat.card ↥C = 3)
+    {φ : ↥C →* MulAut ↥T} (h_iso : ↥T ⋊[φ] ↥C ≃* G) (h_phi_nontriv : φ ≠ 1) :
+    Nonempty (G ≃* CyclicGroup 2 × AlternatingGroup 4) ∨
+    Nonempty (G ≃* SL2 3) := by
+  sorry
+
 /-- A group of order 24 with four Sylow 3-subgroups and a normal Sylow 2-subgroup `T` is
 `T ⋊ C_3` with a non-trivial action, so `T ≃ C_2³` (giving `C_2 × A_4`) or `T ≃ Q_8`
 (giving `SL_2(𝔽_3)`) — the other order-8 groups have no order-3 automorphism. -/
@@ -966,7 +983,43 @@ private lemma order24_4_sylow3_normal_sylow2 {G : Type*} [Group G] (h : Nat.card
     (h_n3 : Nat.card (Sylow 3 G) = 4) (h_n2 : Nat.card (Sylow 2 G) = 1) :
     Nonempty (G ≃* CyclicGroup 2 × AlternatingGroup 4) ∨
     Nonempty (G ≃* SL2 3) := by
-  sorry
+  haveI : Fact (Nat.Prime 2) := ⟨by decide⟩
+  haveI : Fact (Nat.Prime 3) := ⟨by decide⟩
+  haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [h]; decide)
+  -- The unique Sylow 2-subgroup is normal in G
+  haveI : Subsingleton (Sylow 2 G) := (Nat.card_eq_one_iff_unique.mp h_n2).1
+  let T : Sylow 2 G := default
+  haveI hTnormal : (↑T : Subgroup G).Normal := Sylow.normal_of_subsingleton T
+  -- |T| = 8 and [G : T] = 3
+  have h_T_card : Nat.card ↥(T : Subgroup G) = 8 := by
+    simpa using sylow_card_eq (p := 2) (q := 3) (by decide)
+      (show Nat.card G = 2 ^ 3 * 3 ^ 1 by rw [h]; ring) T
+  have h_T_idx : (↑T : Subgroup G).index = 3 := by
+    simpa using sylow_index_eq (p := 2) (q := 3) (by decide)
+      (show Nat.card G = 2 ^ 3 * 3 ^ 1 by rw [h]; ring) T
+  -- Schur-Zassenhaus: a complement C of order 3 exists
+  obtain ⟨C, hC⟩ := Subgroup.exists_right_complement'_of_coprime
+    (N := (↑T : Subgroup G)) (by rw [h_T_card, h_T_idx]; decide)
+  have h_iso := SemidirectProduct.mulEquivSubgroup hC
+  have h_C_card : Nat.card ↥C = 3 := by
+    have := (Nat.card_congr h_iso.toEquiv).symm
+    rw [SemidirectProduct.card, h_T_card, h] at this
+    omega
+  -- Conjugation action φ : C →* MulAut T
+  let φ : ↥C →* MulAut ↥(↑T : Subgroup G) :=
+    (↑T : Subgroup G).normalizerMonoidHom.comp
+      (Subgroup.inclusion (by simp [Subgroup.normalizer_eq_top]))
+  classical
+  by_cases h_triv : φ = 1
+  · -- Trivial action would make the Sylow-3 normal, contradicting n₃ = 4
+    exfalso
+    have h_iso_one : ↥(↑T : Subgroup G) ⋊[(1 : ↥C →* MulAut ↥(↑T : Subgroup G))] ↥C ≃* G := by
+      rw [← h_triv]; exact h_iso
+    have e : G ≃* ↥(↑T : Subgroup G) × ↥C :=
+      h_iso_one.symm.trans SemidirectProduct.mulEquivProd
+    have := sylow3_card_one_of_iso_prod_order8 h_T_card h_C_card e
+    omega
+  · exact order24_4_sdp_dispatch h_T_card h_C_card h_iso h_triv
 
 /-- Order-2-kernel case: the kernel is a central involution, forcing a normal Sylow-2 `T`
 with `G ≃* T ⋊ C_3` non-trivially; `T ≃ C_2³` gives `C_2 × A_4`, `T ≃ Q_8` gives
