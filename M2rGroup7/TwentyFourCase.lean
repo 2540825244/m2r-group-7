@@ -1420,7 +1420,74 @@ private lemma two_power_order_mem_sylow2_of_central_invol {G : Type*} [Group G]
     (hz : orderOf z = 2) (hz_mem : z ∈ Subgroup.center G)
     (T : Sylow 2 G) (x : G) (hx : orderOf x ∣ 8) :
     x ∈ (T : Subgroup G) := by
-  sorry
+  haveI : Fact (Nat.Prime 2) := ⟨by decide⟩
+  haveI : Fact (Nat.Prime 3) := ⟨by decide⟩
+  haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [h]; decide)
+  haveI : Fintype G := Fintype.ofFinite G
+  haveI : DecidableEq G := Classical.decEq G
+  haveI : DecidablePred (· ∈ (T : Subgroup G)) := Classical.decPred _
+  set S3 : Finset G := ({y | orderOf y = 3} : Set G).toFinset with hS3def
+  set S6 : Finset G := ({y | orderOf y = 6} : Set G).toFinset with hS6def
+  set TF : Finset G := ((T : Subgroup G) : Set G).toFinset with hTFdef
+  have mem_S3 : ∀ y : G, y ∈ S3 ↔ orderOf y = 3 := fun y => by
+    rw [hS3def]; simp
+  have mem_S6 : ∀ y : G, y ∈ S6 ↔ orderOf y = 6 := fun y => by
+    rw [hS6def]; simp
+  have mem_TF : ∀ y : G, y ∈ TF ↔ y ∈ (T : Subgroup G) := fun y => by
+    rw [hTFdef]; simp
+  have h8 : Nat.card (T : Subgroup G) = 8 := by
+    simpa using sylow_card_eq (p := 2) (q := 3) (by decide)
+      (show Nat.card G = 2 ^ 3 * 3 ^ 1 by rw [h]; ring) T
+  -- the three cardinalities
+  have hS3_card : S3.card = 8 := by
+    have heq : S3.card = Nat.card {y : G | orderOf y = 3} := by
+      rw [hS3def, Set.toFinset_card, Nat.card_eq_fintype_card]
+    rw [heq, sylow_elements_order_p_card (sylow3_24_card h), h_n3]
+  have hTF_card : TF.card = 8 := by
+    have heq : TF.card = Nat.card (T : Subgroup G) := by
+      rw [hTFdef]; simp [Set.toFinset_card]
+    rw [heq, h8]
+  have hS6_ge : 8 ≤ S6.card := by
+    have hmaps : ∀ y ∈ S3, z * y ∈ S6 := fun y hy =>
+      (mem_S6 _).mpr (orderOf_central_invol_mul hz hz_mem ((mem_S3 _).mp hy))
+    have hinj : Set.InjOn (fun y => z * y) ↑S3 := (mul_right_injective z).injOn
+    calc 8 = S3.card := hS3_card.symm
+    _ ≤ S6.card := Finset.card_le_card_of_injOn _ hmaps hinj
+  -- pairwise disjoint
+  have hd36 : Disjoint S3 S6 := by
+    rw [Finset.disjoint_left]
+    intro y hy3 hy6
+    rw [mem_S3] at hy3
+    rw [mem_S6] at hy6
+    omega
+  have h_not36 : ∀ y : G, orderOf y ∣ 8 → y ∉ S3 ∪ S6 := by
+    intro y h_dvd h36
+    rcases Finset.mem_union.mp h36 with hy | hy
+    · rw [mem_S3] at hy; rw [hy] at h_dvd; omega
+    · rw [mem_S6] at hy; rw [hy] at h_dvd; omega
+  have hdT : Disjoint (S3 ∪ S6) TF := by
+    rw [Finset.disjoint_left]
+    intro y hy36 hyT
+    refine h_not36 y ?_ hy36
+    have := Subgroup.orderOf_dvd_natCard (T : Subgroup G) ((mem_TF _).mp hyT)
+    rwa [h8] at this
+  -- 8 + 8 + 8 = 24 pins the union to be everything
+  have hU_card : (S3 ∪ S6 ∪ TF).card = S3.card + S6.card + TF.card := by
+    rw [Finset.card_union_of_disjoint hdT, Finset.card_union_of_disjoint hd36]
+  have h_le_univ : (S3 ∪ S6 ∪ TF).card ≤ 24 := by
+    have := Finset.card_le_univ (S3 ∪ S6 ∪ TF)
+    rwa [← Nat.card_eq_fintype_card, h] at this
+  have hS6_card : S6.card = 8 := by
+    rw [hU_card, hS3_card, hTF_card] at h_le_univ
+    omega
+  have hU_univ : S3 ∪ S6 ∪ TF = Finset.univ := by
+    apply Finset.eq_univ_of_card
+    rw [hU_card, hS3_card, hS6_card, hTF_card, ← Nat.card_eq_fintype_card, h]
+  -- x has 2-power order, so it can only sit in the TF part
+  have hx_mem : x ∈ S3 ∪ S6 ∪ TF := hU_univ ▸ Finset.mem_univ x
+  rcases Finset.mem_union.mp hx_mem with hx36 | hxT
+  · exact absurd hx36 (h_not36 x hx)
+  · exact (mem_TF _).mp hxT
 
 /-- Counting core: a central involution `z` forces a unique Sylow 2-subgroup when
 `n₃ = 4`: any two Sylow 2-subgroups consist of 2-power-order elements, hence contain
