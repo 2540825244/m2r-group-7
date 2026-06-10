@@ -960,11 +960,43 @@ private lemma sylow2_card_one_of_ker_two {G : Type*} [Group G] (h : Nat.card G =
   sorry
 
 /-- A group isomorphic to `T × H` with `|T| = 8` and `|H| = 3` has a unique Sylow
-3-subgroup: every order-3 element lies in `1 × H`. -/
+3-subgroup: there are at most 3 elements of order 3 (all in `1 × H`), but four Sylow
+3-subgroups would give 8. -/
 private lemma sylow3_card_one_of_iso_prod_order8 {G T H : Type*} [Group G] [Group T]
     [Group H] (hT : Nat.card T = 8) (hH : Nat.card H = 3) (e : G ≃* T × H) :
     Nat.card (Sylow 3 G) = 1 := by
-  sorry
+  haveI : Fact (Nat.Prime 3) := ⟨by decide⟩
+  haveI : Finite T := Nat.finite_of_card_ne_zero (by rw [hT]; decide)
+  haveI : Finite H := Nat.finite_of_card_ne_zero (by rw [hH]; decide)
+  haveI : Finite G := Finite.of_equiv _ e.toEquiv.symm
+  have h24 : Nat.card G = 24 := by
+    rw [Nat.card_congr e.toEquiv, Nat.card_prod, hT, hH]
+  rcases sylow3_24 h24 with h1 | h4
+  · exact h1
+  exfalso
+  have h_count : Nat.card {x : G | orderOf x = 3} = 8 := by
+    rw [sylow_elements_order_p_card (sylow3_24_card h24), h4]
+  -- every order-3 element maps into `1 × H` under `e`
+  have h_fst : ∀ x : G, orderOf x = 3 → (e x).1 = 1 := by
+    intro x hx
+    have h_pow : (e x) ^ 3 = 1 := by
+      rw [← map_pow, ← hx, pow_orderOf_eq_one x, map_one]
+    have h_ord3 : orderOf (e x).1 ∣ 3 :=
+      orderOf_dvd_iff_pow_eq_one.mpr (congrArg Prod.fst h_pow)
+    have h_ord8 : orderOf (e x).1 ∣ 8 := hT ▸ orderOf_dvd_natCard _
+    have h_one : orderOf (e x).1 ∣ 1 := by simpa using Nat.dvd_gcd h_ord3 h_ord8
+    exact orderOf_eq_one_iff.mp (Nat.dvd_one.mp h_one)
+  -- so the order-3 elements inject into H
+  have h_le : Nat.card {x : G | orderOf x = 3} ≤ Nat.card H := by
+    have hf : Function.Injective
+        (fun x : {x : G | orderOf x = 3} => (e (x : G)).2) := by
+      intro x y hxy
+      have h_eq : e (x : G) = e (y : G) :=
+        Prod.ext (by rw [h_fst _ x.2, h_fst _ y.2]) hxy
+      exact Subtype.ext (e.injective h_eq)
+    exact Nat.card_le_card_of_injective _ hf
+  rw [h_count, hH] at h_le
+  omega
 
 /-- A hom out of `C_3` killing the generator is trivial. -/
 private lemma c3_hom_eq_one_of_gen_eq_one {M : Type*} [Group M]
