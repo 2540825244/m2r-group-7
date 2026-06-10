@@ -966,20 +966,52 @@ private lemma sylow3_card_one_of_iso_prod_order8 {G T H : Type*} [Group G] [Grou
     Nat.card (Sylow 3 G) = 1 := by
   sorry
 
+/-- A hom out of `C_3` killing the generator is trivial. -/
+private lemma c3_hom_eq_one_of_gen_eq_one {M : Type*} [Group M]
+    {ψ : CyclicGroup 3 →* M} (h : ψ (Multiplicative.ofAdd 1) = 1) : ψ = 1 := by
+  rw [cyclicHom_ext ψ (one_pow 3) h]
+  ext x
+  rw [cyclicHom_apply_eq_zpow]
+  simp
+
+/-- The cube of the generator image under a hom out of `C_3` is trivial. -/
+private lemma c3_hom_gen_cube_eq_one {M : Type*} [Group M]
+    (ψ : CyclicGroup 3 →* M) : ψ (Multiplicative.ofAdd 1) ^ 3 = 1 := by
+  rw [← map_pow]
+  exact (congrArg ψ (by decide)).trans (map_one ψ)
+
+/-- `Aut(C_8)` has no non-trivial elements of order dividing 3. -/
+private lemma mulAut_c8_eq_one_of_cube_eq_one
+    (A : MulAut (CyclicGroup 8)) (h : A ^ 3 = 1) : A = 1 := by
+  sorry
+
+/-- `Aut(C_4 × C_2)` has no non-trivial elements of order dividing 3. -/
+private lemma mulAut_c4c2_eq_one_of_cube_eq_one
+    (A : MulAut (CyclicGroup 4 × CyclicGroup 2)) (h : A ^ 3 = 1) : A = 1 := by
+  sorry
+
+/-- `Aut(D_4)` has no non-trivial elements of order dividing 3. -/
+private lemma mulAut_d4_eq_one_of_cube_eq_one
+    (A : MulAut (DihedralGroup 4)) (h : A ^ 3 = 1) : A = 1 := by
+  sorry
+
 /-- `Aut(C_8)` has order 4, so it admits no non-trivial hom from `C_3`. -/
 private lemma c3_hom_mulAut_c8_trivial
-    (ψ : CyclicGroup 3 →* MulAut (CyclicGroup 8)) : ψ = 1 := by
-  sorry
+    (ψ : CyclicGroup 3 →* MulAut (CyclicGroup 8)) : ψ = 1 :=
+  c3_hom_eq_one_of_gen_eq_one
+    (mulAut_c8_eq_one_of_cube_eq_one _ (c3_hom_gen_cube_eq_one ψ))
 
 /-- `Aut(C_4 × C_2)` has order 8, so it admits no non-trivial hom from `C_3`. -/
 private lemma c3_hom_mulAut_c4c2_trivial
-    (ψ : CyclicGroup 3 →* MulAut (CyclicGroup 4 × CyclicGroup 2)) : ψ = 1 := by
-  sorry
+    (ψ : CyclicGroup 3 →* MulAut (CyclicGroup 4 × CyclicGroup 2)) : ψ = 1 :=
+  c3_hom_eq_one_of_gen_eq_one
+    (mulAut_c4c2_eq_one_of_cube_eq_one _ (c3_hom_gen_cube_eq_one ψ))
 
 /-- `Aut(D_4)` has order 8, so it admits no non-trivial hom from `C_3`. -/
 private lemma c3_hom_mulAut_d4_trivial
-    (ψ : CyclicGroup 3 →* MulAut (DihedralGroup 4)) : ψ = 1 := by
-  sorry
+    (ψ : CyclicGroup 3 →* MulAut (DihedralGroup 4)) : ψ = 1 :=
+  c3_hom_eq_one_of_gen_eq_one
+    (mulAut_d4_eq_one_of_cube_eq_one _ (c3_hom_gen_cube_eq_one ψ))
 
 /-- Any non-trivial action `ψ` of `C_3` on `(C_2)³` gives
 `(C_2)³ ⋊[ψ] C_3 ≃* C_2 × A_4`: the fixed line of `ψ` splits off as a central `C_2`, and
