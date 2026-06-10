@@ -1173,12 +1173,48 @@ private lemma q8_sdp_c3_iso_standard
       QuaternionGroup 2 ⋊[c3OnQ8] CyclicGroup 3) := by
   sorry
 
-/-- Identification: `Q_8 ⋊[c3OnQ8] C_3 ≃* SL_2(𝔽_3)`, sending `i, j, k` to
-`!![0,-1;1,0]`, `!![1,1;1,-1]`, `!![-1,1;1,1]` and the `C_3` generator to `!![1,1;0,1]`
-(which conjugation-cycles the three matrices). -/
+/-- The embedding `Q_8 →* SL_2(𝔽_3)` sending `i, j, k` to `!![0,-1;1,0]`, `!![1,1;1,-1]`,
+`!![-1,1;1,1]`. Its image is the (unique) Sylow 2-subgroup of `SL_2(𝔽_3)`. -/
+private def q8HomSL23 : QuaternionGroup 2 →* SL2 3 where
+  toFun
+    | .a 0 => ⟨!![1, 0; 0, 1], by decide⟩
+    | .a 1 => ⟨!![0, -1; 1, 0], by decide⟩
+    | .a 2 => ⟨!![-1, 0; 0, -1], by decide⟩
+    | .a 3 => ⟨!![0, 1; -1, 0], by decide⟩
+    | .xa 0 => ⟨!![1, 1; 1, -1], by decide⟩
+    | .xa 1 => ⟨!![1, -1; -1, -1], by decide⟩
+    | .xa 2 => ⟨!![-1, -1; -1, 1], by decide⟩
+    | .xa 3 => ⟨!![-1, 1; 1, 1], by decide⟩
+  map_one' := by decide
+  map_mul' p q := by revert p q; decide
+
+/-- The hom `C_3 →* SL_2(𝔽_3)` sending the generator to the order-3 unipotent
+`!![1,1;0,1]`, whose conjugation action cycles the images of `i, j, k`. -/
+private def c3HomSL23 : CyclicGroup 3 →* SL2 3 :=
+  cyclicHom 3 ⟨!![1, 1; 0, 1], by decide⟩ (by decide)
+
+/-- Conjugating `q8HomSL23` by `c3HomSL23 g` realises the action `c3OnQ8 g`. -/
+private lemma q8HomSL23_compat (g : CyclicGroup 3) (n : QuaternionGroup 2) :
+    q8HomSL23 (c3OnQ8 g n) = c3HomSL23 g * q8HomSL23 n * (c3HomSL23 g)⁻¹ := by
+  revert g n; decide
+
+/-- Identification: `Q_8 ⋊[c3OnQ8] C_3 ≃* SL_2(𝔽_3)`. The hom is assembled by
+`SemidirectProduct.lift` from `q8HomSL23` and `c3HomSL23` (the compatibility and
+injectivity checks are decidable), and bijectivity follows since both sides have 24
+elements. -/
 private noncomputable def q8_sdp_c3OnQ8_iso_sl23 :
     QuaternionGroup 2 ⋊[c3OnQ8] CyclicGroup 3 ≃* SL2 3 := by
-  sorry
+  refine MulEquiv.ofBijective
+    (SemidirectProduct.lift q8HomSL23 c3HomSL23
+      (fun g => MonoidHom.ext fun n => q8HomSL23_compat g n))
+    ((Nat.bijective_iff_injective_and_card _).mpr ⟨?_, ?_⟩)
+  · rw [injective_iff_map_eq_one]
+    decide
+  · have h1 : Nat.card (QuaternionGroup 2) = 8 := by
+      rw [Nat.card_eq_fintype_card]; decide
+    have h2 : Nat.card (SL2 3) = 24 := by
+      rw [Nat.card_eq_fintype_card]; decide
+    rw [SemidirectProduct.card, h1, card_cyclicGroup, h2]
 
 /-- Any non-trivial action `ψ` of `C_3` on `Q_8` gives `Q_8 ⋊[ψ] C_3 ≃* SL_2(𝔽_3)`. -/
 private lemma q8_sdp_c3_nontrivial
