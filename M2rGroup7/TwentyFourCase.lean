@@ -1000,10 +1000,55 @@ private lemma mulAut_c8_eq_one_of_cube_eq_one
   rw [hpt]
   exact key a h1 x
 
+/-- Every element of `C_4 × C_2` is killed by the 4th power. -/
+private lemma c4c2_exp4 (b : CyclicGroup 4 × CyclicGroup 2) : b ^ 4 = 1 := by
+  revert b; decide
+
+/-- The endomorphism of `C_4 × C_2` sending the generators `(a, 1) ↦ u` and `(1, b) ↦ v`
+(the codomain is abelian, so the pointwise product of the two factor homs is a hom). -/
+private def c4c2CompHom (u v : CyclicGroup 4 × CyclicGroup 2) (hv : v ^ 2 = 1) :
+    (CyclicGroup 4 × CyclicGroup 2) →* (CyclicGroup 4 × CyclicGroup 2) :=
+  ((cyclicHom 4 u (c4c2_exp4 u)).comp (MonoidHom.fst (CyclicGroup 4) (CyclicGroup 2))) *
+    ((cyclicHom 2 v hv).comp (MonoidHom.snd (CyclicGroup 4) (CyclicGroup 2)))
+
+private lemma c4c2CompHom_gen1 (u v : CyclicGroup 4 × CyclicGroup 2) (hv : v ^ 2 = 1) :
+    c4c2CompHom u v hv (Multiplicative.ofAdd 1, 1) = u := by
+  haveI : Fact (1 < 4) := ⟨by norm_num⟩
+  simp [c4c2CompHom, cyclicHom_apply_eq_zpow, ZMod.val_one]
+
+private lemma c4c2CompHom_gen2 (u v : CyclicGroup 4 × CyclicGroup 2) (hv : v ^ 2 = 1) :
+    c4c2CompHom u v hv (1, Multiplicative.ofAdd 1) = v := by
+  haveI : Fact (1 < 2) := ⟨by norm_num⟩
+  simp [c4c2CompHom, cyclicHom_apply_eq_zpow, ZMod.val_one]
+
 /-- `Aut(C_4 × C_2)` has no non-trivial elements of order dividing 3. -/
 private lemma mulAut_c4c2_eq_one_of_cube_eq_one
     (A : MulAut (CyclicGroup 4 × CyclicGroup 2)) (h : A ^ 3 = 1) : A = 1 := by
-  sorry
+  obtain ⟨u, hu⟩ : ∃ u, u = A (Multiplicative.ofAdd 1, 1) := ⟨_, rfl⟩
+  obtain ⟨v, hv'⟩ : ∃ v, v = A (1, Multiplicative.ofAdd 1) := ⟨_, rfl⟩
+  have hv : v ^ 2 = 1 := by
+    rw [hv']
+    exact (map_pow A _ 2).symm.trans ((congrArg A (by decide)).trans (map_one A))
+  have h_det : A.toMonoidHom = c4c2CompHom u v hv :=
+    c4c2_hom_ext (hu.symm.trans (c4c2CompHom_gen1 u v hv).symm)
+      (hv'.symm.trans (c4c2CompHom_gen2 u v hv).symm)
+  have hpt : ∀ x, A x = c4c2CompHom u v hv x := fun x => DFunLike.congr_fun h_det x
+  have h1 : A (A (A (Multiplicative.ofAdd 1, 1))) = (Multiplicative.ofAdd 1, 1) :=
+    DFunLike.congr_fun h _
+  have h2 : A (A (A ((1 : CyclicGroup 4), Multiplicative.ofAdd 1))) =
+      (1, Multiplicative.ofAdd 1) :=
+    DFunLike.congr_fun h _
+  simp only [hpt] at h1 h2
+  have key : ∀ w : CyclicGroup 4 × CyclicGroup 2, ∀ hw : w ^ 2 = 1,
+      ∀ z : CyclicGroup 4 × CyclicGroup 2,
+      c4c2CompHom z w hw (c4c2CompHom z w hw (c4c2CompHom z w hw
+        (Multiplicative.ofAdd 1, 1))) = (Multiplicative.ofAdd 1, 1) →
+      c4c2CompHom z w hw (c4c2CompHom z w hw (c4c2CompHom z w hw
+        (1, Multiplicative.ofAdd 1))) = (1, Multiplicative.ofAdd 1) →
+      ∀ x, c4c2CompHom z w hw x = x := by decide
+  refine MulEquiv.ext fun x => ?_
+  rw [hpt]
+  exact key v hv u h1 h2 x
 
 /-- `Aut(D_4)` has no non-trivial elements of order dividing 3. -/
 private lemma mulAut_d4_eq_one_of_cube_eq_one
