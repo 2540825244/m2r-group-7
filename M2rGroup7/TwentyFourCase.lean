@@ -830,12 +830,53 @@ lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
 -- `T ∈ {C_2³, Q_8}` (the only order-8 groups with an order-3 automorphism), giving
 -- `C_2 × A_4` and `SL_2(𝔽_3)` respectively.
 
+/-- With four Sylow 3-subgroups in a group of order 24, each normalizer has order 6. -/
+private lemma sylow3_24_normalizer_card {G : Type*} [Group G] (h : Nat.card G = 24)
+    (h_n3 : Nat.card (Sylow 3 G) = 4) (P : Sylow 3 G) :
+    Nat.card (Subgroup.normalizer ((P : Subgroup G) : Set G)) = 6 := by
+  haveI : Fact (Nat.Prime 3) := ⟨by decide⟩
+  haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [h]; decide)
+  have h_idx := Sylow.card_eq_index_normalizer P
+  rw [h_n3] at h_idx
+  have h_mul := Subgroup.index_mul_card (Subgroup.normalizer ((P : Subgroup G) : Set G))
+  rw [← h_idx, h] at h_mul
+  omega
+
+/-- The kernel of the conjugation action on Sylow 3-subgroups is contained in every
+Sylow-3 normalizer. -/
+private lemma sylow3_action_ker_le_normalizer {G : Type*} [Group G] (P : Sylow 3 G) :
+    (MulAction.toPermHom G (Sylow 3 G)).ker ≤
+      Subgroup.normalizer ((P : Subgroup G) : Set G) := by
+  intro g hg
+  rw [MonoidHom.mem_ker] at hg
+  rw [← Sylow.smul_eq_iff_mem_normalizer]
+  exact DFunLike.congr_fun hg P
+
+/-- The kernel of the Sylow-3 conjugation action has order coprime to 3: an order-3
+element of the kernel would generate the unique Sylow 3-subgroup of all four distinct
+order-6 normalizers simultaneously. -/
+private lemma sylow3_action_ker_not_dvd_three {G : Type*} [Group G] (h : Nat.card G = 24)
+    (h_n3 : Nat.card (Sylow 3 G) = 4) :
+    ¬ 3 ∣ Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker := by
+  sorry
+
 /-- The kernel of the conjugation action on the four Sylow 3-subgroups has order 1 or 2. -/
 private lemma sylow3_action_ker_card_dvd_two {G : Type*} [Group G] (h : Nat.card G = 24)
     (h_n3 : Nat.card (Sylow 3 G) = 4) :
     Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = 1 ∨
     Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = 2 := by
-  sorry
+  haveI : Fact (Nat.Prime 3) := ⟨by decide⟩
+  haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [h]; decide)
+  obtain ⟨P⟩ : Nonempty (Sylow 3 G) := inferInstance
+  have h_dvd6 : Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker ∣ 6 :=
+    sylow3_24_normalizer_card h h_n3 P ▸
+      Subgroup.card_dvd_of_le (sylow3_action_ker_le_normalizer P)
+  have h_not3 := sylow3_action_ker_not_dvd_three h h_n3
+  have h_pos : 0 < Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker := Nat.card_pos
+  generalize hk : Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = k
+      at h_dvd6 h_not3 h_pos ⊢
+  have h_le : k ≤ 6 := Nat.le_of_dvd (by norm_num) h_dvd6
+  interval_cases k <;> omega
 
 /-- Trivial-kernel case: the action embeds `G` into `Perm (Sylow 3 G) ≃ S_4`, and both
 have 24 elements. -/
