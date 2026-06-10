@@ -311,46 +311,47 @@ theorem uniqueness (n i n' i' : Nat)
         squaresInv)
     · -- n = 17
       by_single_group
-    all_goals
+    · -- n = 18
+      by_invariant 18 i i'
+        isAbelianInv ⊗
+        (numElementsOfOrderInv 2) ⊗
+        (numElementsOfOrderInv 9)
+    · -- n = 19
+      by_single_group
+    · -- n = 20
+      by_invariant 20 i i'
+        isAbelianInv ⊗
+        (numElementsOfOrderInv 2) ⊗
+        (numElementsOfOrderInv 4) ⊗
+        (numElementsOfOrderInv 5) ⊗
+        (numElementsOfOrderInv 10)
+    · -- n = 21: C21 vs C7⋊C3; abelian vs non-abelian
+      by_invariant 21 i i' isAbelianInv
+    · -- n = 22: D11 vs C22; non-abelian vs abelian
+      by_invariant 22 i i' isAbelianInv
+    · -- n = 23
+      by_single_group
+    · -- n = 24
       sorry
-    -- · -- n = 18
-    --   by_single_group
-    -- · -- n = 19
-    --   by_single_group
-    -- · -- n = 20
-    --   by_invariant 20 i i'
-    --     isAbelianInv ⊗
-    --     (numElementsOfOrderInv 2) ⊗
-    --     (numElementsOfOrderInv 4) ⊗
-    --     (numElementsOfOrderInv 5) ⊗
-    --     (numElementsOfOrderInv 10)
-    -- · -- n = 21: C21 vs C7⋊C3; abelian vs non-abelian
-    --   by_invariant 21 i i' isAbelianInv
-    -- · -- n = 22: D11 vs C22; non-abelian vs abelian
-    --   by_invariant 22 i i' isAbelianInv
-    -- · -- n = 23
-    --   by_single_group
-    -- · -- n = 24
-    --   by_single_group
-    -- · -- n = 25: C25 vs C5×C5; C25 has element with x^5≠1, C5×C5 does not
-    --   by_invariant 25 i i' (hasPowerNotOneInv 5)
-    -- · -- n = 26: D13 vs C26; non-abelian vs abelian
-    --   by_invariant 26 i i' isAbelianInv
-    -- · -- n = 27
-    --   by_single_group
-    -- · -- n = 28
-    --   by_invariant 28 i i'
-    --     isAbelianInv ⊗
-    --     (numElementsOfOrderInv 2) ⊗
-    --     (numElementsOfOrderInv 4) ⊗
-    --     (numElementsOfOrderInv 7) ⊗
-    --     (numElementsOfOrderInv 14)
-    -- · -- n = 29
-    --   by_single_group
-    -- · -- n = 30
-    --   by_single_group
-    -- · -- n = 31
-    --   by_single_group
+    · -- n = 25: C25 vs C5×C5; C25 has element with x^5≠1, C5×C5 does not
+      by_invariant 25 i i' (hasPowerNotOneInv 5)
+    · -- n = 26: D13 vs C26; non-abelian vs abelian
+      by_invariant 26 i i' isAbelianInv
+    · -- n = 27
+      sorry
+    · -- n = 28
+      by_invariant 28 i i'
+        isAbelianInv ⊗
+        (numElementsOfOrderInv 2) ⊗
+        (numElementsOfOrderInv 4) ⊗
+        (numElementsOfOrderInv 7) ⊗
+        (numElementsOfOrderInv 14)
+    · -- n = 29
+      by_single_group
+    · -- n = 30: C30 vs C15⋊C2 variants; abelian separates C30, #order-2 elements separates the three non-abelian ones (15 vs 3 vs 5)
+      by_invariant 30 i i' (isAbelianInv ⊗ (numElementsOfOrderInv 2))
+    · -- n = 31
+      by_single_group
   · -- n ≠ n'
     have : Nat.card G = n := retrieve_card n i
     have : Nat.card G' = n' := retrieve_card n' i'
