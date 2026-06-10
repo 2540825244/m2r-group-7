@@ -1050,10 +1050,39 @@ private lemma mulAut_c4c2_eq_one_of_cube_eq_one
   rw [hpt]
   exact key v hv u h1 h2 x
 
+/-- Candidate endomorphism of `D_4` from generator images `r 1 ↦ u`, `sr 0 ↦ w` (a raw
+function; no hom structure is needed since every element is `r i` or `sr i`). -/
+private def d4GenMap (u w : DihedralGroup 4) : DihedralGroup 4 → DihedralGroup 4
+  | .r i => u ^ i.val
+  | .sr i => w * u ^ i.val
+
 /-- `Aut(D_4)` has no non-trivial elements of order dividing 3. -/
 private lemma mulAut_d4_eq_one_of_cube_eq_one
     (A : MulAut (DihedralGroup 4)) (h : A ^ 3 = 1) : A = 1 := by
-  sorry
+  obtain ⟨u, hu⟩ : ∃ u, u = A (.r 1) := ⟨_, rfl⟩
+  obtain ⟨w, hw⟩ : ∃ w, w = A (.sr 0) := ⟨_, rfl⟩
+  have hr : ∀ j : ZMod 4, (.r j : DihedralGroup 4) = .r 1 ^ j.val := by decide
+  have hsr : ∀ j : ZMod 4, (.sr j : DihedralGroup 4) = .sr 0 * .r 1 ^ j.val := by decide
+  have hpt : ∀ d, A d = d4GenMap u w d := by
+    intro d
+    rcases d with i | i
+    · change A (.r i) = u ^ i.val
+      rw [hr i, map_pow, ← hu]
+    · change A (.sr i) = w * u ^ i.val
+      rw [hsr i, map_mul, map_pow, ← hu, ← hw]
+  have hinj : Function.Injective (d4GenMap u w) := by
+    rw [← funext hpt]
+    exact A.injective
+  have h1 : A (A (A (.r 1))) = .r 1 := DFunLike.congr_fun h _
+  have h2 : A (A (A (.sr 0))) = .sr 0 := DFunLike.congr_fun h _
+  simp only [hpt] at h1 h2
+  have key : ∀ z y : DihedralGroup 4, Function.Injective (d4GenMap z y) →
+      d4GenMap z y (d4GenMap z y (d4GenMap z y (.r 1))) = .r 1 →
+      d4GenMap z y (d4GenMap z y (d4GenMap z y (.sr 0))) = .sr 0 →
+      ∀ d, d4GenMap z y d = d := by decide
+  refine MulEquiv.ext fun x => ?_
+  rw [hpt]
+  exact key u w hinj h1 h2 x
 
 /-- `Aut(C_8)` has order 4, so it admits no non-trivial hom from `C_3`. -/
 private lemma c3_hom_mulAut_c8_trivial
