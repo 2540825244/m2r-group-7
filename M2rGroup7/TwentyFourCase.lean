@@ -413,6 +413,120 @@ private lemma c8_to_mulAutC3_nontrivial_eq
     · exact hinv
   rw [cyclicHom_ext ψ h_inv_pow h_gen]; rfl
 
+-- ── C_4 × C_2 leaf helpers ─────────────────────────────────────────────────
+-- The 3 non-trivial homs `(C_4 × C_2) → MulAut(C_3) ≃ C_2` split into two
+-- `Aut(C_4 × C_2)`-orbits, giving two output targets: `D_3 × C_4` and `C_2 × Q_12`.
+
+/-- Standard action for the `D_3 × C_4` target: project to the `C_2` factor, then invert. -/
+private def c4c2OnC3Inv_via_snd :
+    (CyclicGroup 4 × CyclicGroup 2) →* MulAut (CyclicGroup 3) :=
+  (c2OnCqInv 3).comp (MonoidHom.snd (CyclicGroup 4) (CyclicGroup 2))
+
+/-- Standard action for the `C_2 × Q_12` target: project to the `C_4` factor, then apply
+the order-2 action `c4OnCqInv 3` (which mods out by `C_2` and inverts). -/
+private def c4c2OnC3Inv_via_fst_mod2 :
+    (CyclicGroup 4 × CyclicGroup 2) →* MulAut (CyclicGroup 3) :=
+  (c4OnCqInv 3).comp (MonoidHom.fst (CyclicGroup 4) (CyclicGroup 2))
+
+/-- The Aut of `C_4 × C_2` fixing `(a², 1)` and `(1, b)`, swapping `(a, 1) ↔ (a, b)`.
+Lifts the `(inv, inv)` action case to the `(1, inv)` standard form. -/
+private def c4c2_diag_swap :
+    (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2) := sorry
+
+/-- The iso `C_3 ⋊[c4OnCqInv 3] C_4 ≃* Q_12`, identifying `c ↔ a⁴` and `x ↔ xa 0`. -/
+private def c3_sdp_c4_iso_q12 :
+    CyclicGroup 3 ⋊[c4OnCqInv 3] CyclicGroup 4 ≃* QuaternionGroup 3 := sorry
+
+/-- Identification chain for the `via_snd → D_3 × C_4` target: swap `(C_4 × C_2)` to
+`(C_2 × C_4)` so the acting factor is first, factor off the trailing `C_4`, then
+identify `C_3 ⋊_inv C_2 ≃ D_3`. -/
+private def c3_sdp_c4c2_via_snd_iso_d3c4 :
+    CyclicGroup 3 ⋊[c4c2OnC3Inv_via_snd] (CyclicGroup 4 × CyclicGroup 2) ≃*
+      DihedralGroup 3 × CyclicGroup 4 :=
+  (SemidirectProduct.congr (MulEquiv.refl _)
+      (MulEquiv.prodComm (M := CyclicGroup 4) (N := CyclicGroup 2))
+      (by intro; rfl)).trans <|
+  (sdp_prodEquivOfFstAction (c2OnCqInv 3)).trans <|
+  dihedralThree_iso_sdp.prodCongr (MulEquiv.refl _)
+
+/-- Identification chain for the `via_fst_mod2 → C_2 × Q_12` target: factor off the
+trailing `C_2`, identify the `C_3 ⋊ C_4` factor as `Q_12`, then swap. -/
+private def c3_sdp_c4c2_via_fst_mod2_iso_c2q12 :
+    CyclicGroup 3 ⋊[c4c2OnC3Inv_via_fst_mod2] (CyclicGroup 4 × CyclicGroup 2) ≃*
+      CyclicGroup 2 × QuaternionGroup 3 :=
+  (sdp_prodEquivOfFstAction (c4OnCqInv 3)).trans <|
+  (c3_sdp_c4_iso_q12.prodCongr (MulEquiv.refl _)).trans <|
+  MulEquiv.prodComm (M := QuaternionGroup 3) (N := CyclicGroup 2)
+
+/-- Case-bash on `(φ(a, 1), φ(1, b)) ∈ {1, inv}²` (excluding the trivial case). Three
+sub-cases land in the `via_snd` form (using `c4c2_diag_swap` for the `(inv, inv)` case);
+one lands in the `via_fst_mod2` form. -/
+private lemma c4c2_basis_change_exists
+    {φ : (CyclicGroup 4 × CyclicGroup 2) →* MulAut (CyclicGroup 3)} (h : φ ≠ 1) :
+    (∃ α : (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2),
+        c4c2OnC3Inv_via_snd.comp α.toMonoidHom = φ) ∨
+    (∃ α : (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2),
+        c4c2OnC3Inv_via_fst_mod2.comp α.toMonoidHom = φ) := by
+  obtain ⟨a, ha⟩ : ∃ a, a = φ (Multiplicative.ofAdd (1 : ZMod 4), 1) := ⟨_, rfl⟩
+  obtain ⟨b, hb⟩ : ∃ b, b = φ (1, Multiplicative.ofAdd (1 : ZMod 2)) := ⟨_, rfl⟩
+  rcases mulAut_cyclicGroup_three_cases a with rfl | rfl <;>
+    rcases mulAut_cyclicGroup_three_cases b with rfl | rfl
+  · -- (1, 1): φ trivial, contradicts h
+    sorry
+  · -- (1, inv): target via_snd, α = refl
+    exact Or.inl ⟨MulEquiv.refl _, sorry⟩
+  · -- (inv, 1): target via_fst_mod2, α = refl
+    exact Or.inr ⟨MulEquiv.refl _, sorry⟩
+  · -- (inv, inv): target via_snd, α = c4c2_diag_swap
+    exact Or.inl ⟨c4c2_diag_swap, sorry⟩
+
+/-- Transport step for the `via_snd` branch: given a basis change `α` with
+`c4c2OnC3Inv_via_snd ∘ α = φ`, the action `φ`-SDP is iso to the `via_snd`-SDP. -/
+private def c3_sdp_c4c2_iso_via_snd_standard
+    {φ : (CyclicGroup 4 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
+    {α : (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2)}
+    (hα : c4c2OnC3Inv_via_snd.comp α.toMonoidHom = φ) :
+    CyclicGroup 3 ⋊[φ] (CyclicGroup 4 × CyclicGroup 2) ≃*
+      CyclicGroup 3 ⋊[c4c2OnC3Inv_via_snd] (CyclicGroup 4 × CyclicGroup 2) :=
+  SemidirectProduct.congr (MulEquiv.refl _) α (by
+    intro g
+    have h := DFunLike.ext_iff.mp hα g
+    ext n
+    simp only [MulEquiv.trans_apply, MulEquiv.refl_apply]
+    exact (congrArg (fun a : MulAut _ => a n) h).symm)
+
+/-- Transport step for the `via_fst_mod2` branch. -/
+private def c3_sdp_c4c2_iso_via_fst_mod2_standard
+    {φ : (CyclicGroup 4 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
+    {α : (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2)}
+    (hα : c4c2OnC3Inv_via_fst_mod2.comp α.toMonoidHom = φ) :
+    CyclicGroup 3 ⋊[φ] (CyclicGroup 4 × CyclicGroup 2) ≃*
+      CyclicGroup 3 ⋊[c4c2OnC3Inv_via_fst_mod2] (CyclicGroup 4 × CyclicGroup 2) :=
+  SemidirectProduct.congr (MulEquiv.refl _) α (by
+    intro g
+    have h := DFunLike.ext_iff.mp hα g
+    ext n
+    simp only [MulEquiv.trans_apply, MulEquiv.refl_apply]
+    exact (congrArg (fun a : MulAut _ => a n) h).symm)
+
+/-- Any non-trivial action `φ` of `C_4 × C_2` on `C_3` gives `C_3 ⋊[φ] (C_4 × C_2)`
+isomorphic to either `D_3 × C_4` or `C_2 × Q_12`, depending on the iso class of `ker φ`. -/
+private lemma c3_sdp_c4c2_nontrivial
+    {φ : (CyclicGroup 4 × CyclicGroup 2) →* MulAut (CyclicGroup 3)} (h_nontriv : φ ≠ 1) :
+    Nonempty (CyclicGroup 3 ⋊[φ] (CyclicGroup 4 × CyclicGroup 2) ≃*
+              DihedralGroup 3 × CyclicGroup 4) ∨
+    Nonempty (CyclicGroup 3 ⋊[φ] (CyclicGroup 4 × CyclicGroup 2) ≃*
+              CyclicGroup 2 × QuaternionGroup 3) := by
+  rcases c4c2_basis_change_exists h_nontriv with ⟨_, hα⟩ | ⟨_, hα⟩
+  · let : CyclicGroup 3 ⋊[φ] (CyclicGroup 4 × CyclicGroup 2) ≃*
+          DihedralGroup 3 × CyclicGroup 4 :=
+      (c3_sdp_c4c2_iso_via_snd_standard hα).trans c3_sdp_c4c2_via_snd_iso_d3c4
+    tauto
+  · let : CyclicGroup 3 ⋊[φ] (CyclicGroup 4 × CyclicGroup 2) ≃*
+          CyclicGroup 2 × QuaternionGroup 3 :=
+      (c3_sdp_c4c2_iso_via_fst_mod2_standard hα).trans c3_sdp_c4c2_via_fst_mod2_iso_c2q12
+    tauto
+
 /-- Non-trivial-action branch of the normal-Sylow-3 classification. Given a
     semidirect-product iso `↥P ⋊[φ] ↥K ≃* G` with `|P| = 3` and `|K| = 8`,
     dispatch on `order8_classification` of `K`. Six of the seven possible
@@ -447,9 +561,18 @@ private lemma order24_1_sylow3_nontrivial
       h_iso.symm.trans (h_psi_eq ▸ SemidirectProduct.congr' eP eK)
     tauto
   · -- K ≃* C_4 × C_2: two sub-cases by `ker φ`
-    --   ker = C_4  → D_3 × C_4
-    --   ker = V_4  → C_2 × Q_12
-    sorry
+    --   ker = C_4 or diagonal C_4  → D_3 × C_4
+    --   ker = V_4                  → C_2 × Q_12
+    obtain ⟨eK⟩ := hC4C2
+    rcases c3_sdp_c4c2_nontrivial (transported_action_ne_one eP eK h_phi_nontriv) with he | he
+    · obtain ⟨e⟩ := he
+      let : G ≃* DihedralGroup 3 × CyclicGroup 4 :=
+        h_iso.symm.trans <| (SemidirectProduct.congr' eP eK).trans e
+      tauto
+    · obtain ⟨e⟩ := he
+      let : G ≃* CyclicGroup 2 × QuaternionGroup 3 :=
+        h_iso.symm.trans <| (SemidirectProduct.congr' eP eK).trans e
+      tauto
   · -- K ≃* C_2^3: target `D_3 × V_4`
     obtain ⟨eK⟩ := hC2sq3
     let : G ≃* DihedralGroup 3 × (CyclicGroup 2 × CyclicGroup 2) :=
