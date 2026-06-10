@@ -1407,9 +1407,9 @@ private instance (u v t z₀ q : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
 
 -- `maxSize`: the `Decidable` instance term stacks `Prod` instances at every quantifier
 -- layer over `(C_2)³` and exceeds the default size limit of 128.
+set_option synthInstance.maxSize 1000 in
 -- `maxHeartbeats`: the search evaluates the certificate over 512 generator-image
 -- triples (16× the default budget).
-set_option synthInstance.maxSize 1000 in
 set_option maxHeartbeats 3200000 in
 /-- Every injective, cube-trivial, non-identity generator-image map on `(C_2)³` is
 conjugate to `c2cubedRotFun` by some generator-image map: a fixed vector `z₀` and a
@@ -1436,7 +1436,69 @@ private lemma c2cubed_sdp_c3_iso_standard
     (h_nontriv : ψ ≠ 1) :
     Nonempty ((CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ⋊[ψ] CyclicGroup 3 ≃*
       (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ⋊[c3OnC2cubed] CyclicGroup 3) := by
-  sorry
+  -- Pin the generator image `B := ψ(gen)` to a raw generator-image map
+  obtain ⟨B, hB⟩ : ∃ B, B = ψ (Multiplicative.ofAdd 1) := ⟨_, rfl⟩
+  obtain ⟨u, hu⟩ : ∃ u, u = B c2cubedE1 := ⟨_, rfl⟩
+  obtain ⟨v, hv⟩ : ∃ v, v = B c2cubedE2 := ⟨_, rfl⟩
+  obtain ⟨w, hw⟩ : ∃ w, w = B c2cubedE3 := ⟨_, rfl⟩
+  have h_decomp : ∀ p : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2,
+      p = c2cubedE1 ^ (Multiplicative.toAdd p.1).val *
+        c2cubedE2 ^ (Multiplicative.toAdd p.2.1).val *
+        c2cubedE3 ^ (Multiplicative.toAdd p.2.2).val := by decide
+  have key : ∀ a b c : ℕ, B (c2cubedE1 ^ a * c2cubedE2 ^ b * c2cubedE3 ^ c) =
+      B c2cubedE1 ^ a * B c2cubedE2 ^ b * B c2cubedE3 ^ c := fun a b c =>
+    (map_mul B _ _).trans (congrArg₂ (· * ·)
+      ((map_mul B _ _).trans (congrArg₂ (· * ·) (map_pow B _ _) (map_pow B _ _)))
+      (map_pow B _ _))
+  have hpt : ∀ p, B p = c2cubedGenMap u v w p := fun p =>
+    (congrArg B (h_decomp p)).trans ((key _ _ _).trans (by rw [← hu, ← hv, ← hw]; rfl))
+  -- B is injective as a raw map, cubes to the identity, and is not the identity
+  have hinj : ∀ s s', c2cubedGenMap u v w s = c2cubedGenMap u v w s' → s = s' :=
+    fun s s' hst => B.injective ((hpt s).trans (hst.trans (hpt s').symm))
+  have hB3 : B ^ 3 = 1 := by rw [hB]; exact c3_hom_gen_cube_eq_one ψ
+  have h1 : B (B (B c2cubedE1)) = c2cubedE1 := DFunLike.congr_fun hB3 _
+  have h2 : B (B (B c2cubedE2)) = c2cubedE2 := DFunLike.congr_fun hB3 _
+  have h3 : B (B (B c2cubedE3)) = c2cubedE3 := DFunLike.congr_fun hB3 _
+  simp only [hpt] at h1 h2 h3
+  have hne : ¬ ∀ p, c2cubedGenMap u v w p = p := fun hall =>
+    h_nontriv (c3_hom_eq_one_of_gen_eq_one
+      (hB.symm.trans (MulEquiv.ext fun p => (hpt p).trans (hall p))))
+  -- Extract the conjugator certificate and assemble the automorphism β
+  obtain ⟨z₀, q, _, _, _, hmul', hinj', hconj⟩ :=
+    c2cubedGenMap_conjugator_exists u v w hinj h1 h2 h3 hne
+  have hbij : Function.Bijective (c2cubedGenMap z₀ q (c2cubedGenMap u v w q)) :=
+    Finite.injective_iff_bijective.mp fun s s' => hinj' s s'
+  let β : (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) :=
+    MulEquiv.ofBijective
+      (MonoidHom.mk' (c2cubedGenMap z₀ q (c2cubedGenMap u v w q)) hmul') hbij
+  -- β conjugates the standard rotation to B
+  have h_gen_conj : MulAut.congr β c2cubedRot = B := by
+    refine MulEquiv.ext fun x => ?_
+    change c2cubedGenMap z₀ q (c2cubedGenMap u v w q) (c2cubedRotFun (β.symm x)) = B x
+    rw [hconj (β.symm x)]
+    change c2cubedGenMap u v w (β (β.symm x)) = B x
+    rw [MulEquiv.apply_symm_apply]
+    exact (hpt x).symm
+  -- hence it intertwines the actions as homs out of C_3
+  have h_rot_gen : c3OnC2cubed (Multiplicative.ofAdd 1) = c2cubedRot := by
+    haveI : Fact (1 < 3) := ⟨by norm_num⟩
+    simp [c3OnC2cubed, cyclicHom_apply_eq_zpow, ZMod.val_one]
+  have h_gen : ((MulAut.congr β).toMonoidHom.comp c3OnC2cubed)
+      (Multiplicative.ofAdd 1) = B := by
+    change MulAut.congr β (c3OnC2cubed (Multiplicative.ofAdd 1)) = B
+    rw [h_rot_gen]
+    exact h_gen_conj
+  have h_comp : (MulAut.congr β).toMonoidHom.comp c3OnC2cubed = ψ :=
+    (cyclicHom_ext _ hB3 h_gen).trans (cyclicHom_ext ψ hB3 hB.symm).symm
+  -- transport the semidirect product along β and flip
+  refine ⟨(SemidirectProduct.congr β (MulEquiv.refl _) fun g => ?_).symm⟩
+  have hg := DFunLike.congr_fun h_comp g
+  refine MulEquiv.ext fun n => ?_
+  change β (c3OnC2cubed g n) = ψ g (β n)
+  rw [← hg]
+  change β (c3OnC2cubed g n) = β (c3OnC2cubed g (β.symm (β n)))
+  rw [MulEquiv.symm_apply_apply]
 
 /-- Any non-trivial action `ψ` of `C_3` on `(C_2)³` gives
 `(C_2)³ ⋊[ψ] C_3 ≃* C_2 × A_4`. -/
