@@ -1165,6 +1165,27 @@ private def c3OnQ8 : CyclicGroup 3 →* MulAut (QuaternionGroup 2) :=
     change q8_cycle_ijk (q8_cycle_ijk (q8_cycle_ijk x)) = x
     revert x; decide)
 
+/-- Candidate endomorphism of `Q_8` from generator images `a 1 ↦ u`, `xa 0 ↦ w` (a raw
+function; every element of `Q_8` is a word `a i = (a 1)^i` or `xa i = xa 0 * a i`). -/
+private def q8GenMap (u w : QuaternionGroup 2) : QuaternionGroup 2 → QuaternionGroup 2
+  | .a i => u ^ i.val
+  | .xa i => w * u ^ i.val
+
+/-- Every multiplicative injective `q8GenMap` of order dividing 3 (and not the identity)
+is conjugate to `q8_cycle_ijk` by some multiplicative injective `q8GenMap`: all order-3
+automorphisms of `Q_8` are conjugate in `Aut(Q_8) ≃ S_4`. -/
+private lemma q8GenMap_conjugator_exists : ∀ z y : QuaternionGroup 2,
+    (∀ s t, q8GenMap z y (s * t) = q8GenMap z y s * q8GenMap z y t) →
+    (∀ s t, q8GenMap z y s = q8GenMap z y t → s = t) →
+    q8GenMap z y (q8GenMap z y (q8GenMap z y (.a 1))) = .a 1 →
+    q8GenMap z y (q8GenMap z y (q8GenMap z y (.xa 0))) = .xa 0 →
+    (¬ ∀ q, q8GenMap z y q = q) →
+    ∃ p r : QuaternionGroup 2,
+      (∀ s t, q8GenMap p r (s * t) = q8GenMap p r s * q8GenMap p r t) ∧
+      (∀ s t, q8GenMap p r s = q8GenMap p r t → s = t) ∧
+      ∀ q, q8GenMap p r (q8GenMap z y q) = q8_cycle_ijk (q8GenMap p r q) := by
+  decide
+
 /-- Basis change: any non-trivial action of `C_3` on `Q_8` is conjugate to the standard
 one, since all order-3 automorphisms of `Q_8` are conjugate in `Aut(Q_8) ≃ S_4`. -/
 private lemma q8_sdp_c3_iso_standard
