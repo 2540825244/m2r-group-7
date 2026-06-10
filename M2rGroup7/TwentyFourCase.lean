@@ -1144,11 +1144,48 @@ private lemma c2cubed_sdp_c3_nontrivial
       CyclicGroup 2 × AlternatingGroup 4) := by
   sorry
 
+/-- The order-3 automorphism of `Q_8` cycling `i ↦ j ↦ k ↦ i` (and `-i ↦ -j ↦ -k`),
+in the encoding `i = a 1`, `j = xa 0`, `k = xa 3`, `-1 = a 2`. -/
+private def q8_cycle_ijk : QuaternionGroup 2 ≃* QuaternionGroup 2 where
+  toFun
+    | .a 0 => .a 0   | .a 1 => .xa 0 | .a 2 => .a 2   | .a 3 => .xa 2
+    | .xa 0 => .xa 3 | .xa 1 => .a 3 | .xa 2 => .xa 1 | .xa 3 => .a 1
+  invFun
+    | .a 0 => .a 0   | .a 1 => .xa 3 | .a 2 => .a 2   | .a 3 => .xa 1
+    | .xa 0 => .a 1  | .xa 1 => .xa 2 | .xa 2 => .a 3 | .xa 3 => .xa 0
+  left_inv := by decide
+  right_inv := by decide
+  map_mul' := by decide
+
+/-- The standard non-trivial action of `C_3` on `Q_8`, sending the generator to
+`q8_cycle_ijk`. -/
+private def c3OnQ8 : CyclicGroup 3 →* MulAut (QuaternionGroup 2) :=
+  cyclicHom 3 q8_cycle_ijk (by
+    ext x
+    change q8_cycle_ijk (q8_cycle_ijk (q8_cycle_ijk x)) = x
+    revert x; decide)
+
+/-- Basis change: any non-trivial action of `C_3` on `Q_8` is conjugate to the standard
+one, since all order-3 automorphisms of `Q_8` are conjugate in `Aut(Q_8) ≃ S_4`. -/
+private lemma q8_sdp_c3_iso_standard
+    {ψ : CyclicGroup 3 →* MulAut (QuaternionGroup 2)} (h_nontriv : ψ ≠ 1) :
+    Nonempty (QuaternionGroup 2 ⋊[ψ] CyclicGroup 3 ≃*
+      QuaternionGroup 2 ⋊[c3OnQ8] CyclicGroup 3) := by
+  sorry
+
+/-- Identification: `Q_8 ⋊[c3OnQ8] C_3 ≃* SL_2(𝔽_3)`, sending `i, j, k` to
+`!![0,-1;1,0]`, `!![1,1;1,-1]`, `!![-1,1;1,1]` and the `C_3` generator to `!![1,1;0,1]`
+(which conjugation-cycles the three matrices). -/
+private noncomputable def q8_sdp_c3OnQ8_iso_sl23 :
+    QuaternionGroup 2 ⋊[c3OnQ8] CyclicGroup 3 ≃* SL2 3 := by
+  sorry
+
 /-- Any non-trivial action `ψ` of `C_3` on `Q_8` gives `Q_8 ⋊[ψ] C_3 ≃* SL_2(𝔽_3)`. -/
 private lemma q8_sdp_c3_nontrivial
     {ψ : CyclicGroup 3 →* MulAut (QuaternionGroup 2)} (h_nontriv : ψ ≠ 1) :
     Nonempty (QuaternionGroup 2 ⋊[ψ] CyclicGroup 3 ≃* SL2 3) := by
-  sorry
+  obtain ⟨e⟩ := q8_sdp_c3_iso_standard h_nontriv
+  exact ⟨e.trans q8_sdp_c3OnQ8_iso_sl23⟩
 
 /-- Dispatch on the iso class of the order-8 normal subgroup in `T ⋊[φ] C` with `φ ≠ 1`:
 only `C_2³` and `Q_8` admit an order-3 automorphism, giving `C_2 × A_4` and `SL_2(𝔽_3)`
