@@ -224,13 +224,12 @@ lemma gl2Diag1NegOne_sq (hp2 : p ≠ 2) :
   rw [Units.val_pow_eq_pow_val, sq, gl2Diag1NegOne_val, Units.val_one,
       Matrix.diagonal_mul_diagonal]
   ext i j
-  fin_cases i <;> fin_cases j <;>
-    simp [Matrix.diagonal_apply, Matrix.one_apply]
+  fin_cases i <;> fin_cases j <;> simp
 
 /-- The element `-I` of `GL₂(𝔽_p)` squares to the identity. -/
 lemma gl2DiagNeg1Neg1_sq :
     (gl2DiagNeg1Neg1 : GL (Fin 2) (ZMod p)) ^ 2 = 1 := by
-  show ((-1 : GL (Fin 2) (ZMod p))) ^ 2 = 1
+  change ((-1 : GL (Fin 2) (ZMod p))) ^ 2 = 1
   rw [neg_one_sq]
 
 end GL2OrderTwo

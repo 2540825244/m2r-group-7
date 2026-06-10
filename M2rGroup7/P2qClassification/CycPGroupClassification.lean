@@ -14,7 +14,7 @@ def cyclicGroupAutEquivUnits (n : ℕ) [NeZero n] : MulAut (CyclicGroup n) ≃* 
     a generator α raised to the power |Aut|/p^r has order exactly p^r. -/
 private lemma canonicalAutElement_exists
     (p q n r : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n)
+    (hq_odd : q ≠ 2) (hn : 0 < n)
     (hr : r ≤ (q - 1).factorization p) :
     ∃ τ : MulAut (CyclicGroup (q ^ n)), orderOf τ = p ^ r := by
   have h_aut_iso : MulAut (CyclicGroup (q ^ n)) ≃* (ZMod (q ^ n))ˣ := by
@@ -31,7 +31,8 @@ private lemma canonicalAutElement_exists
     have hmem := hα₀ (h_aut_iso x)
     rw [Subgroup.mem_zpowers_iff] at hmem ⊢
     obtain ⟨z, hz⟩ := hmem
-    exact ⟨z, by rw [show α = h_aut_iso.symm α₀ from rfl, ← map_zpow, hz, MulEquiv.symm_apply_apply]⟩
+    exact ⟨z, by
+      rw [show α = h_aut_iso.symm α₀ from rfl, ← map_zpow, hz, MulEquiv.symm_apply_apply]⟩
   have h_orderOf_α : orderOf α = Nat.card (MulAut (CyclicGroup (q ^ n))) := by
     have hzpow_top : (Subgroup.zpowers α : Subgroup _) = ⊤ :=
       (Subgroup.eq_top_iff' _).mpr hα
@@ -72,7 +73,7 @@ private def findFirstUnitWithOrder {n : ℕ} (p r : ℕ) :
 
 /-- Computable enumeration: pick the first unit `u : (ZMod (q^n))ˣ` whose order equals `p^r`.
     Falls back to `1` when none exists (unreachable under the canonical hypotheses). -/
-private def canonicalAutElement_unit (p q n r : ℕ) [Fact q.Prime] (hn : 0 < n) :
+private def canonicalAutElement_unit (p q n r : ℕ) [Fact q.Prime] :
     (ZMod (q ^ n))ˣ :=
   -- Enumerate i ∈ {0, ..., q^n - 1}, keep those coprime to q^n (these give units),
   -- and pick the first unit with order = p^r.
@@ -83,12 +84,10 @@ private def canonicalAutElement_unit (p q n r : ℕ) [Fact q.Prime] (hn : 0 < n)
 
 /-- The canonical element of Aut(C_{q^n}) of order p^r, for r ≤ v_p(q-1). Computable. -/
 def canonicalAutElement
-    (p q n r : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n)
-    (hr : r ≤ (q - 1).factorization p) :
+    (p q n r : ℕ) [hq : Fact q.Prime] :
     MulAut (CyclicGroup (q ^ n)) :=
   haveI : NeZero (q ^ n) := ⟨pow_ne_zero n hq.out.ne_zero⟩
-  (cyclicGroupAutEquivUnits (q ^ n)).symm (canonicalAutElement_unit p q n r hn)
+  (cyclicGroupAutEquivUnits (q ^ n)).symm (canonicalAutElement_unit p q n r)
 
 /-- Characterization: for prime `p`, `hasOrderPrimePow p r u = true ↔ orderOf u = p^r`. -/
 private lemma hasOrderPrimePow_iff {n : ℕ} (p r : ℕ) [hp : Fact p.Prime] (u : (ZMod n)ˣ) :
@@ -144,22 +143,22 @@ private lemma findFirstUnitWithOrder_orderOf {n : ℕ} (p r : ℕ) [Fact p.Prime
 
 lemma canonicalAutElement_orderOf
     (p q n r : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n)
+    (hq_odd : q ≠ 2) (hn : 0 < n)
     (hr : r ≤ (q - 1).factorization p) :
-    orderOf (canonicalAutElement p q n r hpq hq_odd hn hr) = p ^ r := by
+    orderOf (canonicalAutElement p q n r) = p ^ r := by
   haveI : NeZero (q ^ n) := ⟨pow_ne_zero n hq.out.ne_zero⟩
   -- Bridge to the existence proof: transport to (ZMod (q^n))ˣ.
-  show orderOf ((cyclicGroupAutEquivUnits (q ^ n)).symm (canonicalAutElement_unit p q n r hn))
+  change orderOf ((cyclicGroupAutEquivUnits (q ^ n)).symm (canonicalAutElement_unit p q n r))
       = p ^ r
   rw [(cyclicGroupAutEquivUnits (q ^ n)).symm.orderOf_eq]
-  show orderOf (canonicalAutElement_unit p q n r hn) = p ^ r
+  show orderOf (canonicalAutElement_unit p q n r) = p ^ r
   -- The unit comes from the candidates list; we show the candidates list contains some
   -- unit with order p^r (transported from canonicalAutElement_exists), then apply
   -- findFirstUnitWithOrder_orderOf.
-  obtain ⟨τ, hτ⟩ := canonicalAutElement_exists p q n r hpq hq_odd hn hr
+  obtain ⟨τ, hτ⟩ := canonicalAutElement_exists p q n r hq_odd hn hr
   let u₀ : (ZMod (q^n))ˣ := cyclicGroupAutEquivUnits (q^n) τ
   have hu₀ : orderOf u₀ = p ^ r := by
-    show orderOf (cyclicGroupAutEquivUnits (q^n) τ) = p ^ r
+    change orderOf (cyclicGroupAutEquivUnits (q^n) τ) = p ^ r
     rw [(cyclicGroupAutEquivUnits (q^n)).orderOf_eq]; exact hτ
   -- Show u₀ appears in the candidates list. Let i = u₀.val.val (the underlying ℕ).
   set i : ℕ := (u₀.val.val) with hi_def
@@ -177,7 +176,7 @@ lemma canonicalAutElement_orderOf
     rw [hi_def]
     exact (ZMod.natCast_zmod_val (u₀ : ZMod (q ^ n)))
   -- Build the candidates list and show u₀ is in it.
-  show orderOf (canonicalAutElement_unit p q n r hn) = p ^ r
+  change orderOf (canonicalAutElement_unit p q n r) = p ^ r
   unfold canonicalAutElement_unit
   apply findFirstUnitWithOrder_orderOf
   refine ⟨u₀, ?_, hu₀⟩
@@ -193,13 +192,14 @@ lemma canonicalAutElement_orderOf
     is `1` because its order divides `p^m`. -/
 def canonicalAction
     (p q n m : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n)
+    (hq_odd : q ≠ 2) (hn : 0 < n)
     (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
     CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n)) :=
   haveI : NeZero (p ^ m) := ⟨pow_ne_zero m hp.out.ne_zero⟩
-  let τ := canonicalAutElement p q n r hpq hq_odd hn (hr.trans (min_le_right m _))
+  let τ := canonicalAutElement p q n r
   cyclicHom (p ^ m) τ (by
-    have h_ord : orderOf τ = p ^ r := canonicalAutElement_orderOf p q n r hpq hq_odd hn _
+    have h_ord : orderOf τ = p ^ r :=
+      canonicalAutElement_orderOf p q n r hq_odd hn (hr.trans (min_le_right m _))
     have h_dvd : τ ^ p ^ m = 1 := by
       apply orderOf_dvd_iff_pow_eq_one.mp
       rw [h_ord]
@@ -210,7 +210,7 @@ def canonicalAction
 lemma cyclicHom_apply_eq_zpow
     (n : Nat) [NeZero n] {G : Type*} [Group G] (a : G) (h : a ^ n = 1) (x : CyclicGroup n) :
     cyclicHom n a h x = a ^ ((Multiplicative.toAdd x).val : ℤ) := by
-  show Additive.toMul ((ZMod.lift n
+  change Additive.toMul ((ZMod.lift n
       ⟨zmultiplesHom (Additive G) (Additive.ofMul a),
         by change (n : ℤ) • Additive.ofMul a = 0
            rw [← ofMul_zpow, zpow_natCast, h, ofMul_one]⟩) (Multiplicative.toAdd x))
@@ -228,9 +228,9 @@ private lemma ofAdd_one_zpowers_top (n : Nat) [NeZero n] :
   rw [Subgroup.eq_top_iff']
   intro x
   refine Subgroup.mem_zpowers_iff.mpr ⟨((Multiplicative.toAdd x).val : ℤ), ?_⟩
-  show Multiplicative.ofAdd (1 : ZMod n) ^ ((Multiplicative.toAdd x).val : ℤ) = x
+  change Multiplicative.ofAdd (1 : ZMod n) ^ ((Multiplicative.toAdd x).val : ℤ) = x
   rw [← Multiplicative.ofAdd.apply_symm_apply x]
-  show Multiplicative.ofAdd (1 : ZMod n) ^ ((Multiplicative.toAdd x).val : ℤ)
+  change Multiplicative.ofAdd (1 : ZMod n) ^ ((Multiplicative.toAdd x).val : ℤ)
       = Multiplicative.ofAdd (Multiplicative.toAdd x)
   rw [← ofAdd_zsmul, zsmul_one]
   congr 1
@@ -250,13 +250,13 @@ lemma cyclicHom_range (n : Nat) [NeZero n] {G : Type*} [Group G] (a : G) (h : a 
   by_cases hn1 : n = 1
   · -- n = 1: (1 : ZMod 1) = 0, so val = 0
     subst hn1
-    show a ^ ((Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 1))).val : ℤ) = a
+    change a ^ ((Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 1))).val : ℤ) = a
     have hval : (Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 1))).val = 0 := by
       simp [Subsingleton.elim (Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod 1))) 0]
     rw [hval]
     -- a = 1 since a^1 = 1
     simpa using h.symm
-  · show a ^ ((Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod n))).val : ℤ) = a
+  · change a ^ ((Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod n))).val : ℤ) = a
     have h2 : 2 ≤ n := by omega
     have hval : (Multiplicative.toAdd (Multiplicative.ofAdd (1 : ZMod n))).val = 1 := by
       change (1 : ZMod n).val = 1
@@ -266,21 +266,23 @@ lemma cyclicHom_range (n : Nat) [NeZero n] {G : Type*} [Group G] (a : G) (h : a 
 /-- The range of canonicalAction r has cardinality p^r. -/
 lemma canonicalAction_range_card
     (p q n m r : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n)
+    (hq_odd : q ≠ 2) (hn : 0 < n)
     (hr : r ≤ min m ((q - 1).factorization p)) :
-    Nat.card (canonicalAction p q n m hpq hq_odd hn r hr).range = p ^ r := by
+    Nat.card (canonicalAction p q n m hq_odd hn r hr).range = p ^ r := by
   haveI : NeZero (p ^ m) := ⟨pow_ne_zero m hp.out.ne_zero⟩
-  set τ := canonicalAutElement p q n r hpq hq_odd hn (hr.trans (min_le_right m _))
+  set τ := canonicalAutElement p q n r
   have h_pm : τ ^ p ^ m = 1 := by
-    have h_ord : orderOf τ = p ^ r := canonicalAutElement_orderOf p q n r hpq hq_odd hn _
+    have h_ord : orderOf τ = p ^ r :=
+      canonicalAutElement_orderOf p q n r hq_odd hn (hr.trans (min_le_right m _))
     apply orderOf_dvd_iff_pow_eq_one.mp
     rw [h_ord]
     exact pow_dvd_pow p (hr.trans (min_le_left m _))
   -- canonicalAction = cyclicHom applied to τ, so its range = zpowers τ.
-  have hrange : (canonicalAction p q n m hpq hq_odd hn r hr).range = Subgroup.zpowers τ := by
-    show (cyclicHom (p ^ m) τ h_pm).range = Subgroup.zpowers τ
+  have hrange : (canonicalAction p q n m hq_odd hn r hr).range = Subgroup.zpowers τ := by
+    change (cyclicHom (p ^ m) τ h_pm).range = Subgroup.zpowers τ
     exact cyclicHom_range (p ^ m) τ h_pm
-  rw [hrange, Nat.card_zpowers, canonicalAutElement_orderOf]
+  rw [hrange, Nat.card_zpowers,
+    canonicalAutElement_orderOf p q n r hq_odd hn (hr.trans (min_le_right m _))]
 
 /-- Generic transport: for `CyclicGroup` types parameterized by ℕ with `NeZero`,
     along `p1 = p` and `q1 = q` (with `NeZero p1`, `NeZero q1` already in scope, and
@@ -401,13 +403,13 @@ theorem center_card_of_trivial_action
 /-- For r = 0 (trivial action), |Z(C_{q^n} ⋊ C_{p^m})| = q^n * p^m. -/
 theorem center_card_of_r_zero
     (p q n m : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n) :
+    (hq_odd : q ≠ 2) (hn : 0 < n) :
     Nat.card (Subgroup.center (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-      (canonicalAction p q n m hpq hq_odd hn 0 (Nat.zero_le _)))) = q ^ n * p ^ m := by
-  have h_range : Nat.card (canonicalAction p q n m hpq hq_odd hn 0 (Nat.zero_le _)).range = 1 := by
-    simpa using canonicalAction_range_card p q n m 0 hpq hq_odd hn (Nat.zero_le _)
+      (canonicalAction p q n m hq_odd hn 0 (Nat.zero_le _)))) = q ^ n * p ^ m := by
+  have h_range : Nat.card (canonicalAction p q n m hq_odd hn 0 (Nat.zero_le _)).range = 1 := by
+    simpa using canonicalAction_range_card p q n m 0 hq_odd hn (Nat.zero_le _)
   calc Nat.card (Subgroup.center (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-          (canonicalAction p q n m hpq hq_odd hn 0 (Nat.zero_le _))))
+          (canonicalAction p q n m hq_odd hn 0 (Nat.zero_le _))))
       = Nat.card (CyclicGroup (q ^ n)) * Nat.card (CyclicGroup (p ^ m)) :=
           center_card_of_trivial_action _ (eq_one_of_range_card_one h_range)
     _ = q ^ n * p ^ m := by rw [card_cyclicGroup, card_cyclicGroup]
@@ -418,8 +420,8 @@ theorem center_card_of_r_pos
     (hpq : p ≠ q) (hq_odd : q ≠ 2) (hn : 0 < n) (hr : 0 < r)
     (hle : r ≤ min m ((q - 1).factorization p)) :
     Nat.card (Subgroup.center (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-      (canonicalAction p q n m hpq hq_odd hn r hle))) = p ^ (m - r) := by
-  set f := canonicalAction p q n m hpq hq_odd hn r hle
+      (canonicalAction p q n m hq_odd hn r hle))) = p ^ (m - r) := by
+  set f := canonicalAction p q n m hq_odd hn r hle
   have hrm : r ≤ m := hle.trans (min_le_left _ _)
   -- |Z(G)| = |Fix(Im(f))| × |Ker(f)|
   have h_center : Nat.card (Subgroup.center (SemidirectProduct (CyclicGroup (q ^ n))
@@ -435,7 +437,7 @@ theorem center_card_of_r_pos
     have hsmul : ∀ (k : CyclicGroup (p ^ m)) (y : CyclicGroup (q ^ n)), k • y = f k y :=
       fun _ _ => rfl
     ext x
-    simp only [fixedPointsSubgroup, Subgroup.mem_mk, Set.mem_setOf_eq, Subgroup.mem_bot]
+    simp only [fixedPointsSubgroup, Subgroup.mem_mk, Subgroup.mem_bot]
     constructor
     · intro hx
       -- hx : ∀ h, f h x = x, equivalently k • x = x for all k
@@ -454,10 +456,10 @@ theorem center_card_of_r_pos
       · -- Trivial action: f = 1, so Im(f) = {1}, |Im(f)| = 1 = p^r — but r > 0
         exfalso
         have hf_one : f = 1 := MonoidHom.ext fun k => MulEquiv.ext fun y => by
-          show (f k) y = y
+          change (f k) y = y
           have : k • y = y := mul_inv_eq_one.mp (htrivial y k)
           rw [← hsmul k y]; exact this
-        linarith [canonicalAction_range_card p q n m r hpq hq_odd hn hle,
+        linarith [canonicalAction_range_card p q n m r hq_odd hn hle,
                   show Nat.card f.range = 1 by simp [hf_one],
                   Nat.one_lt_pow hr.ne' hp.out.one_lt]
       · -- Surjective: for x ∈ Fix, write x = k₀ • q₀ * q₀⁻¹; induction gives x^(p^m) = 1
@@ -504,12 +506,13 @@ theorem center_card_of_r_pos
     have h_lagrange : Nat.card f.ker * f.ker.index = Nat.card (CyclicGroup (p ^ m)) :=
       Subgroup.card_mul_index (H := f.ker)
     have h_index : f.ker.index = p ^ r := by
-      rw [Subgroup.index_ker, canonicalAction_range_card p q n m r hpq hq_odd hn hle]
+      rw [Subgroup.index_ker, canonicalAction_range_card p q n m r hq_odd hn hle]
     rw [h_index, card_cyclicGroup] at h_lagrange
     have h_split : p ^ r * p ^ (m - r) = p ^ m := by
       rw [← pow_add, Nat.add_sub_cancel' hrm]
     nlinarith [pow_pos hp.out.pos r, pow_pos hp.out.pos (m - r)]
-  rw [h_center, show Nat.card (fixedPointsSubgroup f) = 1 from by rw [h_fix]; exact Subgroup.card_bot,
+  rw [h_center,
+    show Nat.card (fixedPointsSubgroup f) = 1 from by rw [h_fix]; exact Subgroup.card_bot,
     one_mul, h_ker]
 
 /-- Semidirect products C_{q^n} ⋊ C_{p^m} (q odd prime, p ≠ q) are classified up to
@@ -518,12 +521,12 @@ theorem center_card_of_r_pos
 theorem classify_Cqn_rtimes_Cpm
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
     (hpq : p ≠ q) (hq_odd : q ≠ 2)
-    (m n : ℕ) (hm : 0 < m) (hn : 0 < n)
+    (m n : ℕ) (hn : 0 < n)
     (f : CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n))) :
     ∃! r : Fin (min m ((q - 1).factorization p) + 1),
       Nonempty (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m)) f ≃*
                SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-                 (canonicalAction p q n m hpq hq_odd hn ↑r (Nat.lt_succ_iff.mp r.isLt))) := by
+                 (canonicalAction p q n m hq_odd hn ↑r (Nat.lt_succ_iff.mp r.isLt))) := by
   -- |f.range| = p^r for some r ≤ m, since |f.range| ∣ |C_{p^m}| = p^m
   have h_range_dvd_pm : Nat.card ↥f.range ∣ p ^ m := by
     have := Subgroup.card_range_dvd f; rwa [card_cyclicGroup] at this
@@ -558,14 +561,14 @@ theorem classify_Cqn_rtimes_Cpm
       (MulEquiv.isCyclic h_aut_iso).mpr (ZMod.isCyclic_units_of_prime_pow q hq.out hq_odd n)
     exact cyclic_subgroup_of_cyclic_group_is_unique
       Nat.card_pos rfl f.range _ h_range_card
-      (canonicalAction_range_card p q n m r hpq hq_odd hn hr)
+      (canonicalAction_range_card p q n m r hq_odd hn hr)
   · -- r is uniquely determined by the isomorphism class
     intro ⟨r', hr'_lt⟩ hr'_iso; simp only [Fin.mk.injEq]
     have hr'_le : r' ≤ min m ((q - 1).factorization p) := Nat.lt_succ_iff.mp hr'_lt
     -- Re-derive f ≅ canonicalAction r (same construction as the existence branch)
     have hiso_r : Nonempty (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m)) f ≃*
         SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-          (canonicalAction p q n m hpq hq_odd hn r hr)) := by
+          (canonicalAction p q n m hq_odd hn r hr)) := by
       apply semidirectProduct_iso_if_range_eq hp (card_cyclicGroup _)
       have h_aut_iso : MulAut (CyclicGroup (q ^ n)) ≃* (ZMod (q ^ n))ˣ := by
         have h := IsCyclic.mulAutMulEquiv (CyclicGroup (q ^ n)); rwa [card_cyclicGroup] at h
@@ -573,21 +576,21 @@ theorem classify_Cqn_rtimes_Cpm
       haveI : IsCyclic (MulAut (CyclicGroup (q ^ n))) :=
         (MulEquiv.isCyclic h_aut_iso).mpr (ZMod.isCyclic_units_of_prime_pow q hq.out hq_odd n)
       exact cyclic_subgroup_of_cyclic_group_is_unique Nat.card_pos rfl f.range _
-        h_range_card (canonicalAction_range_card p q n m r hpq hq_odd hn hr)
+        h_range_card (canonicalAction_range_card p q n m r hq_odd hn hr)
     obtain ⟨φ_r⟩ := hiso_r
     obtain ⟨φ_r'⟩ := hr'_iso
     -- canonicalAction r ≅ canonicalAction r'
     have hiso : SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-          (canonicalAction p q n m hpq hq_odd hn r hr) ≃*
+          (canonicalAction p q n m hq_odd hn r hr) ≃*
         SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-          (canonicalAction p q n m hpq hq_odd hn r' hr'_le) :=
+          (canonicalAction p q n m hq_odd hn r' hr'_le) :=
       φ_r.symm.trans φ_r'
     -- Isomorphic groups have isomorphic centers, hence equal center cardinalities
     have h_center_eq :
         Nat.card (Subgroup.center (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-          (canonicalAction p q n m hpq hq_odd hn r hr))) =
+          (canonicalAction p q n m hq_odd hn r hr))) =
         Nat.card (Subgroup.center (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-          (canonicalAction p q n m hpq hq_odd hn r' hr'_le))) :=
+          (canonicalAction p q n m hq_odd hn r' hr'_le))) :=
       Nat.card_congr (Subgroup.centerCongr hiso).toEquiv
     -- coprimality of q^n and p^k, needed for the r=0 contradiction cases
     have hcop_pq : Nat.Coprime p q := hp.out.coprime_of_ne hq.out hpq
@@ -597,7 +600,7 @@ theorem classify_Cqn_rtimes_Cpm
     · rcases Nat.eq_zero_or_pos r' with rfl | hr'_pos
       · rfl
       · exfalso
-        rw [center_card_of_r_zero p q n m hpq hq_odd hn,
+        rw [center_card_of_r_zero p q n m hq_odd hn,
             center_card_of_r_pos p q n m r' hpq hq_odd hn hr'_pos hr'_le] at h_center_eq
         -- q^n * p^m = p^(m-r') is impossible: q^n > 1 but gcd(q^n, p^(m-r')) = 1
         have hcop : Nat.Coprime (q ^ n) (p ^ (m - r')) :=
@@ -609,7 +612,7 @@ theorem classify_Cqn_rtimes_Cpm
     · rcases Nat.eq_zero_or_pos r' with rfl | hr'_pos
       · exfalso
         rw [center_card_of_r_pos p q n m r hpq hq_odd hn hr_pos hr,
-            center_card_of_r_zero p q n m hpq hq_odd hn] at h_center_eq
+            center_card_of_r_zero p q n m hq_odd hn] at h_center_eq
         have hcop : Nat.Coprime (q ^ n) (p ^ (m - r)) :=
           (hcop_pq.symm.pow_left n).pow_right (m - r)
         have h_not_dvd : ¬ (q ^ n ∣ p ^ (m - r)) := fun hdvd =>
@@ -628,14 +631,14 @@ theorem classify_Cqn_rtimes_Cpm
     proof that `|f.range| = p^r`, build the iso to the canonical action. -/
 theorem classify_Cqn_rtimes_Cpm_exists
     {p q r : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2)
-    (m n : ℕ) (hm : 0 < m) (hn : 0 < n)
+    (hq_odd : q ≠ 2)
+    (m n : ℕ) (hn : 0 < n)
     (f : CyclicGroup (p ^ m) →* MulAut (CyclicGroup (q ^ n)))
     (h : Nat.card f.range = p ^ r)
     (hr : r ≤ min m ((q - 1).factorization p)) :
       Nonempty (SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m)) f ≃*
                SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-                 (canonicalAction p q n m hpq hq_odd hn r hr)) := by
+                 (canonicalAction p q n m hq_odd hn r hr)) := by
   apply semidirectProduct_iso_if_range_eq hp (card_cyclicGroup _)
   have h_aut_iso : MulAut (CyclicGroup (q ^ n)) ≃* (ZMod (q ^ n))ˣ := by
     have h' := IsCyclic.mulAutMulEquiv (CyclicGroup (q ^ n))
@@ -646,7 +649,7 @@ theorem classify_Cqn_rtimes_Cpm_exists
     (MulEquiv.isCyclic h_aut_iso).mpr (ZMod.isCyclic_units_of_prime_pow q hq.out hq_odd n)
   exact cyclic_subgroup_of_cyclic_group_is_unique
     Nat.card_pos rfl f.range _ h
-    (canonicalAction_range_card p q n m r hpq hq_odd hn hr)
+    (canonicalAction_range_card p q n m r hq_odd hn hr)
 
 /-- The canonical action on abstract cyclic groups N, K: conjugates `canonicalAction p q n m r`
     through the unique isos N ≃* CyclicGroup (q^n) and K ≃* CyclicGroup (p^m).
@@ -659,7 +662,7 @@ theorem classify_Cqn_rtimes_Cpm_exists
 noncomputable def sdpCanonicalAction
     {N K : Type*} [Group N] [Group K] [IsCyclic N] [IsCyclic K]
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2)
+    (hq_odd : q ≠ 2)
     (m n : ℕ) (hn : 0 < n)
     (hN : Nat.card N = q ^ n) (hK : Nat.card K = p ^ m)
     (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
@@ -669,7 +672,7 @@ noncomputable def sdpCanonicalAction
   let eN : N ≃* CyclicGroup (q ^ n) := mulEquivOfCyclicCardEq (by rw [hN, card_cyclicGroup])
   let eK : K ≃* CyclicGroup (p ^ m) := mulEquivOfCyclicCardEq (by rw [hK, card_cyclicGroup])
   (MulAut.congr eN.symm).toMonoidHom.comp
-    ((canonicalAction p q n m hpq hq_odd hn r hr).comp eK.toMonoidHom)
+    ((canonicalAction p q n m hq_odd hn r hr).comp eK.toMonoidHom)
 
 /-- Abstract-group variant of `classify_Cqn_rtimes_Cpm`: classifies any semidirect product
     N ⋊ K of cyclic groups with |N| = q^n and |K| = p^m up to isomorphism, giving a unique
@@ -679,13 +682,13 @@ theorem classify_sdp
     {N K : Type*} [Group N] [Group K] [IsCyclic N] [IsCyclic K]
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
     (hpq : p ≠ q) (hq_odd : q ≠ 2)
-    (m n : ℕ) (hm : 0 < m) (hn : 0 < n)
+    (m n : ℕ) (hn : 0 < n)
     (hN : Nat.card N = q ^ n) (hK : Nat.card K = p ^ m)
     (φ : K →* MulAut N) :
     ∃! r : Fin (min m ((q - 1).factorization p) + 1),
       Nonempty (SemidirectProduct N K φ ≃*
                SemidirectProduct N K
-                 (sdpCanonicalAction hpq hq_odd m n hn hN hK ↑r (Nat.lt_succ_iff.mp r.isLt))) := by
+                 (sdpCanonicalAction hq_odd m n hn hN hK ↑r (Nat.lt_succ_iff.mp r.isLt))) := by
   haveI : Finite N := Nat.finite_of_card_ne_zero (by
     rw [hN]; exact pow_ne_zero n hq.out.ne_zero)
   haveI : Finite K := Nat.finite_of_card_ne_zero (by
@@ -699,64 +702,65 @@ theorem classify_sdp
     SemidirectProduct.congr' (φ₁ := φ) (fn := eN) (fg := eK)
   have h_bridge_back : ∀ r' : Fin (min m ((q - 1).factorization p) + 1),
       SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-        (canonicalAction p q n m hpq hq_odd hn ↑r' (Nat.lt_succ_iff.mp r'.isLt)) ≃*
+        (canonicalAction p q n m hq_odd hn ↑r' (Nat.lt_succ_iff.mp r'.isLt)) ≃*
       SemidirectProduct N K
-        (sdpCanonicalAction hpq hq_odd m n hn hN hK ↑r' (Nat.lt_succ_iff.mp r'.isLt)) :=
+        (sdpCanonicalAction hq_odd m n hn hN hK ↑r' (Nat.lt_succ_iff.mp r'.isLt)) :=
     fun r' => SemidirectProduct.congr'
-      (φ₁ := canonicalAction p q n m hpq hq_odd hn ↑r' (Nat.lt_succ_iff.mp r'.isLt))
+      (φ₁ := canonicalAction p q n m hq_odd hn ↑r' (Nat.lt_succ_iff.mp r'.isLt))
       (fn := eN.symm) (fg := eK.symm)
-  obtain ⟨r, hr_iso, hr_uniq⟩ := classify_Cqn_rtimes_Cpm hpq hq_odd m n hm hn f
+  obtain ⟨r, hr_iso, hr_uniq⟩ := classify_Cqn_rtimes_Cpm hpq hq_odd m n hn f
   refine ⟨r, ⟨h_bridge.trans (hr_iso.some.trans (h_bridge_back r))⟩, ?_⟩
   intro r' hr'_iso
   exact hr_uniq r' ⟨h_bridge.symm.trans (hr'_iso.some.trans (h_bridge_back r').symm)⟩
 
 /-- Canonical iso: `CyclicGroup (q^n) ⋊ canonicalAction r ≃* N ⋊ sdpCanonicalAction r`
-    for any cyclic N, K with the right cardinalities. The proof is a single `SemidirectProduct.congr'`
-    call; definitional equality of the output action follows from proof irrelevance on
+    for any cyclic N, K with the right cardinalities. The proof is a single
+    `SemidirectProduct.congr'` call; definitional equality of the output action
+    follows from proof irrelevance on
     the `mulEquivOfCyclicCardEq` arguments inside `sdpCanonicalAction`. -/
 noncomputable def sdpCanonicalAction_iso_canonicalAction
     {N K : Type*} [Group N] [Group K] [IsCyclic N] [IsCyclic K]
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2)
+    (hq_odd : q ≠ 2)
     (m n : ℕ) (hn : 0 < n)
     (hN : Nat.card N = q ^ n) (hK : Nat.card K = p ^ m)
     (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
     SemidirectProduct (CyclicGroup (q ^ n)) (CyclicGroup (p ^ m))
-        (canonicalAction p q n m hpq hq_odd hn r hr) ≃*
+        (canonicalAction p q n m hq_odd hn r hr) ≃*
     SemidirectProduct N K
-        (sdpCanonicalAction hpq hq_odd m n hn hN hK r hr) :=
+        (sdpCanonicalAction hq_odd m n hn hN hK r hr) :=
   letI : Finite N := Nat.finite_of_card_ne_zero (hN ▸ pow_ne_zero n hq.out.ne_zero)
   letI : Finite K := Nat.finite_of_card_ne_zero (hK ▸ pow_ne_zero m hp.out.ne_zero)
   let eN : N ≃* CyclicGroup (q ^ n) := mulEquivOfCyclicCardEq (by rw [hN, card_cyclicGroup])
   let eK : K ≃* CyclicGroup (p ^ m) := mulEquivOfCyclicCardEq (by rw [hK, card_cyclicGroup])
-  SemidirectProduct.congr' (φ₁ := canonicalAction p q n m hpq hq_odd hn r hr)
+  SemidirectProduct.congr' (φ₁ := canonicalAction p q n m hq_odd hn r hr)
     (fn := eN.symm) (fg := eK.symm)
 
 /-- The range of `sdpCanonicalAction r` has cardinality `p^r`, matching `canonicalAction r`. -/
 lemma sdpCanonicalAction_range_card
     {N K : Type*} [Group N] [Group K] [IsCyclic N] [IsCyclic K]
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2)
+    (hq_odd : q ≠ 2)
     (m n : ℕ) (hn : 0 < n)
     (hN : Nat.card N = q ^ n) (hK : Nat.card K = p ^ m)
     (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
-    Nat.card (sdpCanonicalAction hpq hq_odd m n hn hN hK r hr).range = p ^ r := by
+    Nat.card (sdpCanonicalAction hq_odd m n hn hN hK r hr).range = p ^ r := by
   letI : Finite N := Nat.finite_of_card_ne_zero (hN ▸ pow_ne_zero n hq.out.ne_zero)
   letI : Finite K := Nat.finite_of_card_ne_zero (hK ▸ pow_ne_zero m hp.out.ne_zero)
   let eN : N ≃* CyclicGroup (q ^ n) := mulEquivOfCyclicCardEq (by rw [hN, card_cyclicGroup])
   let eK : K ≃* CyclicGroup (p ^ m) := mulEquivOfCyclicCardEq (by rw [hK, card_cyclicGroup])
   -- sdpCanonicalAction = (MulAut.congr eN.symm) ∘ (canonicalAction r) ∘ eK  [definitionally]
-  have h1 : ((canonicalAction p q n m hpq hq_odd hn r hr).comp eK.toMonoidHom).range =
-      (canonicalAction p q n m hpq hq_odd hn r hr).range := by
+  have h1 : ((canonicalAction p q n m hq_odd hn r hr).comp eK.toMonoidHom).range =
+      (canonicalAction p q n m hq_odd hn r hr).range := by
     ext x; simp only [MonoidHom.mem_range, MonoidHom.comp_apply]
     exact ⟨fun ⟨k, hk⟩ => ⟨eK k, hk⟩, fun ⟨y, hy⟩ => ⟨eK.symm y, by simp [hy]⟩⟩
-  show Nat.card (((MulAut.congr eN.symm).toMonoidHom.comp
-      ((canonicalAction p q n m hpq hq_odd hn r hr).comp eK.toMonoidHom))).range = p ^ r
+  change Nat.card (((MulAut.congr eN.symm).toMonoidHom.comp
+      ((canonicalAction p q n m hq_odd hn r hr).comp eK.toMonoidHom))).range = p ^ r
   rw [MonoidHom.range_comp, h1]
   exact Nat.card_congr
-    (Subgroup.equivMapOfInjective (canonicalAction p q n m hpq hq_odd hn r hr).range
+    (Subgroup.equivMapOfInjective (canonicalAction p q n m hq_odd hn r hr).range
       (MulAut.congr eN.symm).toMonoidHom (MulAut.congr eN.symm).injective).symm.toEquiv |>.trans
-    (canonicalAction_range_card p q n m r hpq hq_odd hn hr)
+    (canonicalAction_range_card p q n m r hq_odd hn hr)
 
 /-- Transport `sdpCanonicalAction r` across isos `N₁ ≃* N₂` and `K₁ ≃* K₂`:
     `N₁ ⋊ sdpCanonicalAction r ≃* N₂ ⋊ sdpCanonicalAction r`. -/
@@ -764,12 +768,12 @@ noncomputable def sdpCanonicalAction_transport
     {N₁ N₂ K₁ K₂ : Type*} [Group N₁] [Group N₂] [Group K₁] [Group K₂]
     [IsCyclic N₁] [IsCyclic N₂] [IsCyclic K₁] [IsCyclic K₂]
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq_odd : q ≠ 2)
+    (hq_odd : q ≠ 2)
     (m n : ℕ) (hn : 0 < n)
     (hN₁ : Nat.card N₁ = q ^ n) (hK₁ : Nat.card K₁ = p ^ m)
     (hN₂ : Nat.card N₂ = q ^ n) (hK₂ : Nat.card K₂ = p ^ m)
     (r : ℕ) (hr : r ≤ min m ((q - 1).factorization p)) :
-    SemidirectProduct N₁ K₁ (sdpCanonicalAction hpq hq_odd m n hn hN₁ hK₁ r hr) ≃*
-    SemidirectProduct N₂ K₂ (sdpCanonicalAction hpq hq_odd m n hn hN₂ hK₂ r hr) :=
-  (sdpCanonicalAction_iso_canonicalAction hpq hq_odd m n hn hN₁ hK₁ r hr).symm.trans
-    (sdpCanonicalAction_iso_canonicalAction hpq hq_odd m n hn hN₂ hK₂ r hr)
+    SemidirectProduct N₁ K₁ (sdpCanonicalAction hq_odd m n hn hN₁ hK₁ r hr) ≃*
+    SemidirectProduct N₂ K₂ (sdpCanonicalAction hq_odd m n hn hN₂ hK₂ r hr) :=
+  (sdpCanonicalAction_iso_canonicalAction hq_odd m n hn hN₁ hK₁ r hr).symm.trans
+    (sdpCanonicalAction_iso_canonicalAction hq_odd m n hn hN₂ hK₂ r hr)

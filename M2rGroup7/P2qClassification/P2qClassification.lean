@@ -12,10 +12,10 @@ import «M2rGroup7».CyclicGroup
     Exists when q ∣ p - 1, encoded by `hr : 1 ≤ min 1 ((p - 1).factorization q)`. -/
 noncomputable def canonicalCqOnCp2Action
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hp2 : p ≠ 2)
+    (hp2 : p ≠ 2)
     (hr : 1 ≤ min 1 ((p - 1).factorization q)) :
     CyclicGroup q →* MulAut (CyclicGroup (p ^ 2)) :=
-  sdpCanonicalAction (p := q) (q := p) (Ne.symm hpq) hp2
+  sdpCanonicalAction (p := q) (q := p) hp2
     1 2 (by norm_num)
     (by rw [card_cyclicGroup])
     (by rw [card_cyclicGroup, pow_one])
@@ -27,7 +27,7 @@ theorem classification_p2q {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_prime : Fac
       ∨ Nonempty (G ≃* CyclicGroup p × CyclicGroup p × CyclicGroup q)
       ∨ (∃ (hp2 : p ≠ 2) (hr : 1 ≤ min 1 ((p - 1).factorization q)),
           Nonempty (G ≃* SemidirectProduct (CyclicGroup (p ^ 2)) (CyclicGroup q)
-                           (canonicalCqOnCp2Action h_p_ne_q hp2 hr))) := by
+                           (canonicalCqOnCp2Action hp2 hr))) := by
   -- G is finite
   haveI : Finite G := by
     apply Nat.finite_of_card_ne_zero
@@ -104,7 +104,7 @@ theorem classification_p2q {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_prime : Fac
         -- classify_sdp: C_q acts on C_{p^2}; in sdpCanonicalAction variables p↔q, q↔p, m=1, n=2
         obtain ⟨⟨rval, hrlt⟩, hr_iso, _⟩ :=
           classify_sdp (p := q) (q := p) (Ne.symm h_p_ne_q) hp_ne_2
-            1 2 Nat.one_pos (by norm_num)
+            1 2 (by norm_num)
             (hN := by rw [card_cyclicGroup (p ^ 2)])
             (hK := by rw [card_cyclicGroup q, pow_one])
             φ'
@@ -115,7 +115,7 @@ theorem classification_p2q {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_prime : Fac
         · -- r = 0: trivial action → G ≃* C_{p^2 * q}
           obtain ⟨e⟩ := hr_iso
           have h_triv :
-              sdpCanonicalAction (p := q) (q := p) (Ne.symm h_p_ne_q) hp_ne_2
+              sdpCanonicalAction (p := q) (q := p) hp_ne_2
                 1 2 (by norm_num)
                 (hN := by rw [card_cyclicGroup (p ^ 2)])
                 (hK := by rw [card_cyclicGroup q, pow_one])
@@ -132,7 +132,7 @@ theorem classification_p2q {q : ℕ} [h_p_prime : Fact p.Prime] [h_q_prime : Fac
           obtain ⟨e⟩ := hr_iso
           have hr_cond : 1 ≤ min 1 ((p - 1).factorization q) := by omega
           have : G ≃* SemidirectProduct (CyclicGroup (p ^ 2)) (CyclicGroup q)
-                           (canonicalCqOnCp2Action h_p_ne_q hp_ne_2 hr_cond) :=
+                           (canonicalCqOnCp2Action hp_ne_2 hr_cond) :=
             h_iso_g_p_k.symm.trans (h_bridge.trans e)
           tauto
 

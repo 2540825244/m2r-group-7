@@ -29,7 +29,7 @@ canonicalAction_r_iso).
     Built by transporting `canonicalAction p q 1 1 r=1` across `p^1 = p` and `q^1 = q`. -/
 def canonicalCpOnCqAction
     {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq2 : q ≠ 2)
+    (hq2 : q ≠ 2)
     (hr : 1 ≤ min 1 ((q - 1).factorization p)) :
     CyclicGroup p →* MulAut (CyclicGroup q) :=
   haveI : NeZero p := ⟨hp.out.ne_zero⟩
@@ -37,7 +37,7 @@ def canonicalCpOnCqAction
   haveI : NeZero (p^1) := ⟨pow_ne_zero 1 hp.out.ne_zero⟩
   haveI : NeZero (q^1) := ⟨pow_ne_zero 1 hq.out.ne_zero⟩
   transportCpCqHom (pow_one p) (pow_one q)
-    (canonicalAction p q 1 1 hpq hq2 Nat.one_pos 1 hr)
+    (canonicalAction p q 1 1 hq2 Nat.one_pos 1 hr)
 
 -- ─── Main classification theorem ─────────────────────────────────────────────
 
@@ -54,8 +54,8 @@ theorem pq_classification
     Nonempty (G ≃* CyclicGroup (p * q)) ∨
     ∃ (hr : 1 ≤ min 1 ((q - 1).factorization p)),
       Nonempty (G ≃* SemidirectProduct (CyclicGroup q) (CyclicGroup p)
-                       (canonicalCpOnCqAction (Nat.ne_of_lt hlt)
-                                              (by linarith [hp.out.two_le]) hr)) := by
+                       (canonicalCpOnCqAction
+                         (by linarith [hp.out.two_le]) hr)) := by
   have hpq : p ≠ q := Nat.ne_of_lt hlt
   have hq2 : q ≠ 2 := by linarith [hp.out.two_le]
   haveI : NeZero p := ⟨hp.out.ne_zero⟩
@@ -100,19 +100,19 @@ theorem pq_classification
   -- Classify φ_inter via `classify_Cqn_rtimes_Cpm` (m = n = 1).
   have h_pre_iso := SemidirectProduct.transportCpCqIso (pow_one p).symm (pow_one q).symm φ_inter
   obtain ⟨⟨r, hr_lt⟩, ⟨e_pre⟩, _⟩ := classify_Cqn_rtimes_Cpm (p := p) (q := q) hpq hq2 1 1
-    Nat.one_pos Nat.one_pos (transportCpCqHom (pow_one p).symm (pow_one q).symm φ_inter)
+    Nat.one_pos (transportCpCqHom (pow_one p).symm (pow_one q).symm φ_inter)
   have hr_le : r ≤ min 1 ((q - 1).factorization p) := Nat.lt_succ_iff.mp hr_lt
   let e_back := SemidirectProduct.transportCpCqIso (pow_one p) (pow_one q)
-    (canonicalAction p q 1 1 hpq hq2 Nat.one_pos r hr_le)
+    (canonicalAction p q 1 1 hq2 Nat.one_pos r hr_le)
   let pre := h_iso_g_q_k.symm.trans (h_congr.trans (h_pre_iso.trans (e_pre.trans e_back)))
   have hr_le_1 : r ≤ 1 := hr_le.trans (min_le_left _ _)
   interval_cases r
   · -- r = 0: trivial action → G ≃* C_{p * q}
     have h_triv := eq_one_of_range_card_one (by
       change Nat.card (transportCpCqHom (pow_one p) (pow_one q)
-        (canonicalAction p q 1 1 hpq hq2 Nat.one_pos 0 hr_le)).range = 1
+        (canonicalAction p q 1 1 hq2 Nat.one_pos 0 hr_le)).range = 1
       rw [transportCpCqHom_range_card]
-      simpa using canonicalAction_range_card p q 1 1 0 hpq hq2 Nat.one_pos hr_le)
+      simpa using canonicalAction_range_card p q 1 1 0 hq2 Nat.one_pos hr_le)
     have hcop : Nat.Coprime q p := hq.out.coprime_of_ne hp.out hpq.symm
     left
     exact ⟨pre.trans ((SemidirectProduct.mulEquivOfTrivialAction h_triv).trans

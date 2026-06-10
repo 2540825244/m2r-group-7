@@ -16,7 +16,7 @@ def canonicalC2OnCp2Action {p : ℕ} [h_p_prime : Fact p.Prime] (h_p_ne_2 : p �
   haveI : NeZero (2 : ℕ) := ⟨by norm_num⟩
   haveI : NeZero ((2:ℕ) ^ 1) := ⟨pow_ne_zero 1 (by norm_num)⟩
   transportCpCqHom (pow_one 2) (rfl : p ^ 2 = p ^ 2)
-    (canonicalAction 2 p 2 1 (Ne.symm h_p_ne_2) h_p_ne_2 (by norm_num)
+    (canonicalAction 2 p 2 1 h_p_ne_2 (by norm_num)
        1 (by
           have h := (Nat.le_min.mp (one_le_min_two_factorization_two h_p_ne_2)).2
           exact Nat.le_min.mpr ⟨le_refl 1, h⟩))
@@ -144,11 +144,11 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
       have hp22 : (p^2 : ℕ) = p^2 := rfl
       have h_pre_iso := SemidirectProduct.transportCpCqIso h21.symm hp22.symm φ_inter
       obtain ⟨⟨r, hr_lt⟩, ⟨e_pre⟩, _⟩ := classify_Cqn_rtimes_Cpm (p := 2) (q := p) h2p hpne2 1 2
-        Nat.one_pos (by norm_num)
+        (by norm_num)
         (transportCpCqHom h21.symm hp22.symm φ_inter)
       have hr_le : r ≤ min 1 ((p - 1).factorization 2) := Nat.lt_succ_iff.mp hr_lt
       let canonR := fun r (hr : r ≤ min 1 ((p - 1).factorization 2)) =>
-        canonicalAction 2 p 2 1 h2p hpne2 (by norm_num) r hr
+        canonicalAction 2 p 2 1 hpne2 (by norm_num) r hr
       let e_back := fun r hr => SemidirectProduct.transportCpCqIso h21 hp22 (canonR r hr)
       let pre := h_iso_g_n_k.symm.trans (h_congr.trans (h_pre_iso.trans
         (e_pre.trans (e_back r hr_le))))
@@ -158,7 +158,7 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
         have h_triv := eq_one_of_range_card_one (by
           show Nat.card (transportCpCqHom h21 hp22 (canonR 0 hr_le)).range = 1
           rw [transportCpCqHom_range_card]
-          simpa using canonicalAction_range_card 2 p 2 1 0 h2p hpne2 (by norm_num) hr_le)
+          simpa using canonicalAction_range_card 2 p 2 1 0 hpne2 (by norm_num) hr_le)
         have : G ≃* CyclicGroup (2 * p ^ 2) := pre.trans
           ((SemidirectProduct.mulEquivOfTrivialAction h_triv).trans
             (MulEquiv.prodComm.trans (CyclicGroup.prodMulEquiv h2p2cop)))

@@ -205,7 +205,7 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 4, 2 => CyclicGroup 2 × CyclicGroup 2
   | 5, 1 => CyclicGroup 5
   | 6, 1 => SemidirectProduct (CyclicGroup 3) (CyclicGroup 2)
-      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 3) (by norm_num : (3:ℕ) ≠ 2)
+      (canonicalCpOnCqAction (by norm_num : (3:ℕ) ≠ 2)
         (by native_decide : 1 ≤ min 1 ((3 - 1 : ℕ).factorization 2)))
   | 6, 2 => CyclicGroup 6
   | 7, 1 => CyclicGroup 7
@@ -217,7 +217,7 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 9, 1 => CyclicGroup 9
   | 9, 2 => CyclicGroup 3 × CyclicGroup 3
   | 10, 1 => SemidirectProduct (CyclicGroup 5) (CyclicGroup 2)
-      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 5) (by norm_num : (5:ℕ) ≠ 2)
+      (canonicalCpOnCqAction (by norm_num : (5:ℕ) ≠ 2)
         (by native_decide : 1 ≤ min 1 ((5 - 1 : ℕ).factorization 2)))
   | 10, 2 => CyclicGroup 10
   | 11, 1 => CyclicGroup 11
@@ -231,7 +231,7 @@ with one of the explicit computable actions defined above (or in this file). -/
       canonicalC3OnC2C2Action
   | 13, 1 => CyclicGroup 13
   | 14, 1 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 2)
-      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 7) (by norm_num : (7:ℕ) ≠ 2)
+      (canonicalCpOnCqAction (by norm_num : (7:ℕ) ≠ 2)
         (by native_decide : 1 ≤ min 1 ((7 - 1 : ℕ).factorization 2)))
   | 14, 2 => CyclicGroup 14
   | 15, 1 => CyclicGroup 15
@@ -268,11 +268,11 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 20, 5 => SemidirectProduct (CyclicGroup 5) (CyclicGroup 2 × CyclicGroup 2)
       (canonicalC2C2OnCqAction (by norm_num : (5:ℕ) ≠ 2))
   | 21, 1 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 3)
-      (canonicalCpOnCqAction (by norm_num : (3:ℕ) ≠ 7) (by norm_num : (7:ℕ) ≠ 2)
+      (canonicalCpOnCqAction (by norm_num : (7:ℕ) ≠ 2)
         (by native_decide : 1 ≤ min 1 ((7 - 1 : ℕ).factorization 3)))
   | 21, 2 => CyclicGroup 21
   | 22, 1 => SemidirectProduct (CyclicGroup 11) (CyclicGroup 2)
-      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 11) (by norm_num : (11:ℕ) ≠ 2)
+      (canonicalCpOnCqAction (by norm_num : (11:ℕ) ≠ 2)
         (by native_decide : 1 ≤ min 1 ((11 - 1 : ℕ).factorization 2)))
   | 22, 2 => CyclicGroup 22
   | 23, 1 => CyclicGroup 23
@@ -294,7 +294,7 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 25, 1 => CyclicGroup 25
   | 25, 2 => CyclicGroup 5 × CyclicGroup 5
   | 26, 1 => SemidirectProduct (CyclicGroup 13) (CyclicGroup 2)
-      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 13) (by norm_num : (13:ℕ) ≠ 2)
+      (canonicalCpOnCqAction (by norm_num : (13:ℕ) ≠ 2)
         (by native_decide : 1 ≤ min 1 ((13 - 1 : ℕ).factorization 2)))
   | 26, 2 => CyclicGroup 26
   | 27, 1 => CyclicGroup 27
