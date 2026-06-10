@@ -172,10 +172,13 @@ macro "by_single_group" : tactic => `(tactic | (
 
 -- Meta-level mirror of num_entries; must stay in sync with SmallGroupsLibrary.num_entries.
 private def numEntriesMeta : Nat → Nat
-  | 4 | 6 | 9 | 10 | 14 => 2
-  | 8 | 12 => 5
+  | 1 | 2 | 3 | 5 | 7 | 11 | 13 | 15 | 17 | 19 | 23 | 27 | 29 | 31 => 1
+  | 4 | 6 | 9 | 10 | 14 | 21 | 22 | 25 | 26 => 2
+  | 8 | 12 | 18 | 20 => 5
+  | 24 => 15
+  | 28 | 30 => 4
   | 16 => 14
-  | _ => 1
+  | _ => 0
 
 -- Convert a reduced Lean expression (Nat/Bool/nested Prod literal) to term syntax.
 private partial def exprLiteralToSyntax (e : Lean.Expr) : Lean.MetaM (Lean.TSyntax `term) := do
@@ -211,10 +214,7 @@ private unsafe def evalToLiteral (αExpr : Lean.Expr) (e : Lean.Expr) : Lean.Met
 
 syntax (name := byInvariant) "by_invariant" num ident ident term : tactic
 
--- Registered via @[tactic] so it can be `unsafe` (needed for evalToLiteral / evalExpr).
--- The generated proof terms use only `decide`, which is fully kernel-verified.
-@[tactic byInvariant]
-private unsafe def elabByInvariant : Lean.Elab.Tactic.Tactic
+private unsafe def elabByInvariantImpl : Lean.Elab.Tactic.Tactic
   | `(tactic| by_invariant $nStx $i $i' $inv) => do
     let nVal    := nStx.getNat
     let nGroups := numEntriesMeta nVal
@@ -247,6 +247,12 @@ private unsafe def elabByInvariant : Lean.Elab.Tactic.Tactic
          simp only [$simpArgs,*]
          decide)))
   | _ => Lean.Elab.throwUnsupportedSyntax
+
+@[implemented_by elabByInvariantImpl]
+private opaque elabByInvariantSafe : Lean.Elab.Tactic.Tactic
+
+@[tactic byInvariant]
+private def elabByInvariant : Lean.Elab.Tactic.Tactic := elabByInvariantSafe
 
 set_option maxHeartbeats 1600000 in
 -- Bumping heartbeats to allow the elaborator to construct the O(N²) case-split AST.
