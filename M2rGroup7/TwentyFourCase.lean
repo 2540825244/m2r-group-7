@@ -576,10 +576,117 @@ private lemma c3_sdp_c4c2_nontrivial
       (sdp_congr_right_of_comp_eq α hα).trans c3_sdp_c4c2_via_fst_mod2_iso_c2q12
     tauto
 
+-- ── D_4 leaf helpers ────────────────────────────────────────────────────────
+-- The 3 non-trivial homs `D_4 → MulAut(C_3) ≃ C_2` split into two `Aut(D_4)`-orbits:
+-- kernel = rotation C_4 gives `D_12`; kernel = a reflection V_4 gives
+-- `C_3 ⋊[d4OnCqInv 3] D_4` (which is the `retrieve 24 8` entry itself).
+
+/-- Standard action for the `D_12` target: rotations act trivially, reflections invert.
+Its kernel is the rotation subgroup `⟨r⟩ ≃ C_4`. -/
+private def d4OnC3Inv_via_refl : DihedralGroup 4 →* MulAut (CyclicGroup 3) where
+  toFun := fun
+    | .r _ => 1
+    | .sr _ => MulEquiv.inv (CyclicGroup 3)
+  map_one' := rfl
+  map_mul' p q := by
+    rcases p with i | i <;> rcases q with j | j <;> ext c <;> revert c i j <;> decide
+
+/-- The outer automorphism of `D_4` fixing rotations and shifting reflections by one.
+Swaps the two reflection-V_4 subgroups, lifting the `(inv, inv)` action case to
+`d4OnCqInv 3` standard form. -/
+private def d4_shift : DihedralGroup 4 ≃* DihedralGroup 4 where
+  toFun
+    | .r i => .r i
+    | .sr i => .sr (i + 1)
+  invFun
+    | .r i => .r i
+    | .sr i => .sr (i - 1)
+  left_inv := by decide
+  right_inv := by decide
+  map_mul' := by decide
+
+/-- The iso `C_3 ⋊[d4OnC3Inv_via_refl] D_4 ≃* D_12`. The rotation part is the CRT iso
+`C_3 × C_4 ≃ C_12`: `(c^k, r i) ↦ r (4k + 9i)`; reflections: `(c^k, sr i) ↦ sr (9i - 4k)`
+(arithmetic in `ZMod 12`). -/
+private def c3_sdp_d4_iso_d12 :
+    CyclicGroup 3 ⋊[d4OnC3Inv_via_refl] DihedralGroup 4 ≃* DihedralGroup 12 where
+  toFun x :=
+    let k : ZMod 12 := ((Multiplicative.toAdd x.left).val : ZMod 12)
+    match x.right with
+    | .r i => .r (4 * k + 9 * (i.val : ZMod 12))
+    | .sr i => .sr (9 * (i.val : ZMod 12) - 4 * k)
+  invFun y :=
+    match y with
+    | .r j => ⟨Multiplicative.ofAdd ((j.val : ZMod 3)), .r ((j.val : ZMod 4))⟩
+    | .sr j => ⟨Multiplicative.ofAdd (-(j.val : ZMod 3)), .sr ((j.val : ZMod 4))⟩
+  left_inv := by decide
+  right_inv := by decide
+  map_mul' := by decide
+
+/-- Two homomorphisms out of `D_4` agreeing on the generators `r 1` and `sr 0` are equal. -/
+private lemma d4_hom_ext {H : Type*} [Group H]
+    {f g : DihedralGroup 4 →* H}
+    (h1 : f (.r 1) = g (.r 1)) (h2 : f (.sr 0) = g (.sr 0)) :
+    f = g := by
+  have hr : ∀ i : ZMod 4, (.r i : DihedralGroup 4) = .r 1 ^ i.val := by decide
+  have hsr : ∀ i : ZMod 4, (.sr i : DihedralGroup 4) = .sr 0 * .r 1 ^ i.val := by decide
+  ext x
+  rcases x with i | i
+  · rw [hr, f.map_pow, g.map_pow, h1]
+  · rw [hsr, f.map_mul, g.map_mul, f.map_pow, g.map_pow, h1, h2]
+
+/-- Case-bash on `(φ(r 1), φ(sr 0)) ∈ {1, inv}²` (excluding the trivial case). The
+`(1, inv)` case lands on `d4OnC3Inv_via_refl`; the other two land on `d4OnCqInv 3`
+(using `d4_shift` for the `(inv, inv)` case). -/
+private lemma d4_basis_change_exists
+    {φ : DihedralGroup 4 →* MulAut (CyclicGroup 3)} (h : φ ≠ 1) :
+    (∃ α : DihedralGroup 4 ≃* DihedralGroup 4,
+        d4OnC3Inv_via_refl.comp α.toMonoidHom = φ) ∨
+    (∃ α : DihedralGroup 4 ≃* DihedralGroup 4,
+        (d4OnCqInv 3).comp α.toMonoidHom = φ) := by
+  obtain ⟨a, ha⟩ : ∃ a, a = φ (.r 1) := ⟨_, rfl⟩
+  obtain ⟨b, hb⟩ : ∃ b, b = φ (.sr 0) := ⟨_, rfl⟩
+  have close_refl (α : DihedralGroup 4 ≃* DihedralGroup 4)
+      (h1 : d4OnC3Inv_via_refl (α (.r 1)) = a := by decide)
+      (h2 : d4OnC3Inv_via_refl (α (.sr 0)) = b := by decide) :
+      ∃ α' : DihedralGroup 4 ≃* DihedralGroup 4,
+        d4OnC3Inv_via_refl.comp α'.toMonoidHom = φ :=
+    ⟨α, d4_hom_ext (f := d4OnC3Inv_via_refl.comp α.toMonoidHom)
+      (h1.trans ha) (h2.trans hb)⟩
+  have close_parity (α : DihedralGroup 4 ≃* DihedralGroup 4)
+      (h1 : d4OnCqInv 3 (α (.r 1)) = a := by decide)
+      (h2 : d4OnCqInv 3 (α (.sr 0)) = b := by decide) :
+      ∃ α' : DihedralGroup 4 ≃* DihedralGroup 4,
+        (d4OnCqInv 3).comp α'.toMonoidHom = φ :=
+    ⟨α, d4_hom_ext (f := (d4OnCqInv 3).comp α.toMonoidHom)
+      (h1.trans ha) (h2.trans hb)⟩
+  rcases mulAut_cyclicGroup_three_cases a with rfl | rfl <;>
+    rcases mulAut_cyclicGroup_three_cases b with rfl | rfl
+  · -- (1, 1): φ is trivial, contradicting `h`.
+    exact absurd (d4_hom_ext ha.symm hb.symm) h
+  · -- (1, inv): ker φ = ⟨r⟩. Take α = id.
+    exact Or.inl (close_refl (MulEquiv.refl _))
+  · -- (inv, 1): ker φ = {r 0, r 2, sr 0, sr 2}. Take α = id.
+    exact Or.inr (close_parity (MulEquiv.refl _))
+  · -- (inv, inv): ker φ = {r 0, r 2, sr 1, sr 3}. Take α = d4_shift.
+    exact Or.inr (close_parity d4_shift)
+
+/-- Any non-trivial action `φ` of `D_4` on `C_3` gives `C_3 ⋊[φ] D_4` isomorphic to either
+`D_12` or `C_3 ⋊[d4OnCqInv 3] D_4`, depending on the iso class of `ker φ`. -/
+private lemma c3_sdp_d4_nontrivial
+    {φ : DihedralGroup 4 →* MulAut (CyclicGroup 3)} (h_nontriv : φ ≠ 1) :
+    Nonempty (CyclicGroup 3 ⋊[φ] DihedralGroup 4 ≃* DihedralGroup 12) ∨
+    Nonempty (CyclicGroup 3 ⋊[φ] DihedralGroup 4 ≃*
+              CyclicGroup 3 ⋊[d4OnCqInv 3] DihedralGroup 4) := by
+  rcases d4_basis_change_exists h_nontriv with ⟨α, hα⟩ | ⟨α, hα⟩
+  · let : CyclicGroup 3 ⋊[φ] DihedralGroup 4 ≃* DihedralGroup 12 :=
+      (sdp_congr_right_of_comp_eq α hα).trans c3_sdp_d4_iso_d12
+    tauto
+  · exact Or.inr ⟨sdp_congr_right_of_comp_eq α hα⟩
+
 /-- Non-trivial-action branch of the normal-Sylow-3 classification. Given a
     semidirect-product iso `↥P ⋊[φ] ↥K ≃* G` with `|P| = 3` and `|K| = 8`,
-    dispatch on `order8_classification` of `K`. Six of the seven possible
-    iso classes are now named:
+    dispatch on `order8_classification` of `K`. The seven possible iso classes:
     - `K = C_8`                       →  `C_3 ⋊ C_8`
     - `K = C_4 × C_2`, `ker φ = C_4`  →  `D_3 × C_4`
     - `K = C_4 × C_2`, `ker φ = V_4`  →  `C_2 × Q_12`
@@ -630,9 +737,18 @@ private lemma order24_1_sylow3_nontrivial
       c3_sdp_c2cubed_nontrivial (transported_action_ne_one eP eK h_phi_nontriv)
     tauto
   · -- K ≃* D_4: two sub-cases by `ker φ`
-    --   ker = rotation C_4  → D_12
+    --   ker = rotation C_4   → D_12
     --   ker = reflection V_4 → C_3 ⋊[d4OnCqInv 3] D_4
-    sorry
+    obtain ⟨eK⟩ := hD4
+    rcases c3_sdp_d4_nontrivial (transported_action_ne_one eP eK h_phi_nontriv) with he | he
+    · obtain ⟨e⟩ := he
+      let : G ≃* DihedralGroup 12 :=
+        h_iso.symm.trans <| (SemidirectProduct.congr' eP eK).trans e
+      tauto
+    · obtain ⟨e⟩ := he
+      let : G ≃* CyclicGroup 3 ⋊[d4OnCqInv 3] DihedralGroup 4 :=
+        h_iso.symm.trans <| (SemidirectProduct.congr' eP eK).trans e
+      tauto
   · -- K ≃* Q_8: target Q_24
     obtain ⟨eK⟩ := hQ8
     let : G ≃* QuaternionGroup 6 :=
@@ -646,9 +762,8 @@ private lemma order24_1_sylow3_nontrivial
     non-trivial action). The precondition is equivalent to having a normal Sylow
     3-subgroup.
 
-    The 5 trivial-action targets are wired up via `order24_1_sylow3_trivial`; the
-    7 non-trivial-action targets are stubbed in `order24_1_sylow3_nontrivial` (6
-    named + 1 under a trailing `True` placeholder). -/
+    The 5 trivial-action targets are proved in `order24_1_sylow3_trivial`; the
+    7 non-trivial-action targets in `order24_1_sylow3_nontrivial`. -/
 lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
     (h_n3 : Nat.card (Sylow 3 G) = 1) :
     (Nonempty (G ≃* CyclicGroup 3 × CyclicGroup 8) ∨
