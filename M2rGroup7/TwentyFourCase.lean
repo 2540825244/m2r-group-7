@@ -949,16 +949,6 @@ private lemma order24_4_sylow3_ker_one {G : Type*} [Group G] (h : Nat.card G = 2
     Fintype.equivFinOfCardEq (by rw [← Nat.card_eq_fintype_card, h_n3])
   exact ⟨(MulEquiv.ofBijective _ h_bij).trans e_fin.permCongrHom⟩
 
-/-- An order-2 action kernel forces a normal Sylow 2-subgroup. The kernel is a central
-involution `z`; the four Sylow 3-subgroups contribute 8 elements of order 3, whose
-`z`-translates are 8 elements of order 6, so the 8 elements of 2-power order all lie in
-a single Sylow 2-subgroup. -/
-private lemma sylow2_card_one_of_ker_two {G : Type*} [Group G] (h : Nat.card G = 24)
-    (h_n3 : Nat.card (Sylow 3 G) = 4)
-    (h_ker : Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = 2) :
-    Nat.card (Sylow 2 G) = 1 := by
-  sorry
-
 /-- A group isomorphic to `T × H` with `|T| = 8` and `|H| = 3` has a unique Sylow
 3-subgroup: there are at most 3 elements of order 3 (all in `1 × H`), but four Sylow
 3-subgroups would give 8. -/
@@ -1134,16 +1124,6 @@ private lemma c3_hom_mulAut_d4_trivial
   c3_hom_eq_one_of_gen_eq_one
     (mulAut_d4_eq_one_of_cube_eq_one _ (c3_hom_gen_cube_eq_one ψ))
 
-/-- Any non-trivial action `ψ` of `C_3` on `(C_2)³` gives
-`(C_2)³ ⋊[ψ] C_3 ≃* C_2 × A_4`: the fixed line of `ψ` splits off as a central `C_2`, and
-`C_3` acts simply on the complementary `V_4`. -/
-private lemma c2cubed_sdp_c3_nontrivial
-    {ψ : CyclicGroup 3 →* MulAut (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)}
-    (h_nontriv : ψ ≠ 1) :
-    Nonempty ((CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ⋊[ψ] CyclicGroup 3 ≃*
-      CyclicGroup 2 × AlternatingGroup 4) := by
-  sorry
-
 /-- The order-3 automorphism of `Q_8` cycling `i ↦ j ↦ k ↦ i` (and `-i ↦ -j ↦ -k`),
 in the encoding `i = a 1`, `j = xa 0`, `k = xa 3`, `-1 = a 2`. -/
 private def q8_cycle_ijk : QuaternionGroup 2 ≃* QuaternionGroup 2 where
@@ -1306,6 +1286,16 @@ private lemma q8_sdp_c3_nontrivial
   obtain ⟨e⟩ := q8_sdp_c3_iso_standard h_nontriv
   exact ⟨e.trans q8_sdp_c3OnQ8_iso_sl23⟩
 
+/-- Any non-trivial action `ψ` of `C_3` on `(C_2)³` gives
+`(C_2)³ ⋊[ψ] C_3 ≃* C_2 × A_4`: the fixed line of `ψ` splits off as a central `C_2`, and
+`C_3` acts simply on the complementary `V_4`. -/
+private lemma c2cubed_sdp_c3_nontrivial
+    {ψ : CyclicGroup 3 →* MulAut (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)}
+    (h_nontriv : ψ ≠ 1) :
+    Nonempty ((CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ⋊[ψ] CyclicGroup 3 ≃*
+      CyclicGroup 2 × AlternatingGroup 4) := by
+  sorry
+
 /-- Dispatch on the iso class of the order-8 normal subgroup in `T ⋊[φ] C` with `φ ≠ 1`:
 only `C_2³` and `Q_8` admit an order-3 automorphism, giving `C_2 × A_4` and `SL_2(𝔽_3)`
 respectively. -/
@@ -1387,6 +1377,16 @@ private lemma order24_4_sylow3_normal_sylow2 {G : Type*} [Group G] (h : Nat.card
     have := sylow3_card_one_of_iso_prod_order8 h_T_card h_C_card e
     omega
   · exact order24_4_sdp_dispatch h_T_card h_C_card h_iso h_triv
+
+/-- An order-2 action kernel forces a normal Sylow 2-subgroup. The kernel is a central
+involution `z`; the four Sylow 3-subgroups contribute 8 elements of order 3, whose
+`z`-translates are 8 elements of order 6, so the 8 elements of 2-power order all lie in
+a single Sylow 2-subgroup. -/
+private lemma sylow2_card_one_of_ker_two {G : Type*} [Group G] (h : Nat.card G = 24)
+    (h_n3 : Nat.card (Sylow 3 G) = 4)
+    (h_ker : Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = 2) :
+    Nat.card (Sylow 2 G) = 1 := by
+  sorry
 
 /-- Order-2-kernel case: the kernel is a central involution, forcing a normal Sylow-2 `T`
 with `G ≃* T ⋊ C_3` non-trivially; `T ≃ C_2³` gives `C_2 × A_4`, `T ≃ Q_8` gives
