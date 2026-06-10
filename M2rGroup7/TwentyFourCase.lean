@@ -46,6 +46,19 @@ private def sdp_prodEquivOfFstAction
   right_inv _ := rfl
   map_mul' _ _ := rfl
 
+/-- Transport step (basis change): an automorphism `α` of `K` with `ψ ∘ α = φ` induces an
+iso of semidirect products `N ⋊[φ] K ≃* N ⋊[ψ] K`. -/
+private def sdp_congr_right_of_comp_eq
+    {N K : Type*} [Group N] [Group K] {φ ψ : K →* MulAut N}
+    (α : K ≃* K) (hα : ψ.comp α.toMonoidHom = φ) :
+    N ⋊[φ] K ≃* N ⋊[ψ] K :=
+  SemidirectProduct.congr (MulEquiv.refl _) α (by
+    intro g
+    have h := DFunLike.ext_iff.mp hα g
+    ext n
+    simp only [MulEquiv.trans_apply, MulEquiv.refl_apply]
+    exact (congrArg (fun a : MulAut _ => a n) h).symm)
+
 /-- `CyclicGroup 2` has only two elements: `1` and `ofAdd 1`. -/
 private lemma cyclicGroup_two_cases (k : CyclicGroup 2) :
     k = 1 ∨ k = Multiplicative.ofAdd (1 : ZMod 2) := by
@@ -248,12 +261,8 @@ private noncomputable def c3_sdp_c2cubed_iso_standard
       CyclicGroup 3 ⋊[(c2OnCqInv 3).comp
                       (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2 × CyclicGroup 2))]
                     (CyclicGroup 2 × (CyclicGroup 2 × CyclicGroup 2)) :=
-  SemidirectProduct.congr (MulEquiv.refl _) (c3_sdp_c2cubed_basis_change h_nontriv) (by
-    intro g
-    have h := DFunLike.ext_iff.mp (c3_sdp_c2cubed_basis_change_eq h_nontriv) g
-    ext n
-    simp only [MulEquiv.trans_apply, MulEquiv.refl_apply]
-    exact (congrArg (fun a : MulAut _ => a n) h).symm)
+  sdp_congr_right_of_comp_eq (c3_sdp_c2cubed_basis_change h_nontriv)
+    (c3_sdp_c2cubed_basis_change_eq h_nontriv)
 
 /-- Any non-trivial action `φ` of `C₂³` on `C₃` gives `C₃ ⋊[φ] C₂³` isomorphic to `D₃ × V`. -/
 private noncomputable def c3_sdp_c2cubed_nontrivial
@@ -360,12 +369,7 @@ private noncomputable def c3_sdp_q8_iso_standard
     {φ : QuaternionGroup 2 →* MulAut (CyclicGroup 3)} (h_nontriv : φ ≠ 1) :
     CyclicGroup 3 ⋊[φ] QuaternionGroup 2 ≃*
       CyclicGroup 3 ⋊[q8OnC3Inv] QuaternionGroup 2 :=
-  SemidirectProduct.congr (MulEquiv.refl _) (q8_basis_change h_nontriv) (by
-    intro g
-    have h := DFunLike.ext_iff.mp (q8_basis_change_eq h_nontriv) g
-    ext n
-    simp only [MulEquiv.trans_apply, MulEquiv.refl_apply]
-    exact (congrArg (fun a : MulAut _ => a n) h).symm)
+  sdp_congr_right_of_comp_eq (q8_basis_change h_nontriv) (q8_basis_change_eq h_nontriv)
 
 /-- Step 2 (identification): `C_3 ⋊[q8OnC3Inv] Q_8 ≃* Q_24`.
 
@@ -429,13 +433,41 @@ private def c4c2OnC3Inv_via_fst_mod2 :
   (c4OnCqInv 3).comp (MonoidHom.fst (CyclicGroup 4) (CyclicGroup 2))
 
 /-- The Aut of `C_4 × C_2` fixing `(a², 1)` and `(1, b)`, swapping `(a, 1) ↔ (a, b)`.
-Lifts the `(inv, inv)` action case to the `(1, inv)` standard form. -/
+Lifts the `(inv, inv)` action case to the `(1, inv)` standard form. The map is the
+involution `(x, y) ↦ (x, b^((toAdd x).val mod 2) · y)`. -/
 private def c4c2_diag_swap :
-    (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2) := sorry
+    (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2) :=
+  let f : CyclicGroup 4 × CyclicGroup 2 → CyclicGroup 4 × CyclicGroup 2 :=
+    fun p =>
+      let q : CyclicGroup 2 := Multiplicative.ofAdd ((Multiplicative.toAdd p.1).val : ZMod 2)
+      (p.1, q * p.2)
+  { toFun := f, invFun := f
+    left_inv := by decide
+    right_inv := by decide
+    map_mul' := by decide }
 
-/-- The iso `C_3 ⋊[c4OnCqInv 3] C_4 ≃* Q_12`, identifying `c ↔ a⁴` and `x ↔ xa 0`. -/
+/-- The iso `C_3 ⋊[c4OnCqInv 3] C_4 ≃* Q_12`, identifying `c ↔ a⁴` and `x ↔ xa 0`.
+
+The map sends `(c^k, x^i) ↦ a (4k + 3(i/2))` for even `i` and `↦ xa (2k + 3(i/2))` for
+odd `i` (arithmetic in `ZMod 6`, `i/2` is Nat division). -/
 private def c3_sdp_c4_iso_q12 :
-    CyclicGroup 3 ⋊[c4OnCqInv 3] CyclicGroup 4 ≃* QuaternionGroup 3 := sorry
+    CyclicGroup 3 ⋊[c4OnCqInv 3] CyclicGroup 4 ≃* QuaternionGroup 3 where
+  toFun x :=
+    let k : ZMod 6 := ((Multiplicative.toAdd x.left).val : ZMod 6)
+    let i := (Multiplicative.toAdd x.right).val
+    if i % 2 = 0 then .a (4 * k + 3 * ((i / 2 : ℕ) : ZMod 6))
+    else .xa (2 * k + 3 * ((i / 2 : ℕ) : ZMod 6))
+  invFun y :=
+    match y with
+    | .a j =>
+        ⟨Multiplicative.ofAdd ((j.val : ZMod 3)),
+         Multiplicative.ofAdd (if j.val % 2 = 0 then 0 else 2 : ZMod 4)⟩
+    | .xa j =>
+        ⟨Multiplicative.ofAdd ((2 * j.val : ZMod 3)),
+         Multiplicative.ofAdd (if j.val % 2 = 0 then 1 else 3 : ZMod 4)⟩
+  left_inv := by decide
+  right_inv := by decide
+  map_mul' := by decide
 
 /-- Identification chain for the `via_snd → D_3 × C_4` target: swap `(C_4 × C_2)` to
 `(C_2 × C_4)` so the acting factor is first, factor off the trailing `C_4`, then
@@ -458,6 +490,38 @@ private def c3_sdp_c4c2_via_fst_mod2_iso_c2q12 :
   (c3_sdp_c4_iso_q12.prodCongr (MulEquiv.refl _)).trans <|
   MulEquiv.prodComm (M := QuaternionGroup 3) (N := CyclicGroup 2)
 
+/-- `CyclicGroup 4` has exactly four elements. -/
+private lemma cyclicGroup_four_cases (k : CyclicGroup 4) :
+    k = 1 ∨ k = Multiplicative.ofAdd (1 : ZMod 4) ∨ k = Multiplicative.ofAdd (2 : ZMod 4) ∨
+      k = Multiplicative.ofAdd (3 : ZMod 4) := by
+  revert k; decide
+
+/-- Two homomorphisms out of `C_4 × C_2` agreeing on the generators `(a, 1)` and `(1, b)`
+are equal. -/
+private lemma c4c2_hom_ext {H : Type*} [Group H]
+    {f g : (CyclicGroup 4 × CyclicGroup 2) →* H}
+    (h1 : f (Multiplicative.ofAdd (1 : ZMod 4), 1) = g (Multiplicative.ofAdd (1 : ZMod 4), 1))
+    (h2 : f (1, Multiplicative.ofAdd (1 : ZMod 2)) = g (1, Multiplicative.ofAdd (1 : ZMod 2))) :
+    f = g := by
+  have sq (φ : (CyclicGroup 4 × CyclicGroup 2) →* H) :
+      φ (Multiplicative.ofAdd (2 : ZMod 4), 1) =
+        φ (Multiplicative.ofAdd (1 : ZMod 4), 1) * φ (Multiplicative.ofAdd (1 : ZMod 4), 1) := by
+    rw [← φ.map_mul]; exact congrArg φ (by decide)
+  have cu (φ : (CyclicGroup 4 × CyclicGroup 2) →* H) :
+      φ (Multiplicative.ofAdd (3 : ZMod 4), 1) =
+        φ (Multiplicative.ofAdd (1 : ZMod 4), 1) * φ (Multiplicative.ofAdd (2 : ZMod 4), 1) := by
+    rw [← φ.map_mul]; exact congrArg φ (by decide)
+  have split (φ : (CyclicGroup 4 × CyclicGroup 2) →* H) (x : CyclicGroup 4) (y : CyclicGroup 2) :
+      φ (x, y) = φ (x, 1) * φ (1, y) := by
+    rw [← φ.map_mul]
+    exact congrArg φ (by ext <;> simp only [Prod.mk_mul_mk, mul_one, one_mul])
+  refine MonoidHom.ext fun ⟨x, y⟩ => ?_
+  rw [split f, split g]
+  rcases cyclicGroup_four_cases x with rfl | rfl | rfl | rfl <;>
+    rcases cyclicGroup_two_cases y with rfl | rfl <;>
+      simp only [sq, cu, h1, h2, show ((1, 1) : CyclicGroup 4 × CyclicGroup 2) = 1 from rfl,
+        map_one, mul_one, one_mul]
+
 /-- Case-bash on `(φ(a, 1), φ(1, b)) ∈ {1, inv}²` (excluding the trivial case). Three
 sub-cases land in the `via_snd` form (using `c4c2_diag_swap` for the `(inv, inv)` case);
 one lands in the `via_fst_mod2` form. -/
@@ -469,45 +533,30 @@ private lemma c4c2_basis_change_exists
         c4c2OnC3Inv_via_fst_mod2.comp α.toMonoidHom = φ) := by
   obtain ⟨a, ha⟩ : ∃ a, a = φ (Multiplicative.ofAdd (1 : ZMod 4), 1) := ⟨_, rfl⟩
   obtain ⟨b, hb⟩ : ∃ b, b = φ (1, Multiplicative.ofAdd (1 : ZMod 2)) := ⟨_, rfl⟩
+  have close_snd (α : (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2))
+      (h1 : c4c2OnC3Inv_via_snd (α (Multiplicative.ofAdd (1 : ZMod 4), 1)) = a := by decide)
+      (h2 : c4c2OnC3Inv_via_snd (α (1, Multiplicative.ofAdd (1 : ZMod 2))) = b := by decide) :
+      ∃ α' : (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2),
+        c4c2OnC3Inv_via_snd.comp α'.toMonoidHom = φ :=
+    ⟨α, c4c2_hom_ext (f := c4c2OnC3Inv_via_snd.comp α.toMonoidHom)
+      (h1.trans ha) (h2.trans hb)⟩
+  have close_fst (α : (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2))
+      (h1 : c4c2OnC3Inv_via_fst_mod2 (α (Multiplicative.ofAdd (1 : ZMod 4), 1)) = a := by decide)
+      (h2 : c4c2OnC3Inv_via_fst_mod2 (α (1, Multiplicative.ofAdd (1 : ZMod 2))) = b := by decide) :
+      ∃ α' : (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2),
+        c4c2OnC3Inv_via_fst_mod2.comp α'.toMonoidHom = φ :=
+    ⟨α, c4c2_hom_ext (f := c4c2OnC3Inv_via_fst_mod2.comp α.toMonoidHom)
+      (h1.trans ha) (h2.trans hb)⟩
   rcases mulAut_cyclicGroup_three_cases a with rfl | rfl <;>
     rcases mulAut_cyclicGroup_three_cases b with rfl | rfl
-  · -- (1, 1): φ trivial, contradicts h
-    sorry
-  · -- (1, inv): target via_snd, α = refl
-    exact Or.inl ⟨MulEquiv.refl _, sorry⟩
-  · -- (inv, 1): target via_fst_mod2, α = refl
-    exact Or.inr ⟨MulEquiv.refl _, sorry⟩
-  · -- (inv, inv): target via_snd, α = c4c2_diag_swap
-    exact Or.inl ⟨c4c2_diag_swap, sorry⟩
-
-/-- Transport step for the `via_snd` branch: given a basis change `α` with
-`c4c2OnC3Inv_via_snd ∘ α = φ`, the action `φ`-SDP is iso to the `via_snd`-SDP. -/
-private def c3_sdp_c4c2_iso_via_snd_standard
-    {φ : (CyclicGroup 4 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
-    {α : (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2)}
-    (hα : c4c2OnC3Inv_via_snd.comp α.toMonoidHom = φ) :
-    CyclicGroup 3 ⋊[φ] (CyclicGroup 4 × CyclicGroup 2) ≃*
-      CyclicGroup 3 ⋊[c4c2OnC3Inv_via_snd] (CyclicGroup 4 × CyclicGroup 2) :=
-  SemidirectProduct.congr (MulEquiv.refl _) α (by
-    intro g
-    have h := DFunLike.ext_iff.mp hα g
-    ext n
-    simp only [MulEquiv.trans_apply, MulEquiv.refl_apply]
-    exact (congrArg (fun a : MulAut _ => a n) h).symm)
-
-/-- Transport step for the `via_fst_mod2` branch. -/
-private def c3_sdp_c4c2_iso_via_fst_mod2_standard
-    {φ : (CyclicGroup 4 × CyclicGroup 2) →* MulAut (CyclicGroup 3)}
-    {α : (CyclicGroup 4 × CyclicGroup 2) ≃* (CyclicGroup 4 × CyclicGroup 2)}
-    (hα : c4c2OnC3Inv_via_fst_mod2.comp α.toMonoidHom = φ) :
-    CyclicGroup 3 ⋊[φ] (CyclicGroup 4 × CyclicGroup 2) ≃*
-      CyclicGroup 3 ⋊[c4c2OnC3Inv_via_fst_mod2] (CyclicGroup 4 × CyclicGroup 2) :=
-  SemidirectProduct.congr (MulEquiv.refl _) α (by
-    intro g
-    have h := DFunLike.ext_iff.mp hα g
-    ext n
-    simp only [MulEquiv.trans_apply, MulEquiv.refl_apply]
-    exact (congrArg (fun a : MulAut _ => a n) h).symm)
+  · -- (1, 1): φ is trivial, contradicting `h`.
+    exact absurd (c4c2_hom_ext ha.symm hb.symm) h
+  · -- (1, inv): ker φ = ⟨(a, 1)⟩. Take α = id.
+    exact Or.inl (close_snd (MulEquiv.refl _))
+  · -- (inv, 1): ker φ = ⟨(a², 1), (1, b)⟩ = V_4. Take α = id.
+    exact Or.inr (close_fst (MulEquiv.refl _))
+  · -- (inv, inv): ker φ = ⟨(a, b)⟩. Take α = c4c2_diag_swap.
+    exact Or.inl (close_snd c4c2_diag_swap)
 
 /-- Any non-trivial action `φ` of `C_4 × C_2` on `C_3` gives `C_3 ⋊[φ] (C_4 × C_2)`
 isomorphic to either `D_3 × C_4` or `C_2 × Q_12`, depending on the iso class of `ker φ`. -/
@@ -517,14 +566,14 @@ private lemma c3_sdp_c4c2_nontrivial
               DihedralGroup 3 × CyclicGroup 4) ∨
     Nonempty (CyclicGroup 3 ⋊[φ] (CyclicGroup 4 × CyclicGroup 2) ≃*
               CyclicGroup 2 × QuaternionGroup 3) := by
-  rcases c4c2_basis_change_exists h_nontriv with ⟨_, hα⟩ | ⟨_, hα⟩
+  rcases c4c2_basis_change_exists h_nontriv with ⟨α, hα⟩ | ⟨α, hα⟩
   · let : CyclicGroup 3 ⋊[φ] (CyclicGroup 4 × CyclicGroup 2) ≃*
           DihedralGroup 3 × CyclicGroup 4 :=
-      (c3_sdp_c4c2_iso_via_snd_standard hα).trans c3_sdp_c4c2_via_snd_iso_d3c4
+      (sdp_congr_right_of_comp_eq α hα).trans c3_sdp_c4c2_via_snd_iso_d3c4
     tauto
   · let : CyclicGroup 3 ⋊[φ] (CyclicGroup 4 × CyclicGroup 2) ≃*
           CyclicGroup 2 × QuaternionGroup 3 :=
-      (c3_sdp_c4c2_iso_via_fst_mod2_standard hα).trans c3_sdp_c4c2_via_fst_mod2_iso_c2q12
+      (sdp_congr_right_of_comp_eq α hα).trans c3_sdp_c4c2_via_fst_mod2_iso_c2q12
     tauto
 
 /-- Non-trivial-action branch of the normal-Sylow-3 classification. Given a
