@@ -1286,15 +1286,99 @@ private lemma q8_sdp_c3_nontrivial
   obtain ⟨e⟩ := q8_sdp_c3_iso_standard h_nontriv
   exact ⟨e.trans q8_sdp_c3OnQ8_iso_sl23⟩
 
+/-- The order-3 automorphism of `(C_2)³` fixing the first coordinate and acting on the
+last two by the companion matrix of `t² + t + 1`: `(x, y, z) ↦ (x, z, yz)`. -/
+private def c2cubedRot :
+    (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ≃*
+      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) where
+  toFun p := (p.1, p.2.2, p.2.1 * p.2.2)
+  invFun p := (p.1, p.2.1 * p.2.2, p.2.1)
+  left_inv := by decide
+  right_inv := by decide
+  map_mul' := by decide
+
+/-- The standard non-trivial action of `C_3` on `(C_2)³`, sending the generator to
+`c2cubedRot`. -/
+private def c3OnC2cubed :
+    CyclicGroup 3 →* MulAut (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) :=
+  cyclicHom 3 c2cubedRot (by
+    refine MulEquiv.ext fun p => ?_
+    change c2cubedRot (c2cubedRot (c2cubedRot p)) = p
+    revert p; decide)
+
+/-- The double transposition `(0 1)(2 3)` in `A_4`. -/
+private def a4_dt1 : AlternatingGroup 4 :=
+  ⟨Equiv.swap 0 1 * Equiv.swap 2 3, by rw [Equiv.Perm.mem_alternatingGroup]; decide⟩
+
+/-- The double transposition `(0 2)(1 3)` in `A_4`. -/
+private def a4_dt2 : AlternatingGroup 4 :=
+  ⟨Equiv.swap 0 2 * Equiv.swap 1 3, by rw [Equiv.Perm.mem_alternatingGroup]; decide⟩
+
+/-- The 3-cycle `(1 2 3)` in `A_4`, which conjugation-cycles `a4_dt1 ↦ a4_dt2 ↦
+a4_dt1 * a4_dt2`. -/
+private def a4_threeCycle : AlternatingGroup 4 :=
+  ⟨Equiv.swap 1 2 * Equiv.swap 2 3, by rw [Equiv.Perm.mem_alternatingGroup]; decide⟩
+
+/-- The hom `(C_2)³ →* C_2 × A_4` matching `c2cubedRot` with conjugation by a 3-cycle:
+the first coordinate goes to the `C_2` factor, the last two to the double
+transpositions. -/
+private def c2cubedHomC2A4 :
+    (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →*
+      CyclicGroup 2 × AlternatingGroup 4 where
+  toFun p :=
+    (p.1, a4_dt1 ^ (Multiplicative.toAdd p.2.1).val *
+      a4_dt2 ^ (Multiplicative.toAdd p.2.2).val)
+  map_one' := by decide
+  map_mul' p q := by revert p q; decide
+
+/-- The hom `C_3 →* C_2 × A_4` sending the generator to the 3-cycle, whose conjugation
+action cycles the double transpositions like `c2cubedRot` cycles the generators. -/
+private def c3HomC2A4 : CyclicGroup 3 →* CyclicGroup 2 × AlternatingGroup 4 :=
+  cyclicHom 3 (1, a4_threeCycle) (by decide)
+
+/-- Conjugating `c2cubedHomC2A4` by `c3HomC2A4 g` realises the action `c3OnC2cubed g`. -/
+private lemma c2cubedHomC2A4_compat (g : CyclicGroup 3)
+    (n : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) :
+    c2cubedHomC2A4 (c3OnC2cubed g n) =
+      c3HomC2A4 g * c2cubedHomC2A4 n * (c3HomC2A4 g)⁻¹ := by
+  revert g n; decide
+
+/-- Identification: `(C_2)³ ⋊[c3OnC2cubed] C_3 ≃* C_2 × A_4`, assembled by
+`SemidirectProduct.lift` with decidable compatibility and injectivity, and bijectivity
+from 24 = 24. -/
+private noncomputable def c2cubed_sdp_c3OnC2cubed_iso_c2a4 :
+    (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ⋊[c3OnC2cubed] CyclicGroup 3 ≃*
+      CyclicGroup 2 × AlternatingGroup 4 := by
+  refine MulEquiv.ofBijective
+    (SemidirectProduct.lift c2cubedHomC2A4 c3HomC2A4
+      (fun g => MonoidHom.ext fun n => c2cubedHomC2A4_compat g n))
+    ((Nat.bijective_iff_injective_and_card _).mpr ⟨?_, ?_⟩)
+  · rw [injective_iff_map_eq_one]
+    decide
+  · have h1 : Nat.card (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) = 8 := by
+      rw [Nat.card_eq_fintype_card]; decide
+    have h2 : Nat.card (CyclicGroup 2 × AlternatingGroup 4) = 24 := by
+      rw [Nat.card_eq_fintype_card]; decide
+    rw [SemidirectProduct.card, h1, card_cyclicGroup, h2]
+
+/-- Basis change: any non-trivial action of `C_3` on `(C_2)³` is conjugate to the
+standard one. -/
+private lemma c2cubed_sdp_c3_iso_standard
+    {ψ : CyclicGroup 3 →* MulAut (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)}
+    (h_nontriv : ψ ≠ 1) :
+    Nonempty ((CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ⋊[ψ] CyclicGroup 3 ≃*
+      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ⋊[c3OnC2cubed] CyclicGroup 3) := by
+  sorry
+
 /-- Any non-trivial action `ψ` of `C_3` on `(C_2)³` gives
-`(C_2)³ ⋊[ψ] C_3 ≃* C_2 × A_4`: the fixed line of `ψ` splits off as a central `C_2`, and
-`C_3` acts simply on the complementary `V_4`. -/
+`(C_2)³ ⋊[ψ] C_3 ≃* C_2 × A_4`. -/
 private lemma c2cubed_sdp_c3_nontrivial
     {ψ : CyclicGroup 3 →* MulAut (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)}
     (h_nontriv : ψ ≠ 1) :
     Nonempty ((CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ⋊[ψ] CyclicGroup 3 ≃*
       CyclicGroup 2 × AlternatingGroup 4) := by
-  sorry
+  obtain ⟨e⟩ := c2cubed_sdp_c3_iso_standard h_nontriv
+  exact ⟨e.trans c2cubed_sdp_c3OnC2cubed_iso_c2a4⟩
 
 /-- Dispatch on the iso class of the order-8 normal subgroup in `T ⋊[φ] C` with `φ ≠ 1`:
 only `C_2³` and `Q_8` admit an order-3 automorphism, giving `C_2 × A_4` and `SL_2(𝔽_3)`
