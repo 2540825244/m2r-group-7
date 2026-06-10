@@ -935,7 +935,19 @@ private lemma order24_4_sylow3_ker_one {G : Type*} [Group G] (h : Nat.card G = 2
     (h_n3 : Nat.card (Sylow 3 G) = 4)
     (h_ker : Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = 1) :
     Nonempty (G ≃* SymmetricGroup 4) := by
-  sorry
+  haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [h]; decide)
+  haveI : Fintype (Sylow 3 G) := Fintype.ofFinite _
+  haveI : DecidableEq (Sylow 3 G) := Classical.decEq _
+  have h_inj : Function.Injective (MulAction.toPermHom G (Sylow 3 G)) :=
+    (MonoidHom.ker_eq_bot_iff _).mp (Subgroup.card_eq_one.mp h_ker)
+  have h_card_perm : Nat.card (Equiv.Perm (Sylow 3 G)) = 24 := by
+    rw [Nat.card_eq_fintype_card, Fintype.card_perm, ← Nat.card_eq_fintype_card, h_n3]
+    rfl
+  have h_bij : Function.Bijective (MulAction.toPermHom G (Sylow 3 G)) :=
+    (Nat.bijective_iff_injective_and_card _).mpr ⟨h_inj, by rw [h, h_card_perm]⟩
+  have e_fin : Sylow 3 G ≃ Fin 4 :=
+    Fintype.equivFinOfCardEq (by rw [← Nat.card_eq_fintype_card, h_n3])
+  exact ⟨(MulEquiv.ofBijective _ h_bij).trans e_fin.permCongrHom⟩
 
 /-- Order-2-kernel case: the kernel is a central involution, forcing a normal Sylow-2 `T`
 with `G ≃* T ⋊ C_3` non-trivially; `T ≃ C_2³` gives `C_2 × A_4`, `T ≃ Q_8` gives
