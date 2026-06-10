@@ -357,7 +357,36 @@ lemma p2q_group_has_normal_sylow_subgroup {p : ℕ} {q : ℕ}
         linarith [h_q_prime.out.one_lt]
   tauto
 
-/-- Every group G of order pqr with p < q < r has either a normal Sylow q-group or normal Sylow r-group -/
+/-- Every group `G` of order `p * q` for primes `p < q` has a unique (hence normal)
+    Sylow `q`-subgroup. -/
+lemma pq_group_has_normal_sylow_q_subgroup {p q : ℕ}
+    [hp : Fact p.Prime] [hq : Fact q.Prime]
+    (hlt : p < q) (h : Nat.card G = p * q) :
+    Nat.card (Sylow q G) = 1 := by
+  haveI : Finite G := by
+    apply Nat.finite_of_card_ne_zero
+    rw [h]
+    exact Nat.mul_ne_zero hp.out.ne_zero hq.out.ne_zero
+  have hpq : p ≠ q := Nat.ne_of_lt hlt
+  let Q : Sylow q G := default
+  have h_card_form : Nat.card G = q ^ 1 * p ^ 1 := by rw [pow_one, pow_one, h, mul_comm]
+  have hQ_idx : (Q : Subgroup G).index = p := by
+    simpa using sylow_index_eq (Ne.symm hpq) h_card_form Q
+  have h_nq_dvd : Nat.card (Sylow q G) ∣ p := by
+    have := Sylow.card_dvd_index Q
+    rwa [hQ_idx] at this
+  have h_nq_mod : Nat.card (Sylow q G) ≡ 1 [MOD q] := card_sylow_modEq_one q G
+  rcases (Nat.dvd_prime hp.out).mp h_nq_dvd with h1 | hp_eq
+  · exact h1
+  · exfalso
+    rw [hp_eq] at h_nq_mod
+    unfold Nat.ModEq at h_nq_mod
+    rw [Nat.mod_eq_of_lt hlt, Nat.mod_eq_of_lt hq.out.one_lt] at h_nq_mod
+    have := hp.out.one_lt
+    omega
+
+/-- Every group G of order pqr with p < q < r has either a normal Sylow q-group or
+    normal Sylow r-group -/
 lemma pqr_group_has_normal_sylow_qr_subgroup {p : ℕ} {q : ℕ} {r : ℕ}
     [h_p_prime : Fact p.Prime] [h_q_prime : Fact q.Prime] [h_r_prime : Fact r.Prime]
     (h_p_le_q : p < q) (h_q_le_r : q < r) (h : Nat.card G = p * q * r)
