@@ -980,10 +980,25 @@ private lemma c3_hom_gen_cube_eq_one {M : Type*} [Group M]
   rw [← map_pow]
   exact (congrArg ψ (by decide)).trans (map_one ψ)
 
+/-- Every element of `CyclicGroup 8` is killed by the 8th power. -/
+private lemma c8_exp (b : CyclicGroup 8) : b ^ 8 = 1 := by revert b; decide
+
 /-- `Aut(C_8)` has no non-trivial elements of order dividing 3. -/
 private lemma mulAut_c8_eq_one_of_cube_eq_one
     (A : MulAut (CyclicGroup 8)) (h : A ^ 3 = 1) : A = 1 := by
-  sorry
+  obtain ⟨a, ha⟩ : ∃ a, a = A (Multiplicative.ofAdd 1) := ⟨_, rfl⟩
+  have h_det := cyclicHom_ext A.toMonoidHom (c8_exp a) ha.symm
+  have hpt : ∀ x, A x = cyclicHom 8 a (c8_exp a) x := fun x => DFunLike.congr_fun h_det x
+  have h1 : A (A (A (Multiplicative.ofAdd 1))) = Multiplicative.ofAdd 1 :=
+    DFunLike.congr_fun h (Multiplicative.ofAdd 1)
+  simp only [hpt] at h1
+  have key : ∀ b : CyclicGroup 8,
+      cyclicHom 8 b (c8_exp b) (cyclicHom 8 b (c8_exp b) (cyclicHom 8 b (c8_exp b)
+        (Multiplicative.ofAdd 1))) = Multiplicative.ofAdd 1 →
+      ∀ x, cyclicHom 8 b (c8_exp b) x = x := by decide
+  ext x
+  rw [hpt]
+  exact key a h1 x
 
 /-- `Aut(C_4 × C_2)` has no non-trivial elements of order dividing 3. -/
 private lemma mulAut_c4c2_eq_one_of_cube_eq_one
