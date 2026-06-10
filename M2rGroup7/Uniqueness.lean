@@ -2,6 +2,12 @@ import «M2rGroup7».SmallGroupsLibrary
 
 universe u u' v
 
+/-- A group invariant valued in `α`: a function that assigns a value of type `α` to every
+    finite group `K`, and is preserved by group isomorphisms.  Two groups with different
+    invariant values cannot be isomorphic (see `not_iso_by`).
+
+    Invariants can be combined with `⊗` (notation for `combine`) to produce a product
+    invariant that distinguishes groups whenever either component does. -/
 structure GroupInvariant (α : Type u) [DecidableEq α] where
   eval (K : Type v) [Group K] [Fintype K] [DecidableEq K] : α
   preservation {K L : Type v}
@@ -185,6 +191,9 @@ def orderSpectrumInv : GroupInvariant (List (ℕ × ℕ)) where
     intro d _
     simp only [(numElementsOfOrderInv d).preservation e]
 
+/-- Close a uniqueness goal for an order with exactly one group in `SmallGroupsLibrary`.
+    Reduces `num_entries n = 1` via `simp` then uses `omega` to derive a contradiction
+    from the hypothesis `i ≠ i'` and the single-entry bound. -/
 macro "by_single_group" : tactic => `(tactic | (
   simp only [num_entries] at *
   omega
@@ -252,6 +261,17 @@ private unsafe def evalToLiteral (αExpr : Lean.Expr) (e : Lean.Expr) : Lean.Met
   else
     Lean.throwError "evalToLiteral: unsupported invariant type {α}"
 
+/-- `by_invariant n i i' inv` proves that two groups of the same order `n`, indexed by
+    distinct `i` and `i'`, are non-isomorphic using the `GroupInvariant` `inv`.
+
+    The tactic runs in three phases at elaboration time:
+    - **Phase 1 (cache)**: for each group index `k ∈ 1..N`, evaluate `inv.eval (retrieve n k)`
+      via native compilation (`evalExpr`), then inject a kernel-verified hypothesis
+      `hG_k : inv.eval (retrieve n k) = <literal>` proved by `decide` into the goal context.
+    - **Phase 2 (simp set)**: collect all `hG_k` hypotheses into a simp lemma list.
+    - **Phase 3 (case split)**: `interval_cases i; interval_cases i'` enumerates all N² pairs;
+      diagonal cases are closed by `omega`; off-diagonal cases apply `not_iso_by`, rewrite
+      both invariant values to their cached literals via `simp`, then close with `decide`. -/
 syntax (name := byInvariant) "by_invariant" num ident ident term : tactic
 
 private unsafe def elabByInvariantImpl : Lean.Elab.Tactic.Tactic
