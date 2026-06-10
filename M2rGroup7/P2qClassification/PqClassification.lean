@@ -2,8 +2,8 @@ import Mathlib
 import «M2rGroup7».Lemmas.GroupTheoryLemmas
 import «M2rGroup7».Lemmas.ClassificationUtils
 import «M2rGroup7».Lemmas.HomomorphismUtils
+import «M2rGroup7».Lemmas.SylowUtils
 import «M2rGroup7».P2qClassification.CycPGroupClassification
-import OrderPQ
 
 /-!
 # Classification of groups of order p * q (p < q primes)
@@ -15,8 +15,9 @@ Every group G of order p * q is isomorphic to exactly one of:
 
 The condition p ∣ q - 1 is encoded by `hr : 1 ≤ min 1 ((q-1).factorization p)`.
 
-`canonicalCpOnCqAction` is built directly from `sdpCanonicalAction` (n = m = 1, r = 1),
-eliminating the old bridge infrastructure (cycGrpPowOne, _canonicalCpOnCqAction, canonicalAction_r_iso).
+`canonicalCpOnCqAction` is built directly from `canonicalAction` (n = m = 1, r = 1),
+eliminating the old bridge infrastructure (cycGrpPowOne, _canonicalCpOnCqAction,
+canonicalAction_r_iso).
 
 **Usage**: supply the two primes directly, e.g. `pq_classification (p := 2) (q := 7) hlt h`.
 -/
@@ -38,68 +39,6 @@ def canonicalCpOnCqAction
   transportCpCqHom (pow_one p) (pow_one q)
     (canonicalAction p q 1 1 hpq hq2 Nat.one_pos 1 hr)
 
--- ─── General: non-trivial action → non-cyclic SDP ───────────────────────────
-
-/-- A semidirect product with a non-trivial action is non-cyclic (it is non-abelian). -/
-lemma sdp_not_isCyclic_of_action_ne_one
-    {N K : Type*} [Group N] [Group K]
-    {φ : K →* MulAut N} (h_ne : φ ≠ 1) :
-    ¬IsCyclic (SemidirectProduct N K φ) := by
-  intro h_cyc
-  obtain ⟨k, h_k⟩ : ∃ k : K, φ k ≠ 1 := by
-    by_contra h_all; push Not at h_all
-    exact h_ne (MonoidHom.ext fun k => MulEquiv.ext fun n => by
-      have := MulEquiv.ext_iff.mp (h_all k)
-      simp only [MulAut.one_apply] at this; exact this n)
-  obtain ⟨n, h_n⟩ : ∃ n : N, φ k n ≠ n := by
-    by_contra h_all; push Not at h_all
-    exact h_k (MulEquiv.ext fun n => h_all n)
-  have h_not_comm :
-      (⟨n, 1⟩ : SemidirectProduct N K φ) * ⟨1, k⟩ ≠ ⟨1, k⟩ * ⟨n, 1⟩ := by
-    intro h_eq
-    apply h_n
-    have := congr_arg SemidirectProduct.left h_eq
-    simp [SemidirectProduct.mul_left, map_one] at this
-    exact this.symm
-  haveI := h_cyc
-  exact h_not_comm (IsCyclic.commutative.comm _ _)
-
--- ─── Key lemmas about the canonical SDP ─────────────────────────────────────
-
-lemma canonicalSDP_card
-    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq2 : q ≠ 2)
-    (hr : 1 ≤ min 1 ((q - 1).factorization p)) :
-    Nat.card (SemidirectProduct (CyclicGroup q) (CyclicGroup p)
-               (canonicalCpOnCqAction hpq hq2 hr)) = p * q := by
-  rw [SemidirectProduct.card, card_cyclicGroup, card_cyclicGroup, mul_comm]
-
-lemma canonicalSDP_not_isCyclic
-    {p q : ℕ} [hp : Fact p.Prime] [hq : Fact q.Prime]
-    (hpq : p ≠ q) (hq2 : q ≠ 2)
-    (hr : 1 ≤ min 1 ((q - 1).factorization p)) :
-    ¬IsCyclic (SemidirectProduct (CyclicGroup q) (CyclicGroup p)
-                (canonicalCpOnCqAction hpq hq2 hr)) := by
-  apply sdp_not_isCyclic_of_action_ne_one
-  haveI : NeZero p := ⟨hp.out.ne_zero⟩
-  haveI : NeZero q := ⟨hq.out.ne_zero⟩
-  haveI : NeZero (p^1) := ⟨pow_ne_zero 1 hp.out.ne_zero⟩
-  haveI : NeZero (q^1) := ⟨pow_ne_zero 1 hq.out.ne_zero⟩
-  -- canonicalCpOnCqAction transports canonicalAction p q 1 1 r=1 across pow_one rewrites;
-  -- the range card is p^1 = p (after transport), so ≠ 1, hence the action is not trivial.
-  have h_card_orig : Nat.card (canonicalAction p q 1 1 hpq hq2 Nat.one_pos 1 hr).range = p := by
-    have h := canonicalAction_range_card p q 1 1 1 hpq hq2 Nat.one_pos hr
-    simpa using h
-  have h_card' : Nat.card (canonicalCpOnCqAction hpq hq2 hr).range = p := by
-    unfold canonicalCpOnCqAction
-    rw [transportCpCqHom_range_card]
-    exact h_card_orig
-  intro heq
-  have h_range : (1 : CyclicGroup p →* MulAut (CyclicGroup q)).range = ⊥ := by
-    ext x; simp [Subgroup.mem_bot]
-  rw [heq, h_range, Subgroup.card_bot] at h_card'
-  linarith [hp.out.one_lt]
-
 -- ─── Main classification theorem ─────────────────────────────────────────────
 
 /-- **Classification of groups of order p * q** (p < q primes).
@@ -119,17 +58,66 @@ theorem pq_classification
                                               (by linarith [hp.out.two_le]) hr)) := by
   have hpq : p ≠ q := Nat.ne_of_lt hlt
   have hq2 : q ≠ 2 := by linarith [hp.out.two_le]
-  by_cases hc : IsCyclic G
-  · left
-    haveI := hc
-    exact ⟨mulEquivOfCyclicCardEq (h.trans (card_cyclicGroup _).symm)⟩
-  · have h_pdvd : p ∣ q - 1 := by
-      by_contra h_ndvd
-      exact hc (isCyclic_of_card_eq_prime_mul_prime hlt h_ndvd h)
-    have h_fac : 1 ≤ (q - 1).factorization p :=
-      (hp.out.pow_dvd_iff_le_factorization (Nat.sub_pos_of_lt hq.out.one_lt).ne').mp
-        (by simpa [pow_one])
-    have hr : 1 ≤ min 1 ((q - 1).factorization p) := Nat.le_min.mpr ⟨le_refl 1, h_fac⟩
-    right; refine ⟨hr, ?_⟩
-    exact nonempty_mulEquiv_of_card_eq_prime_mul_prime_of_not_isCyclic'
-      hlt h hc (canonicalSDP_card hpq hq2 hr) (canonicalSDP_not_isCyclic hpq hq2 hr)
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  haveI : NeZero (p ^ 1) := ⟨pow_ne_zero 1 hp.out.ne_zero⟩
+  haveI : NeZero (q ^ 1) := ⟨pow_ne_zero 1 hq.out.ne_zero⟩
+  haveI : Finite G :=
+    Nat.finite_of_card_ne_zero (h ▸ Nat.mul_ne_zero hp.out.ne_zero hq.out.ne_zero)
+  -- The Sylow-q subgroup is normal (Lemma `pq_group_has_normal_sylow_q_subgroup`).
+  have hnq : Nat.card (Sylow q G) = 1 := pq_group_has_normal_sylow_q_subgroup G hlt h
+  let Q : Sylow q G := default
+  haveI : Subsingleton (Sylow q G) := (Nat.card_eq_one_iff_unique.mp hnq).1
+  have h_card_form : Nat.card G = q ^ 1 * p ^ 1 := by rw [pow_one, pow_one, h, mul_comm]
+  have h_Q_card : Nat.card ↥(Q : Subgroup G) = q := by
+    simpa using sylow_card_eq (Ne.symm hpq) h_card_form Q
+  have h_Q_idx_p : (↑Q : Subgroup G).index = p := by
+    simpa using sylow_index_eq (Ne.symm hpq) h_card_form Q
+  -- A complement K to Q has order p, by Schur-Zassenhaus.
+  obtain ⟨K, hK⟩ := Subgroup.exists_right_complement'_of_coprime (N := (↑Q : Subgroup G)) (by
+    rw [h_Q_card, h_Q_idx_p]
+    exact hq.out.coprime_of_ne hp.out hpq.symm)
+  have h_iso_g_q_k := SemidirectProduct.mulEquivSubgroup hK
+  let φ : ↥K →* MulAut ↥(↑Q : Subgroup G) :=
+    (↑Q : Subgroup G).normalizerMonoidHom.comp
+      (Subgroup.inclusion (by simp [Subgroup.normalizer_eq_top]))
+  have hK_card : Nat.card ↥K = p := by
+    have h1 : Nat.card G = Nat.card ↥(↑Q : Subgroup G) * Nat.card ↥K := by
+      have heq := Nat.card_congr h_iso_g_q_k.toEquiv
+      rw [SemidirectProduct.card] at heq; exact heq.symm
+    rw [h_Q_card, h] at h1
+    exact (Nat.eq_of_mul_eq_mul_left hq.out.pos (by linarith)).symm
+  have eQ : ↥(↑Q : Subgroup G) ≃* CyclicGroup q :=
+    Classical.choice (prime_classification_of_group (n := q) h_Q_card)
+  have eK : ↥K ≃* CyclicGroup p :=
+    Classical.choice (prime_classification_of_group (n := p) hK_card)
+  -- Bridge G ≅ Q ⋊ K to a semidirect product on the abstract cyclic groups.
+  let φ_inter : CyclicGroup p →* MulAut (CyclicGroup q) :=
+    (MulAut.congr eQ).toMonoidHom.comp (φ.comp eK.symm.toMonoidHom)
+  have h_congr : ↥(↑Q : Subgroup G) ⋊[φ] ↥K ≃*
+      SemidirectProduct (CyclicGroup q) (CyclicGroup p) φ_inter :=
+    SemidirectProduct.congr' (φ₁ := φ) (fn := eQ) (fg := eK)
+  -- Classify φ_inter via `classify_Cqn_rtimes_Cpm` (m = n = 1).
+  have h_pre_iso := SemidirectProduct.transportCpCqIso (pow_one p).symm (pow_one q).symm φ_inter
+  obtain ⟨⟨r, hr_lt⟩, ⟨e_pre⟩, _⟩ := classify_Cqn_rtimes_Cpm (p := p) (q := q) hpq hq2 1 1
+    Nat.one_pos Nat.one_pos (transportCpCqHom (pow_one p).symm (pow_one q).symm φ_inter)
+  have hr_le : r ≤ min 1 ((q - 1).factorization p) := Nat.lt_succ_iff.mp hr_lt
+  let e_back := SemidirectProduct.transportCpCqIso (pow_one p) (pow_one q)
+    (canonicalAction p q 1 1 hpq hq2 Nat.one_pos r hr_le)
+  let pre := h_iso_g_q_k.symm.trans (h_congr.trans (h_pre_iso.trans (e_pre.trans e_back)))
+  have hr_le_1 : r ≤ 1 := hr_le.trans (min_le_left _ _)
+  interval_cases r
+  · -- r = 0: trivial action → G ≃* C_{p * q}
+    have h_triv := eq_one_of_range_card_one (by
+      change Nat.card (transportCpCqHom (pow_one p) (pow_one q)
+        (canonicalAction p q 1 1 hpq hq2 Nat.one_pos 0 hr_le)).range = 1
+      rw [transportCpCqHom_range_card]
+      simpa using canonicalAction_range_card p q 1 1 0 hpq hq2 Nat.one_pos hr_le)
+    have hcop : Nat.Coprime q p := hq.out.coprime_of_ne hp.out hpq.symm
+    left
+    exact ⟨pre.trans ((SemidirectProduct.mulEquivOfTrivialAction h_triv).trans
+      ((CyclicGroup.prodMulEquiv hcop).trans
+        (mulEquivOfCyclicCardEq (by rw [card_cyclicGroup, card_cyclicGroup, mul_comm]))))⟩
+  · -- r = 1: matches `canonicalCpOnCqAction` definitionally.
+    right
+    exact ⟨hr_le, ⟨pre⟩⟩
