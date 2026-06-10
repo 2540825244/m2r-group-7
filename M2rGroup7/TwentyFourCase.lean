@@ -821,6 +821,40 @@ lemma order24_1_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
   · -- Non-trivial action: pass setup state to the sub-lemma
     exact Or.inr (order24_1_sylow3_nontrivial h_P_card hK_card h_iso h_triv)
 
+-- ── n₃ = 4 branch ───────────────────────────────────────────────────────────
+-- Conjugation on the four Sylow 3-subgroups gives `ψ : G →* Perm (Sylow 3 G)`.
+-- Its kernel `K = ⋂ N_G(P)` has order 1 or 2: each normalizer has order 6, and an
+-- order-3 element of `K` would generate the unique Sylow-3 of all four distinct
+-- normalizers at once. `|K| = 1` forces `G ≃* S_4` (count); `|K| = 2` puts a central
+-- involution in `G`, which forces a normal Sylow-2 `T` (count), so `G ≃* T ⋊ C_3` with
+-- `T ∈ {C_2³, Q_8}` (the only order-8 groups with an order-3 automorphism), giving
+-- `C_2 × A_4` and `SL_2(𝔽_3)` respectively.
+
+/-- The kernel of the conjugation action on the four Sylow 3-subgroups has order 1 or 2. -/
+private lemma sylow3_action_ker_card_dvd_two {G : Type*} [Group G] (h : Nat.card G = 24)
+    (h_n3 : Nat.card (Sylow 3 G) = 4) :
+    Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = 1 ∨
+    Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = 2 := by
+  sorry
+
+/-- Trivial-kernel case: the action embeds `G` into `Perm (Sylow 3 G) ≃ S_4`, and both
+have 24 elements. -/
+private lemma order24_4_sylow3_ker_one {G : Type*} [Group G] (h : Nat.card G = 24)
+    (h_n3 : Nat.card (Sylow 3 G) = 4)
+    (h_ker : Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = 1) :
+    Nonempty (G ≃* SymmetricGroup 4) := by
+  sorry
+
+/-- Order-2-kernel case: the kernel is a central involution, forcing a normal Sylow-2 `T`
+with `G ≃* T ⋊ C_3` non-trivially; `T ≃ C_2³` gives `C_2 × A_4`, `T ≃ Q_8` gives
+`SL_2(𝔽_3)`. -/
+private lemma order24_4_sylow3_ker_two {G : Type*} [Group G] (h : Nat.card G = 24)
+    (h_n3 : Nat.card (Sylow 3 G) = 4)
+    (h_ker : Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = 2) :
+    Nonempty (G ≃* CyclicGroup 2 × AlternatingGroup 4) ∨
+    Nonempty (G ≃* SL2 3) := by
+  sorry
+
 /-- A group of order `24` with four Sylow 3-subgroups is isomorphic to one of the three
     non-normal-Sylow-3 groups: `S_4`, `C_2 × A_4`, or `SL(2, 𝔽_3)`. The precondition is
     equivalent to not having a normal Sylow 3-subgroup. -/
@@ -829,7 +863,9 @@ lemma order24_4_sylow3 {G : Type*} [Group G] (h : Nat.card G = 24)
     Nonempty (G ≃* SymmetricGroup 4) ∨
     Nonempty (G ≃* CyclicGroup 2 × AlternatingGroup 4) ∨
     Nonempty (G ≃* SL2 3) := by
-  sorry
+  rcases sylow3_action_ker_card_dvd_two h h_n3 with h_ker | h_ker
+  · exact Or.inl (order24_4_sylow3_ker_one h h_n3 h_ker)
+  · rcases order24_4_sylow3_ker_two h h_n3 h_ker with h' | h' <;> tauto
 
 /-- A group of order `24` is isomorphic to one of the 15 groups of order 24:
     five from a trivial Sylow-3 conjugation action, seven from a non-trivial action, and
