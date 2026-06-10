@@ -949,6 +949,25 @@ private lemma order24_4_sylow3_ker_one {G : Type*} [Group G] (h : Nat.card G = 2
     Fintype.equivFinOfCardEq (by rw [← Nat.card_eq_fintype_card, h_n3])
   exact ⟨(MulEquiv.ofBijective _ h_bij).trans e_fin.permCongrHom⟩
 
+/-- An order-2 action kernel forces a normal Sylow 2-subgroup. The kernel is a central
+involution `z`; the four Sylow 3-subgroups contribute 8 elements of order 3, whose
+`z`-translates are 8 elements of order 6, so the 8 elements of 2-power order all lie in
+a single Sylow 2-subgroup. -/
+private lemma sylow2_card_one_of_ker_two {G : Type*} [Group G] (h : Nat.card G = 24)
+    (h_n3 : Nat.card (Sylow 3 G) = 4)
+    (h_ker : Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = 2) :
+    Nat.card (Sylow 2 G) = 1 := by
+  sorry
+
+/-- A group of order 24 with four Sylow 3-subgroups and a normal Sylow 2-subgroup `T` is
+`T ⋊ C_3` with a non-trivial action, so `T ≃ C_2³` (giving `C_2 × A_4`) or `T ≃ Q_8`
+(giving `SL_2(𝔽_3)`) — the other order-8 groups have no order-3 automorphism. -/
+private lemma order24_4_sylow3_normal_sylow2 {G : Type*} [Group G] (h : Nat.card G = 24)
+    (h_n3 : Nat.card (Sylow 3 G) = 4) (h_n2 : Nat.card (Sylow 2 G) = 1) :
+    Nonempty (G ≃* CyclicGroup 2 × AlternatingGroup 4) ∨
+    Nonempty (G ≃* SL2 3) := by
+  sorry
+
 /-- Order-2-kernel case: the kernel is a central involution, forcing a normal Sylow-2 `T`
 with `G ≃* T ⋊ C_3` non-trivially; `T ≃ C_2³` gives `C_2 × A_4`, `T ≃ Q_8` gives
 `SL_2(𝔽_3)`. -/
@@ -956,8 +975,8 @@ private lemma order24_4_sylow3_ker_two {G : Type*} [Group G] (h : Nat.card G = 2
     (h_n3 : Nat.card (Sylow 3 G) = 4)
     (h_ker : Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker = 2) :
     Nonempty (G ≃* CyclicGroup 2 × AlternatingGroup 4) ∨
-    Nonempty (G ≃* SL2 3) := by
-  sorry
+    Nonempty (G ≃* SL2 3) :=
+  order24_4_sylow3_normal_sylow2 h h_n3 (sylow2_card_one_of_ker_two h h_n3 h_ker)
 
 /-- A group of order `24` with four Sylow 3-subgroups is isomorphic to one of the three
     non-normal-Sylow-3 groups: `S_4`, `C_2 × A_4`, or `SL(2, 𝔽_3)`. The precondition is
