@@ -165,6 +165,26 @@ def squaresInv : GroupInvariant Nat where
         exact ⟨(e.symm z) ^ 2, Finset.mem_image.mpr ⟨e.symm z, Finset.mem_univ _, rfl⟩,
                by simp [map_pow]⟩)
 
+-- Sorted list of (order, count) pairs for every element order that occurs.
+-- Built from numElementsOfOrderInv so it is computable (no noncomputable orderOf call).
+-- Element orders divide |K| by Lagrange, so Nat.divisors covers all occurring orders.
+def orderSpectrumInv : GroupInvariant (List (ℕ × ℕ)) where
+  eval K _ [Fintype K] [DecidableEq K] :=
+    let n := Fintype.card K
+    -- List.range gives [0..n] already sorted; filter to positive divisors of n.
+    -- Avoids Finset.sort (which goes through Multiset.toList → Classical.choice)
+    -- so the whole definition stays kernel-reducible for `decide`.
+    (List.range (n + 1)).filterMap fun d =>
+      if 0 < d && n % d == 0 then
+        let cnt := (numElementsOfOrderInv d).eval K
+        if 0 < cnt then some (d, cnt) else none
+      else none
+  preservation {K L} _ _ _ _ _ _ e := by
+    simp only [Fintype.card_congr e.toEquiv]
+    apply List.filterMap_congr
+    intro d _
+    simp only [(numElementsOfOrderInv d).preservation e]
+
 macro "by_single_group" : tactic => `(tactic | (
   simp only [num_entries] at *
   omega
@@ -192,6 +212,14 @@ private partial def exprLiteralToSyntax (e : Lean.Expr) : Lean.MetaM (Lean.TSynt
       let aSt ← exprLiteralToSyntax aExpr
       let bSt ← exprLiteralToSyntax bExpr
       return ← `(($aSt, $bSt))
+  -- List.nil  →  []
+  if e.isAppOf ``List.nil then return ← `([])
+  -- List.cons α head tail  →  head :: tail
+  if e.isAppOf ``List.cons then
+    let args := e.getAppArgs  -- #[α, head, tail]
+    let headSt ← exprLiteralToSyntax args[1]!
+    let tailSt ← exprLiteralToSyntax args[2]!
+    return ← `($headSt :: $tailSt)
   Lean.throwError "exprLiteralToSyntax: cannot convert {e}"
 
 -- Evaluate a closed term `e : α` via native compilation (elab-time only).
@@ -209,6 +237,18 @@ private unsafe def evalToLiteral (αExpr : Lean.Expr) (e : Lean.Expr) : Lean.Met
     let lvlA ← Lean.Meta.getLevel αA
     let lvlB ← Lean.Meta.getLevel αB
     return Lean.mkApp4 (Lean.mkConst ``Prod.mk [lvlA, lvlB]) αA αB fstLit sndLit
+  -- List (ℕ × ℕ): evalExpr the whole list then reconstruct as Expr
+  else if let .app (.const ``List _) αElem := α then
+    if αElem == Lean.mkApp2 (Lean.mkConst ``Prod [.zero, .zero])
+                             (Lean.mkConst ``Nat) (Lean.mkConst ``Nat) then
+      let pairs ← Lean.Meta.evalExpr (List (Nat × Nat)) α e
+      let pairToExpr (a b : Nat) :=
+        Lean.mkApp4 (Lean.mkConst ``Prod.mk [.zero, .zero])
+          (Lean.mkConst ``Nat) (Lean.mkConst ``Nat) (Lean.mkNatLit a) (Lean.mkNatLit b)
+      let listNil := Lean.mkApp (Lean.mkConst ``List.nil [.zero]) αElem
+      let cons h t := Lean.mkApp3 (Lean.mkConst ``List.cons [.zero]) αElem h t
+      return pairs.foldr (fun (a, b) acc => cons (pairToExpr a b) acc) listNil
+    else Lean.throwError "evalToLiteral: unsupported List element type {αElem}"
   else
     Lean.throwError "evalToLiteral: unsupported invariant type {α}"
 
@@ -232,7 +272,8 @@ private unsafe def elabByInvariantImpl : Lean.Elab.Tactic.Tactic
       let invEvalNK ← Lean.Elab.Tactic.elabTerm (← `(($inv).eval (retrieve $nStx $k1Stx))) none
       let valStx    ← exprLiteralToSyntax (← evalToLiteral αExpr invEvalNK)
       Lean.Elab.Tactic.evalTactic (← `(tactic|
-        have $hName : ($inv).eval (retrieve $nStx $k1Stx) = $valStx := by decide))
+        have $hName : ($inv).eval (retrieve $nStx $k1Stx) = $valStx := by
+          set_option maxRecDepth 2000 in decide))
     -- Phase 2: build simp lemma list from the cached idents.
     let simpArgs ← cacheIdents.mapM fun h => `(Lean.Parser.Tactic.simpLemma| $h:ident)
     -- Phase 3: case-split then close.
@@ -245,7 +286,7 @@ private unsafe def elabByInvariantImpl : Lean.Elab.Tactic.Tactic
       | omega
       | (apply not_iso_by $inv
          simp only [$simpArgs,*]
-         decide)))
+         decide +kernel)))
   | _ => Lean.Elab.throwUnsupportedSyntax
 
 @[implemented_by elabByInvariantImpl]
@@ -254,7 +295,7 @@ private opaque elabByInvariantSafe : Lean.Elab.Tactic.Tactic
 @[tactic byInvariant]
 private def elabByInvariant : Lean.Elab.Tactic.Tactic := elabByInvariantSafe
 
-set_option maxHeartbeats 1600000 in
+set_option maxHeartbeats 4000000 in
 -- Bumping heartbeats to allow the elaborator to construct the O(N²) case-split AST.
 -- The underlying kernel proofs use pure `decide` and execute.
 theorem uniqueness (n i n' i' : Nat)
@@ -332,7 +373,7 @@ theorem uniqueness (n i n' i' : Nat)
     · -- n = 23
       by_single_group
     · -- n = 24
-      sorry
+      by_invariant 24 i i' orderSpectrumInv
     · -- n = 25: C25 vs C5×C5; C25 has element with x^5≠1, C5×C5 does not
       by_invariant 25 i i' (hasPowerNotOneInv 5)
     · -- n = 26: D13 vs C26; non-abelian vs abelian
@@ -348,7 +389,7 @@ theorem uniqueness (n i n' i' : Nat)
         (numElementsOfOrderInv 14)
     · -- n = 29
       by_single_group
-    · -- n = 30: C30 vs C15⋊C2 variants; abelian separates C30, #order-2 elements separates the three non-abelian ones (15 vs 3 vs 5)
+    · -- n = 30
       by_invariant 30 i i' (isAbelianInv ⊗ (numElementsOfOrderInv 2))
     · -- n = 31
       by_single_group
