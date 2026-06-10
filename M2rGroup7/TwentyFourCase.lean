@@ -852,13 +852,64 @@ private lemma sylow3_action_ker_le_normalizer {G : Type*} [Group G] (P : Sylow 3
   rw [← Sylow.smul_eq_iff_mem_normalizer]
   exact DFunLike.congr_fun hg P
 
+/-- In a group of order 24, every Sylow 3-subgroup has order 3. -/
+private lemma sylow3_24_card {G : Type*} [Group G] [Finite G] (h : Nat.card G = 24)
+    (P : Sylow 3 G) : Nat.card (P : Subgroup G) = 3 := by
+  haveI : Fact (Nat.Prime 3) := ⟨by decide⟩
+  haveI : Fact (Nat.Prime 2) := ⟨by decide⟩
+  simpa using sylow_card_eq (p := 3) (q := 2) (by decide)
+    (show Nat.card G = 3 ^ 1 * 2 ^ 3 by rw [h]; ring) P
+
+/-- An order-3 element of the normalizer of a Sylow 3-subgroup `P` lies in `P`: `P` has
+index 2 in its order-6 normalizer, so squares of normalizer elements lie in `P`, and
+`x = (x²)²` when `x³ = 1`. -/
+private lemma sylow3_24_order3_mem_normalizer_mem_sylow {G : Type*} [Group G]
+    (h : Nat.card G = 24) (h_n3 : Nat.card (Sylow 3 G) = 4) (P : Sylow 3 G)
+    {x : G} (hx : orderOf x = 3)
+    (hxN : x ∈ Subgroup.normalizer ((P : Subgroup G) : Set G)) :
+    x ∈ (P : Subgroup G) := by
+  haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [h]; decide)
+  set N := Subgroup.normalizer ((P : Subgroup G) : Set G) with hN
+  have h_card' : Nat.card ((P : Subgroup G).subgroupOf N) = 3 :=
+    (Nat.card_congr (Subgroup.subgroupOfEquivOfLe Subgroup.le_normalizer).toEquiv).trans
+      (sylow3_24_card h P)
+  have h_idx : ((P : Subgroup G).subgroupOf N).index = 2 := by
+    have h_mul := Subgroup.index_mul_card ((P : Subgroup G).subgroupOf N)
+    rw [h_card', sylow3_24_normalizer_card h h_n3 P] at h_mul
+    omega
+  have h3 : (⟨x, hxN⟩ : N) ^ 3 = 1 := by
+    ext
+    simpa using hx ▸ pow_orderOf_eq_one x
+  have h_x4 : ((⟨x, hxN⟩ : N) ^ 2) ^ 2 = ⟨x, hxN⟩ := by
+    rw [← pow_mul]
+    calc (⟨x, hxN⟩ : N) ^ (2 * 2) = (⟨x, hxN⟩ : N) ^ 3 * ⟨x, hxN⟩ := by rw [pow_succ]
+    _ = ⟨x, hxN⟩ := by rw [h3, one_mul]
+  have h_mem := Subgroup.sq_mem_of_index_two h_idx ((⟨x, hxN⟩ : N) ^ 2)
+  rw [h_x4] at h_mem
+  exact Subgroup.mem_subgroupOf.mp h_mem
+
 /-- The kernel of the Sylow-3 conjugation action has order coprime to 3: an order-3
-element of the kernel would generate the unique Sylow 3-subgroup of all four distinct
-order-6 normalizers simultaneously. -/
+element of the kernel would lie in all four (pairwise disjoint) Sylow 3-subgroups. -/
 private lemma sylow3_action_ker_not_dvd_three {G : Type*} [Group G] (h : Nat.card G = 24)
     (h_n3 : Nat.card (Sylow 3 G) = 4) :
     ¬ 3 ∣ Nat.card (MulAction.toPermHom G (Sylow 3 G)).ker := by
-  sorry
+  haveI : Fact (Nat.Prime 3) := ⟨by decide⟩
+  haveI : Finite G := Nat.finite_of_card_ne_zero (by rw [h]; decide)
+  intro h_dvd
+  obtain ⟨y, hy⟩ := exists_prime_orderOf_dvd_card' 3 h_dvd
+  have hy' : orderOf (y : G) = 3 :=
+    (orderOf_injective _ (Subgroup.subtype_injective _) y).trans hy
+  have h_mem : ∀ P : Sylow 3 G, (y : G) ∈ (P : Subgroup G) := fun P =>
+    sylow3_24_order3_mem_normalizer_mem_sylow h h_n3 P hy'
+      (sylow3_action_ker_le_normalizer P y.2)
+  haveI : Nontrivial (Sylow 3 G) :=
+    Finite.one_lt_card_iff_nontrivial.mp (by rw [h_n3]; norm_num)
+  obtain ⟨P₁, P₂, hne⟩ := exists_pair_ne (Sylow 3 G)
+  have h_y1 : (y : G) = 1 := Subgroup.mem_bot.mp
+    (disjoint_iff.mp (sylow_prime_order_disjoint (sylow3_24_card h) hne) ▸
+      Subgroup.mem_inf.mpr ⟨h_mem P₁, h_mem P₂⟩)
+  rw [h_y1, orderOf_one] at hy'
+  norm_num at hy'
 
 /-- The kernel of the conjugation action on the four Sylow 3-subgroups has order 1 or 2. -/
 private lemma sylow3_action_ker_card_dvd_two {G : Type*} [Group G] (h : Nat.card G = 24)
