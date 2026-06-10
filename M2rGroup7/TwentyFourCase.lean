@@ -1361,6 +1361,74 @@ private noncomputable def c2cubed_sdp_c3OnC2cubed_iso_c2a4 :
       rw [Nat.card_eq_fintype_card]; decide
     rw [SemidirectProduct.card, h1, card_cyclicGroup, h2]
 
+/-- Candidate endomorphism of `(C_2)³` from generator images: multiplicative for any
+choice of images since every element squares to one. -/
+private def c2cubedGenMap (u v t : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) :
+    (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →
+      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) :=
+  fun p => u ^ (Multiplicative.toAdd p.1).val * v ^ (Multiplicative.toAdd p.2.1).val *
+    t ^ (Multiplicative.toAdd p.2.2).val
+
+/-- `c2cubedRot` as a raw function, for decidable statements. -/
+private def c2cubedRotFun :
+    (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) →
+      (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) :=
+  fun p => (p.1, p.2.2, p.2.1 * p.2.2)
+
+/-- The three standard generators of `(C_2)³`. -/
+private def c2cubedE1 : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 :=
+  (Multiplicative.ofAdd 1, 1, 1)
+
+private def c2cubedE2 : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 :=
+  (1, Multiplicative.ofAdd 1, 1)
+
+private def c2cubedE3 : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 :=
+  (1, 1, Multiplicative.ofAdd 1)
+
+/-- The conjugation certificate: `β := c2cubedGenMap z₀ q (Bq)` (where `B` is the map
+with generator images `u, v, t` and `Bq := c2cubedGenMap u v t q`) is multiplicative,
+injective, and intertwines `c2cubedRotFun` with `B`. The two leading conjuncts
+(`z₀` is a non-trivial fixed vector and `q` is not fixed) fail fast during the
+decidable search. -/
+private def c2cubedConjugates
+    (u v t z₀ q : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) : Prop :=
+  c2cubedGenMap u v t z₀ = z₀ ∧ z₀ ≠ 1 ∧ c2cubedGenMap u v t q ≠ q ∧
+  (∀ s s', c2cubedGenMap z₀ q (c2cubedGenMap u v t q) (s * s') =
+    c2cubedGenMap z₀ q (c2cubedGenMap u v t q) s *
+      c2cubedGenMap z₀ q (c2cubedGenMap u v t q) s') ∧
+  (∀ s s', c2cubedGenMap z₀ q (c2cubedGenMap u v t q) s =
+    c2cubedGenMap z₀ q (c2cubedGenMap u v t q) s' → s = s') ∧
+  ∀ p, c2cubedGenMap z₀ q (c2cubedGenMap u v t q) (c2cubedRotFun p) =
+    c2cubedGenMap u v t (c2cubedGenMap z₀ q (c2cubedGenMap u v t q) p)
+
+private instance (u v t z₀ q : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) :
+    Decidable (c2cubedConjugates u v t z₀ q) := by
+  unfold c2cubedConjugates; infer_instance
+
+-- `maxSize`: the `Decidable` instance term stacks `Prod` instances at every quantifier
+-- layer over `(C_2)³` and exceeds the default size limit of 128.
+-- `maxHeartbeats`: the search evaluates the certificate over 512 generator-image
+-- triples (16× the default budget).
+set_option synthInstance.maxSize 1000 in
+set_option maxHeartbeats 3200000 in
+/-- Every injective, cube-trivial, non-identity generator-image map on `(C_2)³` is
+conjugate to `c2cubedRotFun` by some generator-image map: a fixed vector `z₀` and a
+trace-free `q ∉ Fix` give a basis `(z₀, q, Bq)` on which the map acts exactly as
+`c2cubedRot` acts on the standard basis. -/
+private lemma c2cubedGenMap_conjugator_exists :
+    ∀ u v t : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2,
+    (∀ s s', c2cubedGenMap u v t s = c2cubedGenMap u v t s' → s = s') →
+    c2cubedGenMap u v t (c2cubedGenMap u v t (c2cubedGenMap u v t c2cubedE1)) =
+      c2cubedE1 →
+    c2cubedGenMap u v t (c2cubedGenMap u v t (c2cubedGenMap u v t c2cubedE2)) =
+      c2cubedE2 →
+    c2cubedGenMap u v t (c2cubedGenMap u v t (c2cubedGenMap u v t c2cubedE3)) =
+      c2cubedE3 →
+    (¬ ∀ p, c2cubedGenMap u v t p = p) →
+    ∃ z₀ q : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2,
+      c2cubedConjugates u v t z₀ q := by
+  decide
+
 /-- Basis change: any non-trivial action of `C_3` on `(C_2)³` is conjugate to the
 standard one. -/
 private lemma c2cubed_sdp_c3_iso_standard
