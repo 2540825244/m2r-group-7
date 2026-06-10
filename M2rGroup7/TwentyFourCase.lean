@@ -966,6 +966,37 @@ private lemma sylow3_card_one_of_iso_prod_order8 {G T H : Type*} [Group G] [Grou
     Nat.card (Sylow 3 G) = 1 := by
   sorry
 
+/-- `Aut(C_8)` has order 4, so it admits no non-trivial hom from `C_3`. -/
+private lemma c3_hom_mulAut_c8_trivial
+    (ψ : CyclicGroup 3 →* MulAut (CyclicGroup 8)) : ψ = 1 := by
+  sorry
+
+/-- `Aut(C_4 × C_2)` has order 8, so it admits no non-trivial hom from `C_3`. -/
+private lemma c3_hom_mulAut_c4c2_trivial
+    (ψ : CyclicGroup 3 →* MulAut (CyclicGroup 4 × CyclicGroup 2)) : ψ = 1 := by
+  sorry
+
+/-- `Aut(D_4)` has order 8, so it admits no non-trivial hom from `C_3`. -/
+private lemma c3_hom_mulAut_d4_trivial
+    (ψ : CyclicGroup 3 →* MulAut (DihedralGroup 4)) : ψ = 1 := by
+  sorry
+
+/-- Any non-trivial action `ψ` of `C_3` on `(C_2)³` gives
+`(C_2)³ ⋊[ψ] C_3 ≃* C_2 × A_4`: the fixed line of `ψ` splits off as a central `C_2`, and
+`C_3` acts simply on the complementary `V_4`. -/
+private lemma c2cubed_sdp_c3_nontrivial
+    {ψ : CyclicGroup 3 →* MulAut (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)}
+    (h_nontriv : ψ ≠ 1) :
+    Nonempty ((CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2) ⋊[ψ] CyclicGroup 3 ≃*
+      CyclicGroup 2 × AlternatingGroup 4) := by
+  sorry
+
+/-- Any non-trivial action `ψ` of `C_3` on `Q_8` gives `Q_8 ⋊[ψ] C_3 ≃* SL_2(𝔽_3)`. -/
+private lemma q8_sdp_c3_nontrivial
+    {ψ : CyclicGroup 3 →* MulAut (QuaternionGroup 2)} (h_nontriv : ψ ≠ 1) :
+    Nonempty (QuaternionGroup 2 ⋊[ψ] CyclicGroup 3 ≃* SL2 3) := by
+  sorry
+
 /-- Dispatch on the iso class of the order-8 normal subgroup in `T ⋊[φ] C` with `φ ≠ 1`:
 only `C_2³` and `Q_8` admit an order-3 automorphism, giving `C_2 × A_4` and `SL_2(𝔽_3)`
 respectively. -/
@@ -974,7 +1005,34 @@ private lemma order24_4_sdp_dispatch {G : Type*} [Group G]
     {φ : ↥C →* MulAut ↥T} (h_iso : ↥T ⋊[φ] ↥C ≃* G) (h_phi_nontriv : φ ≠ 1) :
     Nonempty (G ≃* CyclicGroup 2 × AlternatingGroup 4) ∨
     Nonempty (G ≃* SL2 3) := by
-  sorry
+  haveI : IsCyclic ↥C := isCyclic_of_prime_card h_C_card
+  have eC : ↥C ≃* CyclicGroup 3 :=
+    mulEquivOfCyclicCardEq (h_C_card.trans (card_cyclicGroup 3).symm)
+  rcases order8_classification (G := ↥T) h_T_card with hC8 | hC4C2 | hC2sq3 | hD4 | hQ8
+  · -- T ≃* C_8: impossible, Aut(C_8) has no order-3 elements
+    obtain ⟨eT⟩ := hC8
+    exact absurd (c3_hom_mulAut_c8_trivial _)
+      (transported_action_ne_one eT eC h_phi_nontriv)
+  · -- T ≃* C_4 × C_2: impossible
+    obtain ⟨eT⟩ := hC4C2
+    exact absurd (c3_hom_mulAut_c4c2_trivial _)
+      (transported_action_ne_one eT eC h_phi_nontriv)
+  · -- T ≃* C_2³: target C_2 × A_4
+    obtain ⟨eT⟩ := hC2sq3
+    obtain ⟨e⟩ := c2cubed_sdp_c3_nontrivial (transported_action_ne_one eT eC h_phi_nontriv)
+    let : G ≃* CyclicGroup 2 × AlternatingGroup 4 :=
+      h_iso.symm.trans <| (SemidirectProduct.congr' eT eC).trans e
+    tauto
+  · -- T ≃* D_4: impossible
+    obtain ⟨eT⟩ := hD4
+    exact absurd (c3_hom_mulAut_d4_trivial _)
+      (transported_action_ne_one eT eC h_phi_nontriv)
+  · -- T ≃* Q_8: target SL_2(𝔽_3)
+    obtain ⟨eT⟩ := hQ8
+    obtain ⟨e⟩ := q8_sdp_c3_nontrivial (transported_action_ne_one eT eC h_phi_nontriv)
+    let : G ≃* SL2 3 :=
+      h_iso.symm.trans <| (SemidirectProduct.congr' eT eC).trans e
+    tauto
 
 /-- A group of order 24 with four Sylow 3-subgroups and a normal Sylow 2-subgroup `T` is
 `T ⋊ C_3` with a non-trivial action, so `T ≃ C_2³` (giving `C_2 × A_4`) or `T ≃ Q_8`
