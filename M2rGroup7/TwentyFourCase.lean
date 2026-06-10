@@ -1192,7 +1192,69 @@ private lemma q8_sdp_c3_iso_standard
     {ψ : CyclicGroup 3 →* MulAut (QuaternionGroup 2)} (h_nontriv : ψ ≠ 1) :
     Nonempty (QuaternionGroup 2 ⋊[ψ] CyclicGroup 3 ≃*
       QuaternionGroup 2 ⋊[c3OnQ8] CyclicGroup 3) := by
-  sorry
+  -- Pin the generator image `B := ψ(gen)` to a raw generator-image map
+  obtain ⟨B, hB⟩ : ∃ B, B = ψ (Multiplicative.ofAdd 1) := ⟨_, rfl⟩
+  obtain ⟨u, hu⟩ : ∃ u, u = B (.a 1) := ⟨_, rfl⟩
+  obtain ⟨w, hw⟩ : ∃ w, w = B (.xa 0) := ⟨_, rfl⟩
+  have hra : ∀ j : ZMod 4, (.a j : QuaternionGroup 2) = .a 1 ^ j.val := by decide
+  have hxa : ∀ j : ZMod 4, (.xa j : QuaternionGroup 2) = .xa 0 * .a 1 ^ j.val := by decide
+  have hpt : ∀ q, B q = q8GenMap u w q := by
+    intro q
+    rcases q with i | i
+    · change B (.a i) = u ^ i.val
+      rw [hra i, map_pow, ← hu]
+    · change B (.xa i) = w * u ^ i.val
+      rw [hxa i, map_mul, map_pow, ← hu, ← hw]
+  have hmul : ∀ s t, q8GenMap u w (s * t) = q8GenMap u w s * q8GenMap u w t := by
+    intro s t
+    rw [← hpt, ← hpt, ← hpt, map_mul]
+  have hinj : ∀ s t, q8GenMap u w s = q8GenMap u w t → s = t := by
+    intro s t hst
+    rw [← hpt, ← hpt] at hst
+    exact B.injective hst
+  have hB3 : B ^ 3 = 1 := by rw [hB]; exact c3_hom_gen_cube_eq_one ψ
+  have h1 : B (B (B (.a 1))) = .a 1 := DFunLike.congr_fun hB3 _
+  have h2 : B (B (B (.xa 0))) = .xa 0 := DFunLike.congr_fun hB3 _
+  simp only [hpt] at h1 h2
+  have hne : ¬ ∀ q, q8GenMap u w q = q := fun hall =>
+    h_nontriv (c3_hom_eq_one_of_gen_eq_one
+      (hB.symm.trans (MulEquiv.ext fun q => (hpt q).trans (hall q))))
+  -- Extract the conjugator and assemble it into an automorphism β
+  obtain ⟨p, r, hmul', hinj', hconj⟩ :=
+    q8GenMap_conjugator_exists u w hmul hinj h1 h2 hne
+  have hbij : Function.Bijective (q8GenMap p r) :=
+    Finite.injective_iff_bijective.mp fun s t => hinj' s t
+  let β : QuaternionGroup 2 ≃* QuaternionGroup 2 :=
+    MulEquiv.ofBijective (MonoidHom.mk' (q8GenMap p r) hmul') hbij
+  -- β conjugates B to the standard generator automorphism
+  have h_gen_conj : MulAut.congr β B = q8_cycle_ijk := by
+    refine MulEquiv.ext fun x => ?_
+    change β (B (β.symm x)) = q8_cycle_ijk x
+    rw [hpt (β.symm x)]
+    change q8GenMap p r (q8GenMap u w (β.symm x)) = q8_cycle_ijk x
+    rw [hconj (β.symm x)]
+    change q8_cycle_ijk (β (β.symm x)) = q8_cycle_ijk x
+    rw [MulEquiv.apply_symm_apply]
+  -- hence it intertwines the actions as homs out of C_3
+  have hρ3 : q8_cycle_ijk ^ 3 = 1 := by
+    ext x
+    change q8_cycle_ijk (q8_cycle_ijk (q8_cycle_ijk x)) = x
+    revert x; decide
+  have h_gen : ((MulAut.congr β).toMonoidHom.comp ψ) (Multiplicative.ofAdd 1) =
+      q8_cycle_ijk := by
+    change MulAut.congr β (ψ (Multiplicative.ofAdd 1)) = q8_cycle_ijk
+    rw [← hB]
+    exact h_gen_conj
+  have h_hom : (MulAut.congr β).toMonoidHom.comp ψ = c3OnQ8 :=
+    cyclicHom_ext _ hρ3 h_gen
+  -- transport the semidirect product along β
+  refine ⟨SemidirectProduct.congr β (MulEquiv.refl _) fun g => ?_⟩
+  have hg := DFunLike.congr_fun h_hom g
+  ext n
+  change β (ψ g n) = c3OnQ8 g (β n)
+  rw [← hg]
+  change β (ψ g n) = β (ψ g (β.symm (β n)))
+  rw [MulEquiv.symm_apply_apply]
 
 /-- The embedding `Q_8 →* SL_2(𝔽_3)` sending `i, j, k` to `!![0,-1;1,0]`, `!![1,1;1,-1]`,
 `!![-1,1;1,1]`. Its image is the (unique) Sylow 2-subgroup of `SL_2(𝔽_3)`. -/
