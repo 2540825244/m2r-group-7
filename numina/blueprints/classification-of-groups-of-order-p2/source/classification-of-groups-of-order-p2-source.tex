@@ -1,0 +1,11 @@
+Currently classification of p^2 is done through the OrderPQ library but we can do it on our own.
+
+The mathematical proof is very simple:
+
+Claim: If $G$ is of order $p^2$, then it must be abelian.
+
+Proof: Assume $G$ is non-abelian. As $G$ is non-abelian, its center doesn't have order $p^2$. $G$ is a $p$-group, hence has a non-trivial center. Hence order of center must be $p$. But then $G/Z(G)$ would have prime order so is cyclic. Hence, because $G/Z(G)$ cyclic implies $G$ is abelian, we get a contradiction.
+
+Then by classification of finite abelian groups, we get that $G$ is isomorphic to $C_{p^2}$ or $C_p \times C_p$.
+
+Take inspiration from proof of $p^3$ abelian to finish the proof after the claim. Also $p^3$ proof will have similar arguments for the center, so you don't even need to search Mathlib much I think.
