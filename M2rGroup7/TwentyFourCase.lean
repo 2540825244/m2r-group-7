@@ -1408,9 +1408,9 @@ private instance (u v t z₀ q : CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
 -- `maxSize`: the `Decidable` instance term stacks `Prod` instances at every quantifier
 -- layer over `(C_2)³` and exceeds the default size limit of 128.
 set_option synthInstance.maxSize 1000 in
+set_option maxHeartbeats 3200000 in
 -- `maxHeartbeats`: the search evaluates the certificate over 512 generator-image
 -- triples (16× the default budget).
-set_option maxHeartbeats 3200000 in
 /-- Every injective, cube-trivial, non-identity generator-image map on `(C_2)³` is
 conjugate to `c2cubedRotFun` by some generator-image map: a fixed vector `z₀` and a
 trace-free `q ∉ Fix` give a basis `(z₀, q, Bq)` on which the map acts exactly as
