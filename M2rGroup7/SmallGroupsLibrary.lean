@@ -225,12 +225,12 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 10, 1 => pqSdp 5 2
   | 10, 2 => CyclicGroup 10
   | 11, 1 => CyclicGroup 11
-  | 12, 1 => CyclicGroup 12
-  | 12, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 3
-  | 12, 3 => CyclicGroup 3 ⋊[canonicalC4OnCqAction (by norm_num : (3:ℕ) ≠ 2)] CyclicGroup 4
+  | 12, 1 => CyclicGroup 3 ⋊[canonicalC4OnCqAction (by norm_num : (3:ℕ) ≠ 2)] CyclicGroup 4
+  | 12, 2 => CyclicGroup 12
+  | 12, 3 => (CyclicGroup 2 × CyclicGroup 2) ⋊[canonicalC3OnC2C2Action] CyclicGroup 3
   | 12, 4 => CyclicGroup 3 ⋊[canonicalC2C2OnCqAction (by norm_num : (3:ℕ) ≠ 2)]
       (CyclicGroup 2 × CyclicGroup 2)
-  | 12, 5 => (CyclicGroup 2 × CyclicGroup 2) ⋊[canonicalC3OnC2C2Action] CyclicGroup 3
+  | 12, 5 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 3
   | 13, 1 => CyclicGroup 13
   | 14, 1 => pqSdp 7 2
   | 14, 2 => CyclicGroup 14
@@ -250,20 +250,20 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 16, 13 => (CyclicGroup 4 × CyclicGroup 2) ⋊[c2OnK8Psi6] CyclicGroup 2
   | 16, 14 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
   | 17, 1 => CyclicGroup 17
-  | 18, 1 => CyclicGroup 18
-  | 18, 2 => CyclicGroup 3 × CyclicGroup 3 × CyclicGroup 2
-  | 18, 3 => CyclicGroup (3 ^ 2) ⋊[canonicalC2OnCp2Action (by norm_num : (3:ℕ) ≠ 2)] CyclicGroup 2
-  | 18, 4 => (CyclicGroup 3 × CyclicGroup 3) ⋊[canonicalC2OnCpCpAction_r1
+  | 18, 1 => CyclicGroup (3 ^ 2) ⋊[canonicalC2OnCp2Action (by norm_num : (3:ℕ) ≠ 2)] CyclicGroup 2
+  | 18, 2 => CyclicGroup 18
+  | 18, 3 => (CyclicGroup 3 × CyclicGroup 3) ⋊[canonicalC2OnCpCpAction_r1
       (by norm_num : (3:ℕ) ≠ 2)] CyclicGroup 2
-  | 18, 5 => (CyclicGroup 3 × CyclicGroup 3) ⋊[canonicalC2OnCpCpAction_r2 3] CyclicGroup 2
+  | 18, 4 => (CyclicGroup 3 × CyclicGroup 3) ⋊[canonicalC2OnCpCpAction_r2 3] CyclicGroup 2
+  | 18, 5 => CyclicGroup 3 × CyclicGroup 3 × CyclicGroup 2
   | 19, 1 => CyclicGroup 19
-  | 20, 1 => CyclicGroup 20
-  | 20, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 5
-  | 20, 3 => CyclicGroup 5 ⋊[canonicalC4OnCqAction (by norm_num : (5:ℕ) ≠ 2)] CyclicGroup 4
-  | 20, 4 => CyclicGroup 5 ⋊[canonicalC4OnCqAction_r2
+  | 20, 1 => CyclicGroup 5 ⋊[canonicalC4OnCqAction (by norm_num : (5:ℕ) ≠ 2)] CyclicGroup 4
+  | 20, 2 => CyclicGroup 20
+  | 20, 3 => CyclicGroup 5 ⋊[canonicalC4OnCqAction_r2
       (by decide : (5:ℕ) ≡ 1 [MOD 4])] CyclicGroup 4
-  | 20, 5 => CyclicGroup 5 ⋊[canonicalC2C2OnCqAction (by norm_num : (5:ℕ) ≠ 2)]
+  | 20, 4 => CyclicGroup 5 ⋊[canonicalC2C2OnCqAction (by norm_num : (5:ℕ) ≠ 2)]
       (CyclicGroup 2 × CyclicGroup 2)
+  | 20, 5 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 5
   | 21, 1 => pqSdp 7 3
   | 21, 2 => CyclicGroup 21
   | 22, 1 => pqSdp 11 2
@@ -289,16 +289,16 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 26, 1 => pqSdp 13 2
   | 26, 2 => CyclicGroup 26
   | 27, 1 => CyclicGroup 27
-  | 28, 1 => CyclicGroup 28
-  | 28, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 7
-  | 28, 3 => CyclicGroup 7 ⋊[canonicalC4OnCqAction (by norm_num : (7:ℕ) ≠ 2)] CyclicGroup 4
-  | 28, 4 => CyclicGroup 7 ⋊[canonicalC2C2OnCqAction (by norm_num : (7:ℕ) ≠ 2)]
+  | 28, 1 => CyclicGroup 7 ⋊[canonicalC4OnCqAction (by norm_num : (7:ℕ) ≠ 2)] CyclicGroup 4
+  | 28, 2 => CyclicGroup 28
+  | 28, 3 => CyclicGroup 7 ⋊[canonicalC2C2OnCqAction (by norm_num : (7:ℕ) ≠ 2)]
       (CyclicGroup 2 × CyclicGroup 2)
+  | 28, 4 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 7
   | 29, 1 => CyclicGroup 29
-  | 30, 1 => CyclicGroup 30
-  | 30, 2 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 14 (by decide)] CyclicGroup 2
-  | 30, 3 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 11 (by decide)] CyclicGroup 2
-  | 30, 4 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 4 (by decide)] CyclicGroup 2
+  | 30, 1 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 11 (by decide)] CyclicGroup 2
+  | 30, 2 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 4 (by decide)] CyclicGroup 2
+  | 30, 3 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 14 (by decide)] CyclicGroup 2
+  | 30, 4 => CyclicGroup 30
   | 31, 1 => CyclicGroup 31
   | _, _ => PUnit -- Fallback to make retrieve total
 
@@ -367,4 +367,3 @@ theorem retrieve_card (n : Nat) (i : Nat) [hv : ValidIndex n i] : Nat.card (retr
         Nat.ofNat_pos, Nat.one_le_ofNat, Nat.reduceLeDiff, Order.lt_one_iff, Order.lt_two_iff,
         Std.le_refl, gt_iff_lt, zero_le] <;>
       rfl
-

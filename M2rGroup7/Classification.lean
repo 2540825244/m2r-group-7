@@ -5,7 +5,6 @@ import «M2rGroup7».CpSqAction
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
 import «M2rGroup7».SixteenCase
-import «M2rGroup7».P2qClassification.P2qClassification
 import «M2rGroup7».P2qClassification.PqClassification
 import «M2rGroup7».UT3
 import «M2rGroup7».CaseA
