@@ -3,6 +3,116 @@
 
 \begin{document}
 
-% Your blueprint will go here.
+\section{Setup}
+
+Throughout, let $p$ be a prime and $G$ a group with $|G| = p^2$. The goal is
+to prove
+\[
+  G \simeq C_{p^2} \quad\text{or}\quad G \simeq C_p \times C_p
+\]
+as multiplicative groups, where $C_n$ denotes the cyclic group of order $n$.
+The proof has two steps: first show that $G$ is commutative, then derive the
+dichotomy from a direct internal-product argument on a non-cyclic $G$. We do
+not use the project's \texttt{OrderPQ} library.
+
+We work in
+\texttt{M2rGroup7/PSquaredClassification.lean}, with the cyclic group
+$C_n$ given by the project definition \texttt{CyclicGroup} from
+\texttt{M2rGroup7/CyclicGroup.lean}.
+
+\section{Commutativity of groups of order $p^2$}
+
+\begin{lemma}
+  \label{lem:commutative-of-card-eq-prime-sq}
+  \lean{M2rGroup7.PSquaredClassification.isMulCommutative_of_card_eq_prime_sq}
+  \leanfile{M2rGroup7/PSquaredClassification.lean}
+  \leanok
+  Let $p$ be a prime and $G$ a group with $|G| = p^2$. Then $G$ is
+  commutative.
+\end{lemma}
+
+\begin{proof}
+  $G$ is a finite $p$-group: from $|G| = p^2$ we get
+  $\texttt{IsPGroup}\ p\ G$. The Mathlib lemma
+  \texttt{IsPGroup.isMulCommutative\_of\_card\_eq\_prime\_sq} (which
+  internally argues that the center is non-trivial because $G$ is a $p$-group,
+  and that if $|Z(G)| = p$ then $G/Z(G)$ is cyclic of prime order, forcing
+  $G$ commutative by \texttt{isMulCommutative\_of\_isCyclic\_quotient\_center\_self})
+  gives exactly the conclusion.
+\end{proof}
+
+\section{Non-cyclic case: internal direct product}
+
+\begin{lemma}
+  \label{lem:mulEquiv-prod-of-not-isCyclic}
+  \lean{M2rGroup7.PSquaredClassification.mulEquiv_prod_of_card_eq_prime_sq_of_not_isCyclic}
+  \leanfile{M2rGroup7/PSquaredClassification.lean}
+  \uses{lem:commutative-of-card-eq-prime-sq}
+  \leanok
+  Let $p$ be a prime and $G$ a group with $|G| = p^2$ that is not cyclic.
+  Then $G \simeq C_p \times C_p$.
+\end{lemma}
+
+\begin{proof}
+  By Lemma~\ref{lem:commutative-of-card-eq-prime-sq}, $G$ is commutative.
+  We construct an explicit isomorphism $C_p \times C_p \to G$.
+
+  \smallskip
+  \noindent\emph{Step 1: every non-identity element has order $p$.} Let
+  $g \in G$ with $g \neq 1$. By Lagrange the order of $g$ divides $p^2$, so
+  it is one of $1$, $p$, $p^2$. The case $1$ is excluded by $g \neq 1$. If
+  $|g| = p^2$, then $\langle g \rangle = G$ and $G$ is cyclic, contrary to
+  hypothesis. Hence $|g| = p$.
+
+  \smallskip
+  \noindent\emph{Step 2: pick two independent elements.} Since $|G| > 1$
+  there is a non-identity $x \in G$; by Step~1, $|x| = p$, so $\langle x
+  \rangle$ has order $p$. Since $|G| = p^2 > p = |\langle x \rangle|$, the
+  inclusion is strict and there is some $y \in G \setminus \langle x
+  \rangle$. By Step~1, $|y| = p$, so $\langle y \rangle$ has order $p$.
+
+  \smallskip
+  \noindent\emph{Step 3: trivial intersection.} The intersection $\langle x
+  \rangle \cap \langle y \rangle$ is a subgroup of $\langle y \rangle$, so
+  its order divides $p$. If the intersection equalled $\langle y \rangle$,
+  then $y \in \langle x \rangle$, contradicting the choice of $y$. Therefore
+  the intersection is trivial.
+
+  \smallskip
+  \noindent\emph{Step 4: build the isomorphism.} Because $G$ is commutative,
+  $x$ and $y$ commute. The maps $a \mapsto x^a$ and $b \mapsto y^b$ from
+  $C_p$ define homomorphisms $\iota_x, \iota_y : C_p \to G$ with images
+  $\langle x \rangle$ and $\langle y \rangle$, both of order $p$. The map
+  \[
+    \Phi : C_p \times C_p \to G, \qquad (a, b) \mapsto \iota_x(a) \cdot
+    \iota_y(b)
+  \]
+  is a homomorphism (commutativity of $G$). Its kernel sits inside
+  $\langle x \rangle \cap \langle y \rangle$ via the standard internal-product
+  argument, hence is trivial by Step~3, so $\Phi$ is injective. Both sides
+  have cardinality $p^2$, so $\Phi$ is bijective, giving the desired
+  $C_p \times C_p \simeq G$ which we invert.
+\end{proof}
+
+\section{Main classification}
+
+\begin{theorem}
+  \label{thm:p-squared-classification}
+  \lean{M2rGroup7.PSquaredClassification.p_squared_classification}
+  \leanfile{M2rGroup7/PSquaredClassification.lean}
+  \uses{lem:commutative-of-card-eq-prime-sq, lem:mulEquiv-prod-of-not-isCyclic}
+  \leanok
+  Let $p$ be a prime and $G$ a group with $|G| = p^2$. Then either
+  $G \simeq C_{p^2}$ or $G \simeq C_p \times C_p$.
+\end{theorem}
+
+\begin{proof}
+  Split on whether $G$ is cyclic. If $G$ is cyclic, then any cyclic group of
+  the same cardinality as $G$ is isomorphic to it, and in particular
+  $G \simeq C_{p^2}$ via \texttt{mulEquivOfCyclicCardEq} together with
+  $|C_{p^2}| = p^2$ from \texttt{card\_cyclicGroup}. If $G$ is not cyclic,
+  apply Lemma~\ref{lem:mulEquiv-prod-of-not-isCyclic} to conclude $G \simeq
+  C_p \times C_p$.
+\end{proof}
 
 \end{document}

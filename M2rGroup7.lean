@@ -1,2 +1,3 @@
 import M2rGroup7.Classification
 import M2rGroup7.P2qClassification.FourQClassification
+import M2rGroup7.PSquaredClassification
