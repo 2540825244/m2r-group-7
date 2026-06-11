@@ -1,0 +1,22 @@
+In the proof of this result:
+
+Semidirect products $C_{q^n} \rtimes C_{p^m}$ ($q$ odd prime, $p \neq q$) are classified up to isomorphism by $r \in \{0, …, \min(m, d)\}$ where $d = v_p(q - 1)$, giving $\min(m, d) + 1$ classes. Every action $f$ belongs to exactly one class.
+
+(which has many different forms, one of which is classify_Cqn_rtimes_Cpm, all in CycPGroupClassification.lean)
+
+It uses a lemma that shows that the centre is direct product between Fix(Im(f)) and Ker(f) but I think it only shows for cyclic p and q groups, but its true in general for abelian groups. Could you please take it out and create a lemma that reflects the following?
+
+\begin{lemma}\label{Centre of semidirect product}
+    Let $f : K \rightarrow \text{Aut}(N)$ be the underlying homomorphism of $N \rtimes K$ where $N, K$ are abelian groups. Then $Z(N \rtimes K) = \text{Fix}(\text{Im}(f)) \times \text{Ker}(f)$
+\end{lemma}
+\begin{proof}
+    Group operation is defined as $$(x_1, y_1)(x_2, y_2) = (x_1 \cdot f(y_1)(x_2), y_1y_2)$$
+    By definition $(x, y) \in Z(G) \iff$ for arbitrary $(x', y') \in G$ we have: $$(x, y)(x', y') = (x', y')(x, y)$$
+    Using the definition of the group operation, this is equivalent to $$(x \cdot f(y)(x'), yy') = (x' \cdot f(y')(x), y'y)$$
+    Since $K$ is abelian, we always have $yy' = y'y$. Thus the condition simplifies to $$(x, y) \in Z(G) \iff x \cdot f(y)(x') = x' \cdot f(y')(x) \text{ } \forall x' \in N, y' \in K$$
+    Setting $y' = 1$ we get $x \cdot f(y)(x') = x' \cdot x \implies f(y)(x') = x'$ (as $N$ is abelian) which shows that $y \in \text{Ker}(f)$ as $x'$ is arbitrary.
+
+    Setting $x' = 1$ we get $x = f(y')(x)$ (using $y \in \text{Ker}(f)$). Hence $x \in \text{Fix}(\text{Im}(f))$ as $y'$ is arbitrary.
+
+    These conditions are necessary and sufficient as one can show that $(x, y)(x', y') = (x \cdot x', y \cdot y') = (x' \cdot x, y' \cdot y) = (x', y') (x, y)$.
+\end{proof}

@@ -22,7 +22,7 @@ def canonicalC4OnCqAction
   haveI : NeZero (4 : ℕ) := ⟨by norm_num⟩
   haveI : NeZero ((2:ℕ)^2) := ⟨pow_ne_zero 2 (by norm_num)⟩
   transportCpCqHom (show ((2:ℕ)^2 : ℕ) = 4 by norm_num) (pow_one q)
-    (canonicalAction 2 q 1 2 (show (2:ℕ) ≠ q by omega) h_q_ne_2 Nat.one_pos
+    (canonicalAction 2 q 1 2 h_q_ne_2 Nat.one_pos
        1 (one_le_min_two_factorization_two h_q_ne_2))
 
 /-- Canonical action `C_4 →* Aut(C_q)` of image order 4, for `q ≡ 1 (mod 4)`. -/
@@ -36,7 +36,6 @@ def canonicalC4OnCqAction_r2
   haveI : NeZero ((2:ℕ)^2) := ⟨pow_ne_zero 2 (by norm_num)⟩
   transportCpCqHom (show ((2:ℕ)^2 : ℕ) = 4 by norm_num) (pow_one q)
     (canonicalAction 2 q 1 2
-       (show (2 : ℕ) ≠ q from by simp [Nat.ModEq] at h_1_mod_4; omega)
        (show q ≠ 2 from by simp [Nat.ModEq] at h_1_mod_4; omega)
        Nat.one_pos
        2 (two_le_min_two_factorization_two_of_one_mod_four h_1_mod_4))
@@ -51,7 +50,7 @@ def canonicalC2C2OnCqAction
   haveI : NeZero (2 : ℕ) := ⟨by norm_num⟩
   haveI : NeZero ((2:ℕ)^1) := ⟨pow_ne_zero 1 (by norm_num)⟩
   (transportCpCqHom (pow_one 2) (pow_one q)
-    (canonicalAction 2 q 1 1 (show (2:ℕ) ≠ q by omega) h_q_ne_2 Nat.one_pos
+    (canonicalAction 2 q 1 1 h_q_ne_2 Nat.one_pos
        1 (by have := one_le_min_two_factorization_two h_q_ne_2; omega))).comp
     (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))
 
@@ -126,7 +125,7 @@ lemma canonicalC3OnC2C2Action_range_card :
     Nat.card canonicalC3OnC2C2Action.range = 3 := by
   have h_pow : c2c2OrderThreeAut ^ 3 = 1 := by
     rw [← orderOf_c2c2OrderThreeAut]; exact pow_orderOf_eq_one _
-  show Nat.card (cyclicHom 3 c2c2OrderThreeAut h_pow).range = 3
+  change Nat.card (cyclicHom 3 c2c2OrderThreeAut h_pow).range = 3
   rw [cyclicHom_range, Nat.card_zpowers, orderOf_c2c2OrderThreeAut]
 
 theorem semidirectProduct_C3_on_C2C2_iso
@@ -196,12 +195,12 @@ lemma canonicalC2C2OnCqAction_range_card
     fun f => by
       ext y; simp only [MonoidHom.mem_range, MonoidHom.comp_apply, MonoidHom.coe_fst]
       exact ⟨fun ⟨⟨a, _⟩, h⟩ => ⟨a, h⟩, fun ⟨a, ha⟩ => ⟨(a, 1), ha⟩⟩
-  show Nat.card ((transportCpCqHom (pow_one 2) (pow_one q)
-      (canonicalAction 2 q 1 1 (show (2:ℕ) ≠ q by omega) h_q_ne_2 Nat.one_pos
+  change Nat.card ((transportCpCqHom (pow_one 2) (pow_one q)
+      (canonicalAction 2 q 1 1 h_q_ne_2 Nat.one_pos
          1 (by have := one_le_min_two_factorization_two h_q_ne_2; omega))).comp
     (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))).range = 2
   rw [h_comp_range, transportCpCqHom_range_card]
-  have h := canonicalAction_range_card 2 q 1 1 1 (show (2:ℕ) ≠ q by omega) h_q_ne_2 Nat.one_pos
+  have h := canonicalAction_range_card 2 q 1 1 1 h_q_ne_2 Nat.one_pos
     (by have := one_le_min_two_factorization_two h_q_ne_2; omega)
   simpa using h
 
@@ -252,7 +251,8 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
         have heq := Nat.card_congr h_iso_g_p_k.toEquiv
         rw [SemidirectProduct.card] at heq; exact heq.symm
       rw [h_p_p2, h] at h1; grind
-    have eK : ↥K ≃* CyclicGroup q := Classical.choice (prime_classification_of_group (n := q) hK_card)
+    have eK : ↥K ≃* CyclicGroup q :=
+      Classical.choice (prime_classification_of_group (n := q) hK_card)
     have h4q : Nat.Coprime 4 q :=
       ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2
     rcases (p_squared_classification (p := 2) h_p_p2) with h_c4 | h_c2_c2
@@ -353,10 +353,10 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
       have h22 : ((2:ℕ)^2 : ℕ) = 4 := by norm_num
       have h_pre_iso := SemidirectProduct.transportCpCqIso h22.symm (pow_one q).symm φ_inter
       obtain ⟨⟨r, hr_lt⟩, ⟨e_pre⟩, _⟩ := classify_Cqn_rtimes_Cpm (p := 2) (q := q) h2q hq2 2 1
-        (by norm_num) Nat.one_pos (transportCpCqHom h22.symm (pow_one q).symm φ_inter)
+        Nat.one_pos (transportCpCqHom h22.symm (pow_one q).symm φ_inter)
       have hr_le : r ≤ min 2 ((q - 1).factorization 2) := Nat.lt_succ_iff.mp hr_lt
       let canonR := fun r (hr : r ≤ min 2 ((q - 1).factorization 2)) =>
-        canonicalAction 2 q 1 2 h2q hq2 Nat.one_pos r hr
+        canonicalAction 2 q 1 2 hq2 Nat.one_pos r hr
       let e_back := fun r hr => SemidirectProduct.transportCpCqIso h22 (pow_one q) (canonR r hr)
       let pre := h_iso_g_q_k.symm.trans (h_congr.trans (h_pre_iso.trans
         (e_pre.trans (e_back r hr_le))))
@@ -364,9 +364,9 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
       interval_cases r
       · -- r = 0: trivial action → G ≃* C_{4q}
         have h_triv := eq_one_of_range_card_one (by
-          show Nat.card (transportCpCqHom h22 (pow_one q) (canonR 0 hr_le)).range = 1
+          change Nat.card (transportCpCqHom h22 (pow_one q) (canonR 0 hr_le)).range = 1
           rw [transportCpCqHom_range_card]
-          simpa using canonicalAction_range_card 2 q 1 2 0 h2q hq2 Nat.one_pos hr_le)
+          simpa using canonicalAction_range_card 2 q 1 2 0 hq2 Nat.one_pos hr_le)
         have : G ≃* CyclicGroup (4 * q) := pre.trans
           ((SemidirectProduct.mulEquivOfTrivialAction h_triv).trans
             (MulEquiv.prodComm.trans (CyclicGroup.prodMulEquiv h4q)))

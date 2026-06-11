@@ -16,7 +16,7 @@ def canonicalC2OnCp2Action {p : ℕ} [h_p_prime : Fact p.Prime] (h_p_ne_2 : p �
   haveI : NeZero (2 : ℕ) := ⟨by norm_num⟩
   haveI : NeZero ((2:ℕ) ^ 1) := ⟨pow_ne_zero 1 (by norm_num)⟩
   transportCpCqHom (pow_one 2) (rfl : p ^ 2 = p ^ 2)
-    (canonicalAction 2 p 2 1 (Ne.symm h_p_ne_2) h_p_ne_2 (by norm_num)
+    (canonicalAction 2 p 2 1 h_p_ne_2 (by norm_num)
        1 (by
           have h := (Nat.le_min.mp (one_le_min_two_factorization_two h_p_ne_2)).2
           exact Nat.le_min.mpr ⟨le_refl 1, h⟩))
@@ -65,7 +65,7 @@ private lemma cpcp_semidirect_iso_of_isConj_at_gen
       map_one' := by simp
       map_mul' := fun a b => by simp only [map_mul]; group }
   have h_eq_on_g₂ : φ_inter g₂ = conj_hom g₂ := by
-    show φ_inter g₂ = c * f g₂ * c⁻¹
+    change φ_inter g₂ = c * f g₂ * c⁻¹
     have h1 : c * f g₂ = φ_inter g₂ * c := hcu
     calc φ_inter g₂ = φ_inter g₂ * c * c⁻¹ := by rw [mul_inv_cancel_right]
       _ = c * f g₂ * c⁻¹ := by rw [h1]
@@ -76,6 +76,8 @@ private lemma cpcp_semidirect_iso_of_isConj_at_gen
   exact ⟨e_iso.symm⟩
 
 set_option maxHeartbeats 400000 in
+-- The case split for `2p^2` exercises several large existentials
+-- (Sylow, semidirect product, `classify_sdp`, GL₂ classification), pushing past the default.
 theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
     (h_ge_3 : p ≥ 3) (h : Nat.card G = p ^ 2 * 2)
     : Nonempty (G ≃* CyclicGroup (2 * p ^ 2))
@@ -144,11 +146,11 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
       have hp22 : (p^2 : ℕ) = p^2 := rfl
       have h_pre_iso := SemidirectProduct.transportCpCqIso h21.symm hp22.symm φ_inter
       obtain ⟨⟨r, hr_lt⟩, ⟨e_pre⟩, _⟩ := classify_Cqn_rtimes_Cpm (p := 2) (q := p) h2p hpne2 1 2
-        Nat.one_pos (by norm_num)
+        (by norm_num)
         (transportCpCqHom h21.symm hp22.symm φ_inter)
       have hr_le : r ≤ min 1 ((p - 1).factorization 2) := Nat.lt_succ_iff.mp hr_lt
       let canonR := fun r (hr : r ≤ min 1 ((p - 1).factorization 2)) =>
-        canonicalAction 2 p 2 1 h2p hpne2 (by norm_num) r hr
+        canonicalAction 2 p 2 1 hpne2 (by norm_num) r hr
       let e_back := fun r hr => SemidirectProduct.transportCpCqIso h21 hp22 (canonR r hr)
       let pre := h_iso_g_n_k.symm.trans (h_congr.trans (h_pre_iso.trans
         (e_pre.trans (e_back r hr_le))))
@@ -156,9 +158,9 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
       interval_cases r
       · -- r = 0: trivial action → G ≃* C_{2p²}
         have h_triv := eq_one_of_range_card_one (by
-          show Nat.card (transportCpCqHom h21 hp22 (canonR 0 hr_le)).range = 1
+          change Nat.card (transportCpCqHom h21 hp22 (canonR 0 hr_le)).range = 1
           rw [transportCpCqHom_range_card]
-          simpa using canonicalAction_range_card 2 p 2 1 0 h2p hpne2 (by norm_num) hr_le)
+          simpa using canonicalAction_range_card 2 p 2 1 0 hpne2 (by norm_num) hr_le)
         have : G ≃* CyclicGroup (2 * p ^ 2) := pre.trans
           ((SemidirectProduct.mulEquivOfTrivialAction h_triv).trans
             (MulEquiv.prodComm.trans (CyclicGroup.prodMulEquiv h2p2cop)))
@@ -205,9 +207,9 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
         have hg₂_gen : ∀ x : CyclicGroup 2, x ∈ Subgroup.zpowers g₂ := by
           intro x
           refine Subgroup.mem_zpowers_iff.mpr ⟨((Multiplicative.toAdd x).val : ℤ), ?_⟩
-          show Multiplicative.ofAdd (1 : ZMod 2) ^ ((Multiplicative.toAdd x).val : ℤ) = x
+          change Multiplicative.ofAdd (1 : ZMod 2) ^ ((Multiplicative.toAdd x).val : ℤ) = x
           rw [← Multiplicative.ofAdd.apply_symm_apply x]
-          show Multiplicative.ofAdd (1 : ZMod 2) ^ ((Multiplicative.toAdd x).val : ℤ)
+          change Multiplicative.ofAdd (1 : ZMod 2) ^ ((Multiplicative.toAdd x).val : ℤ)
               = Multiplicative.ofAdd (Multiplicative.toAdd x)
           rw [← ofAdd_zsmul, zsmul_one]
           congr 1
@@ -227,12 +229,14 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
         let e := cpcpEquivGL2 p
         let σ' : GL (Fin 2) (ZMod p) := e σ
         have hσ'_order : orderOf σ' = 2 := by
-          show orderOf (e σ) = 2; rw [e.orderOf_eq]; exact hσ_order
+          change orderOf (e σ) = 2; rw [e.orderOf_eq]; exact hσ_order
         have hval_g₂ : ((Multiplicative.toAdd g₂).val : ℤ) = 1 := by
           change ((1 : ZMod 2).val : ℤ) = 1
           rw [ZMod.val_one_eq_one_mod]; norm_num
-        -- Common helper: transport `IsConj σ' m` back to `IsConj (canon g₂) σ` for canon g₂ = e.symm m.
-        have h_back_of : ∀ {m : GL (Fin 2) (ZMod p)} {canon_g₂ : MulAut (CyclicGroup p × CyclicGroup p)},
+        -- Common helper: transport `IsConj σ' m` back to `IsConj (canon g₂) σ`
+        -- for canon g₂ = e.symm m.
+        have h_back_of :
+            ∀ {m : GL (Fin 2) (ZMod p)} {canon_g₂ : MulAut (CyclicGroup p × CyclicGroup p)},
             canon_g₂ = (cpcpEquivGL2 p).symm m → IsConj σ' m → IsConj canon_g₂ σ := by
           intro m canon_g₂ hcanon hconj
           rw [hcanon]
@@ -243,7 +247,7 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
         · -- σ' ≈ diag(1,-1): transport back to σ ≈ canonical r1 action at g₂.
           have hr1 : canonicalC2OnCpCpAction_r1 hp_ne_2 g₂
               = (cpcpEquivGL2 p).symm (gl2Diag1NegOne hp_ne_2) := by
-            show cyclicHom 2 ((cpcpEquivGL2 p).symm (gl2Diag1NegOne hp_ne_2)) _ g₂ = _
+            change cyclicHom 2 ((cpcpEquivGL2 p).symm (gl2Diag1NegOne hp_ne_2)) _ g₂ = _
             rw [cyclicHom_apply_eq_zpow, hval_g₂]; exact zpow_one _
           obtain ⟨e_iso⟩ := cpcp_semidirect_iso_of_isConj_at_gen
             (f := canonicalC2OnCpCpAction_r1 hp_ne_2) hg₂_gen (h_back_of hr1 h_conj1)
@@ -254,7 +258,7 @@ theorem classification_2p2 {p : ℕ} [h_p_prime : Fact p.Prime] [Group G]
         · -- σ' ≈ -I: transport back to σ ≈ canonical r2 action at g₂.
           have hr2 : canonicalC2OnCpCpAction_r2 p g₂
               = (cpcpEquivGL2 p).symm gl2DiagNeg1Neg1 := by
-            show cyclicHom 2 ((cpcpEquivGL2 p).symm gl2DiagNeg1Neg1) _ g₂ = _
+            change cyclicHom 2 ((cpcpEquivGL2 p).symm gl2DiagNeg1Neg1) _ g₂ = _
             rw [cyclicHom_apply_eq_zpow, hval_g₂]; exact zpow_one _
           obtain ⟨e_iso⟩ := cpcp_semidirect_iso_of_isConj_at_gen
             (f := canonicalC2OnCpCpAction_r2 p) hg₂_gen (h_back_of hr2 h_conj2)

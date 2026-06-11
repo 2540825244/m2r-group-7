@@ -224,13 +224,12 @@ lemma gl2Diag1NegOne_sq (hp2 : p ≠ 2) :
   rw [Units.val_pow_eq_pow_val, sq, gl2Diag1NegOne_val, Units.val_one,
       Matrix.diagonal_mul_diagonal]
   ext i j
-  fin_cases i <;> fin_cases j <;>
-    simp [Matrix.diagonal_apply, Matrix.one_apply]
+  fin_cases i <;> fin_cases j <;> simp
 
 /-- The element `-I` of `GL₂(𝔽_p)` squares to the identity. -/
 lemma gl2DiagNeg1Neg1_sq :
     (gl2DiagNeg1Neg1 : GL (Fin 2) (ZMod p)) ^ 2 = 1 := by
-  show ((-1 : GL (Fin 2) (ZMod p))) ^ 2 = 1
+  change ((-1 : GL (Fin 2) (ZMod p))) ^ 2 = 1
   rw [neg_one_sq]
 
 end GL2OrderTwo
@@ -239,7 +238,7 @@ end GL2OrderTwo
 noncomputable def GL2F2_isoS3 : GL (Fin 2) (ZMod 2) ≃* DihedralGroup 3 :=
   Classical.choice (by
     have hcard : Nat.card (GL (Fin 2) (ZMod 2)) = 6 := by
-      rw [Nat.card_eq_fintype_card]; native_decide
+      rw [Nat.card_eq_fintype_card]; decide
     rcases order6_classification hcard with h | h
     · -- CyclicGroup 6 is abelian, but GL₂(𝔽₂) is not
       obtain ⟨e⟩ := h
@@ -247,7 +246,7 @@ noncomputable def GL2F2_isoS3 : GL (Fin 2) (ZMod 2) ≃* DihedralGroup 3 :=
         fun a b => e.injective (by
           rw [map_mul e, map_mul e]
           exact @mul_comm (Multiplicative (ZMod 6)) inferInstance (e a) (e b))
-      exact absurd hcomm (by native_decide)
+      exact absurd hcomm (by decide)
     · exact h)
 
 /-- An explicit isomorphism `MulAut(C_p × C_p) ≃* GL(2, 𝔽_p)`.
