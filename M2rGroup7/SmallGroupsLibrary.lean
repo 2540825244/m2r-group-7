@@ -166,6 +166,18 @@ lemma c2OnCqInv_apply (q : ℕ) [NeZero q] (x : CyclicGroup 2) :
     c2OnCqInv q x = (MulEquiv.inv (CyclicGroup q)) ^ ((Multiplicative.toAdd x).val : ℤ) :=
   cyclicHom_apply_eq_zpow 2 (MulEquiv.inv (CyclicGroup q)) (inv_aut_pow_two_eq_one q) x
 
+/-- The order-2 action `C_4 →* Aut(C_q)` factoring through `C_4 / C_2`, sending
+the generator to inversion. -/
+def c4OnCqInv (q : Nat) [NeZero q] : CyclicGroup 4 →* MulAut (CyclicGroup q) :=
+  let inv : MulAut (CyclicGroup q) := MulEquiv.inv (CyclicGroup q)
+  cyclicHom 4 inv (by
+    have h2 : inv ^ 2 = 1 := by
+      ext x
+      change (x⁻¹)⁻¹ = x
+      exact inv_inv x
+    change inv ^ (2 * 2) = 1
+    rw [pow_mul, h2, one_pow])
+
 /-- The order-2 action `C_8 →* Aut(C_q)` factoring through `C_8 / C_4`, sending
 the generator to inversion. -/
 def c8OnCqInv (q : Nat) [NeZero q] : CyclicGroup 8 →* MulAut (CyclicGroup q) :=
