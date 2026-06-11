@@ -107,7 +107,9 @@ macro "classify_pq_cyclic" p:num q:num h:term : tactic => `(tactic|(
   haveI : Fact (Nat.Prime $q) := ⟨by norm_num⟩
   have ⟨e⟩ : Nonempty (_ ≃* CyclicGroup ($p * $q)) :=
     (pq_classification (p := $p) (q := $q) (by norm_num) (Eq.trans $h (by norm_num))).resolve_right
-      (fun ⟨hr, _⟩ => absurd hr (by native_decide))
+      (fun ⟨hr, _⟩ => absurd hr (by
+        rw [Nat.factorization_eq_zero_of_not_dvd (by decide)]
+        decide))
   exact ⟨1, by decide, ⟨e⟩⟩))
 
 theorem order12_classification {G : Type*} [Group G] (h : Nat.card G = 12) :
