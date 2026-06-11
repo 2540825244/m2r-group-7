@@ -125,7 +125,7 @@ lemma canonicalC3OnC2C2Action_range_card :
     Nat.card canonicalC3OnC2C2Action.range = 3 := by
   have h_pow : c2c2OrderThreeAut ^ 3 = 1 := by
     rw [← orderOf_c2c2OrderThreeAut]; exact pow_orderOf_eq_one _
-  show Nat.card (cyclicHom 3 c2c2OrderThreeAut h_pow).range = 3
+  change Nat.card (cyclicHom 3 c2c2OrderThreeAut h_pow).range = 3
   rw [cyclicHom_range, Nat.card_zpowers, orderOf_c2c2OrderThreeAut]
 
 theorem semidirectProduct_C3_on_C2C2_iso
@@ -195,7 +195,7 @@ lemma canonicalC2C2OnCqAction_range_card
     fun f => by
       ext y; simp only [MonoidHom.mem_range, MonoidHom.comp_apply, MonoidHom.coe_fst]
       exact ⟨fun ⟨⟨a, _⟩, h⟩ => ⟨a, h⟩, fun ⟨a, ha⟩ => ⟨(a, 1), ha⟩⟩
-  show Nat.card ((transportCpCqHom (pow_one 2) (pow_one q)
+  change Nat.card ((transportCpCqHom (pow_one 2) (pow_one q)
       (canonicalAction 2 q 1 1 h_q_ne_2 Nat.one_pos
          1 (by have := one_le_min_two_factorization_two h_q_ne_2; omega))).comp
     (MonoidHom.fst (CyclicGroup 2) (CyclicGroup 2))).range = 2
@@ -251,7 +251,8 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
         have heq := Nat.card_congr h_iso_g_p_k.toEquiv
         rw [SemidirectProduct.card] at heq; exact heq.symm
       rw [h_p_p2, h] at h1; grind
-    have eK : ↥K ≃* CyclicGroup q := Classical.choice (prime_classification_of_group (n := q) hK_card)
+    have eK : ↥K ≃* CyclicGroup q :=
+      Classical.choice (prime_classification_of_group (n := q) hK_card)
     have h4q : Nat.Coprime 4 q :=
       ((by norm_num : (2 : ℕ).Prime).coprime_of_ne h_q_prime.out (by omega)).pow_left 2
     rcases (p_squared_classification (p := 2) h_p_p2) with h_c4 | h_c2_c2
@@ -363,7 +364,7 @@ theorem classification_4q {q : ℕ} [h_q_prime : Fact q.Prime] [Group G]
       interval_cases r
       · -- r = 0: trivial action → G ≃* C_{4q}
         have h_triv := eq_one_of_range_card_one (by
-          show Nat.card (transportCpCqHom h22 (pow_one q) (canonR 0 hr_le)).range = 1
+          change Nat.card (transportCpCqHom h22 (pow_one q) (canonR 0 hr_le)).range = 1
           rw [transportCpCqHom_range_card]
           simpa using canonicalAction_range_card 2 q 1 2 0 hq2 Nat.one_pos hr_le)
         have : G ≃* CyclicGroup (4 * q) := pre.trans
