@@ -1,0 +1,16 @@
+Use the computable canonicalAction in CycPGroupClassification.lean and classify_Cqn_rtimes_Cpm_exists or classify_Cqn_rtimes_Cpm not sure which one. Take inspiration from 4q and 2p^2 classifications. pq should be quite simple though. The proof is:
+
+(Show this as a lemma in SylowUtils.lean, shouldn't be more than like 50 lines probably)
+\begin{lemma}
+    Let $G$ be a group of order $pq$ for primes $p < q$. Then $G$ has a normal Sylow-$q$ subgroup.
+\end{lemma}
+\begin{proof}
+    By Sylow's theorems, we get $n_q \equiv 1 \pmod q$ and $n_q \mid p$. If $n_q = p$, then as $p < q$, we we get a contradiction to $n_q \equiv 1 \pmod q$. Hence $n_q = 1$ and so $G$ has a normal Sylow-$q$ subgroup.
+\end{proof}
+
+Then: A corollary of the lemma is that $G \cong C_q \rtimes C_p$. We have already proven a much more general lemma \ref{Classification of semidirect products between Cyclic p-group and q-groups} which shows that $G$ is isomorphic to either $C_{pq}$ or the non-trivial semi-direct product $C_q \rtimes C_p$ where the image of the action $f : C_p \rightarrow C_{q - 1}$ has order $p$ when we have $p \mid q - 1$.
+(The \ref{Classification of semidirect products between Cyclic p-group and q-groups} is basically canonicalAction and classify_Cqn_rtimes_Cpm_exists etc.)
+
+Please read all files under Lemmas/ directory first so you don't reprove anything. Currently, the project uses this OrderPQ library to do the pq classification and the task I am giving you is to basically do the classification ourselves, just like 4q and 2p^2 are completely proven in-house. This entails a similar classification theorem to 4q and 2p^2. You should write p < q and then condition for second one would be whatever p divides q - 1 (just like we have conditions for some 4q groups). Then you need to make sure the canonicalAction groups are still being used in the small groups library properly and in the Classification.lean.
+
+Good luck! Should be a quick ride.

@@ -1,5 +1,12 @@
 import Mathlib
 
+/-- If `p` is prime, `q ≠ 0`, and `p ∣ q`, then `1 ≤ min 1 (q.factorization p)`.
+Used to build the `hr` argument for `canonicalCpOnCqAction` from a plain divisibility fact. -/
+lemma one_le_min_one_factorization_of_dvd {p q : ℕ} [hp : Fact p.Prime]
+    (hq : q ≠ 0) (hdvd : p ∣ q) :
+    1 ≤ min 1 (q.factorization p) :=
+  le_min le_rfl (hp.out.factorization_pos_of_dvd hq hdvd)
+
 /-- Two distinct primes are coprime. -/
 lemma Nat.Prime.coprime_of_ne {p q : ℕ} (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q) :
     Nat.Coprime p q :=

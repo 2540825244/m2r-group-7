@@ -4,7 +4,6 @@ import Mathlib.Algebra.Group.Equiv.Basic
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
 import «M2rGroup7».SixteenCase
-import «M2rGroup7».P2qClassification.P2qClassification
 import «M2rGroup7».P2qClassification.PqClassification
 import «M2rGroup7».P3Classification.UT3
 import «M2rGroup7».P3Classification.CaseA
@@ -85,7 +84,9 @@ macro "classify_pq_cyclic" p:num q:num h:term : tactic => `(tactic|(
   haveI : Fact (Nat.Prime $q) := ⟨by norm_num⟩
   have ⟨e⟩ : Nonempty (_ ≃* CyclicGroup ($p * $q)) :=
     (pq_classification (p := $p) (q := $q) (by norm_num) (Eq.trans $h (by norm_num))).resolve_right
-      (fun ⟨hr, _⟩ => absurd hr (by native_decide))
+      (fun ⟨hr, _⟩ => absurd hr (by
+        rw [Nat.factorization_eq_zero_of_not_dvd (by decide)]
+        decide))
   exact ⟨1, by decide, ⟨e⟩⟩))
 
 macro "classify_prime_cubed_odd" p:num h:term : tactic => `(tactic|(
