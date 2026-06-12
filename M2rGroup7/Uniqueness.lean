@@ -235,18 +235,20 @@ private unsafe def evalToLiteral (αExpr : Lean.Expr) (e : Lean.Expr) : Lean.Met
     let lvlA ← Lean.Meta.getLevel αA
     let lvlB ← Lean.Meta.getLevel αB
     return Lean.mkApp4 (Lean.mkConst ``Prod.mk [lvlA, lvlB]) αA αB fstLit sndLit
-  -- List (ℕ × ℕ): evalExpr the whole list then reconstruct as Expr
+  -- Generic List α: whnf to nil/cons constructor form and recurse on element and tail.
+  -- Avoids a hardcoded type check (which is brittle under definitional equality / universe
+  -- instantiation); any element type supported by evalToLiteral is handled automatically.
   else if let .app (.const ``List _) αElem := α then
-    if αElem == Lean.mkApp2 (Lean.mkConst ``Prod [.zero, .zero])
-                             (Lean.mkConst ``Nat) (Lean.mkConst ``Nat) then
-      let pairs ← Lean.Meta.evalExpr (List (Nat × Nat)) α e
-      let pairToExpr (a b : Nat) :=
-        Lean.mkApp4 (Lean.mkConst ``Prod.mk [.zero, .zero])
-          (Lean.mkConst ``Nat) (Lean.mkConst ``Nat) (Lean.mkNatLit a) (Lean.mkNatLit b)
-      let listNil := Lean.mkApp (Lean.mkConst ``List.nil [.zero]) αElem
-      let cons h t := Lean.mkApp3 (Lean.mkConst ``List.cons [.zero]) αElem h t
-      return pairs.foldr (fun (a, b) acc => cons (pairToExpr a b) acc) listNil
-    else Lean.throwError "evalToLiteral: unsupported List element type {αElem}"
+    let le ← Lean.Meta.whnf e
+    if le.isAppOf ``List.nil then
+      return Lean.mkApp (Lean.mkConst ``List.nil [.zero]) αElem
+    else if le.isAppOf ``List.cons then
+      let args := le.getAppArgs  -- #[αElem, head, tail]
+      let headLit ← evalToLiteral αElem args[1]!
+      let tailLit ← evalToLiteral α args[2]!  -- α = List αElem; recurses into this branch
+      return Lean.mkApp3 (Lean.mkConst ``List.cons [.zero]) αElem headLit tailLit
+    else
+      Lean.throwError "evalToLiteral: list did not reduce to nil/cons: {le}"
   else
     Lean.throwError "evalToLiteral: unsupported invariant type {α}"
 
