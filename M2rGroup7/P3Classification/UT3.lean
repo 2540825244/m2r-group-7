@@ -17,6 +17,7 @@ structure UT3 (p : ℕ) [Fact (Nat.Prime p)] where
   a : ZMod p
   b : ZMod p
   c : ZMod p
+  deriving DecidableEq
 
 namespace UT3
 
