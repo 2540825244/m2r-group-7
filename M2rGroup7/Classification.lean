@@ -1,20 +1,18 @@
 import Mathlib.Logic.Basic
 import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
-import «M2rGroup7».CpSqAction
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».PqCase
 import «M2rGroup7».SixteenCase
-import «M2rGroup7».P2qClassification.P2qClassification
 import «M2rGroup7».P2qClassification.PqClassification
-import «M2rGroup7».UT3
-import «M2rGroup7».CaseA
-import «M2rGroup7».CaseB
-import «M2rGroup7».CaseC
-import «M2rGroup7».OddCaseA
-import «M2rGroup7».OddCaseB
-import «M2rGroup7».OddCaseC
-import «M2rGroup7».Order8Classification
+import «M2rGroup7».P3Classification.UT3
+import «M2rGroup7».P3Classification.CaseA
+import «M2rGroup7».P3Classification.CaseB
+import «M2rGroup7».P3Classification.CaseC
+import «M2rGroup7».P3Classification.OddCaseA
+import «M2rGroup7».P3Classification.OddCaseB
+import «M2rGroup7».P3Classification.OddCaseC
+import «M2rGroup7».P3Classification.MainP3Classification
 import «M2rGroup7».TwentyFourCase
 import Mathlib.FieldTheory.Finite.GaloisField
 import Mathlib.Algebra.Module.ZMod
@@ -55,28 +53,6 @@ lemma AddSubgroup.closure_singleton_int_one_eq_top : closure ({1} : Set ℤ) = �
 
 variable (n : ℕ) (G : Type*) [Group G]
 
-
-theorem order_odd_prime_cubed_classification {p : ℕ} [hn : Fact p.Prime] (hp : p ≠ 2)
-    (h : Nat.card G = p ^ 3) :
-    (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
-    (Nonempty (MulEquiv G (CyclicGroup (p^2) × CyclicGroup p))) ∨
-    (Nonempty (MulEquiv G (CyclicGroup p × CyclicGroup p × CyclicGroup p))) ∨
-    (Nonempty (MulEquiv G (UT3 p))) ∨
-    (Nonempty (MulEquiv G (CyclicGroup (p^2) ⋊[cpSqAction p] CyclicGroup p))) := by
-  rcases order_p_cubed_classification (G := G) h with
-    h1 | h2 | h3 | ⟨h4, _⟩ | ⟨h4, _⟩ | ⟨_, h6⟩ | ⟨_, h7⟩
-  · exact Or.inl h1
-  · exact Or.inr (Or.inl h2)
-  · exact Or.inr (Or.inr (Or.inl h3))
-  · exact absurd h4 hp
-  · exact absurd h4 hp
-  · exact Or.inr (Or.inr (Or.inr (Or.inl h6)))
-  · exact Or.inr (Or.inr (Or.inr (Or.inr h7)))
-
-macro "classify_prime_cubed_odd" p:num h:term : tactic => `(tactic|(
-  haveI : Fact (Nat.Prime $p) := ⟨by decide⟩
-  exact order_odd_prime_cubed_classification (by decide) ($h |>.trans (by norm_num))))
-
 macro "classify_prime" p:num h:term : tactic => `(tactic|(
   have : Fact (Nat.Prime $p) := ⟨by decide⟩
   use 1
@@ -108,8 +84,22 @@ macro "classify_pq_cyclic" p:num q:num h:term : tactic => `(tactic|(
   haveI : Fact (Nat.Prime $q) := ⟨by norm_num⟩
   have ⟨e⟩ : Nonempty (_ ≃* CyclicGroup ($p * $q)) :=
     (pq_classification (p := $p) (q := $q) (by norm_num) (Eq.trans $h (by norm_num))).resolve_right
-      (fun ⟨hr, _⟩ => absurd hr (by native_decide))
+      (fun ⟨hr, _⟩ => absurd hr (by
+        rw [Nat.factorization_eq_zero_of_not_dvd (by decide)]
+        decide))
   exact ⟨1, by decide, ⟨e⟩⟩))
+
+macro "classify_prime_cubed_odd" p:num h:term : tactic => `(tactic|(
+  haveI : Fact (Nat.Prime $p) := ⟨by decide⟩
+  have hp : ($p : ℕ) ≠ 2 := by decide
+  have hcard : Nat.card G = ($p : ℕ) ^ 3 := $h |>.trans (by norm_num)
+  rcases order_odd_prime_cubed_classification (G := G) hp hcard with
+    h1 | h2 | h3 | h4 | h5
+  · exact ⟨1, by decide, h1⟩
+  · exact ⟨5, by decide, h2.map (fun e => e.trans MulEquiv.prodComm)⟩
+  · exact ⟨4, by decide, h3⟩
+  · exact ⟨2, by decide, h4⟩
+  · exact ⟨3, by decide, h5⟩))
 
 theorem order12_classification {G : Type*} [Group G] (h : Nat.card G = 12) :
     Nonempty (G ≃* retrieve 12 1) ∨
@@ -221,10 +211,10 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   -- n = 8
   · rcases order8_classification h with h1 | h2 | h3 | h4 | h5
     · exact ⟨1, by decide, h1⟩
-    · exact ⟨2, by decide, h2⟩
-    · exact ⟨5, by decide, h3⟩
-    · exact ⟨3, by decide, h4⟩
-    · exact ⟨4, by decide, h5⟩
+    · exact ⟨5, by decide, h2.map (fun e => e.trans MulEquiv.prodComm)⟩
+    · exact ⟨4, by decide, h3⟩
+    · exact ⟨2, by decide, h4⟩
+    · exact ⟨3, by decide, h5⟩
 
   -- n = 9
   · classify_prime_sq 3 h
@@ -314,7 +304,7 @@ theorem classification [hpos : NeZero n] [hmax : Fact (n <= maximumOrder)] (h : 
   · classify_pq 2 13 h
 
   -- n = 27
-  · sorry
+  · classify_prime_cubed_odd 3 h
 
   -- n = 28
   · rcases order28_classification h with h1 | h2 | h3 | h4

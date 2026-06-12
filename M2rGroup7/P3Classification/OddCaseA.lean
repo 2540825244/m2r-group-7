@@ -1,5 +1,5 @@
 import Mathlib
-import «M2rGroup7».UT3
+import «M2rGroup7».P3Classification.UT3
 import «M2rGroup7».SmallGroupsLibrary
 
 set_option maxHeartbeats 800000

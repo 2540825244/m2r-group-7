@@ -1,6 +1,6 @@
 import Mathlib
-import «M2rGroup7».CpSqAction
 import «M2rGroup7».SmallGroupsLibrary
+import Mathlib.Algebra.Group.TypeTags.Basic
 
 set_option maxHeartbeats 3200000
 set_option linter.style.longLine false
@@ -299,35 +299,56 @@ end Uniqueness
 
 section MainTheorem
 
-/-
-Helper: cpSqAction p is nontrivial
--/
-private lemma cpSqAction_nontrivial (hp_odd : p ≠ 2) :
+/-- `cyclicHom n a h` sends the canonical generator `Multiplicative.ofAdd 1`
+of `CyclicGroup n` to `a`. -/
+lemma cyclicHom_gen (n : ℕ) [NeZero n] {G : Type*} [Group G] (a : G) (h : a ^ n = 1) :
+    cyclicHom n a h (Multiplicative.ofAdd (1 : ZMod n)) = a := by
+  unfold cyclicHom
+  change Additive.toMul (((ZMod.lift n)
+    ⟨(zmultiplesHom (Additive G)) (Additive.ofMul a), _⟩) (1 : ZMod n)) = a
+  have h1 : (1 : ZMod n) = ((1 : ℤ) : ZMod n) := by push_cast; ring
+  rw [h1, ZMod.lift_coe]
+  simp [zmultiplesHom_apply]
+
+/-- The image of the generator of `C_p` under `cpSqAction p` is the canonical
+order-`p` automorphism `cpSqAut p`. -/
+lemma cpSqAction_gen :
+    cpSqAction p (Multiplicative.ofAdd 1) = cpSqAut p :=
+  cyclicHom_gen p (cpSqAut p) (cpSqAut_pow_p p)
+
+/-- `cpSqAction p` is non-trivial.
+
+(The hypothesis `hp_odd : p ≠ 2` is unnecessary for the computable construction,
+but kept so this is a drop-in replacement for the original lemma.) -/
+lemma cpSqAction_nontrivial (hp_odd : p ≠ 2) :
     cpSqAction p ≠ 1 := by
   intro h
-  have h_trivial : cpSqAction p (Multiplicative.ofAdd 1) = 1 := by
-    aesop;
-  -- By definition of `cpSqAction`, we have `cpSqAction p (Multiplicative.ofAdd 1) = iso.symm (gen^(p-1))`.
-  have h_iso : cpSqAction p (Multiplicative.ofAdd 1) = (Classical.choice (aut_of_cyclic_p2 (h_p_prime := hp))).symm (Multiplicative.ofAdd 1 ^ (p - 1)) := by
-    rcases p with ( _ | _ | p ) <;> norm_cast;
-  -- By definition of `iso`, we have `iso.symm (gen^(p-1)) = 1` implies `gen^(p-1) = 1`.
-  have h_gen_pow : (Multiplicative.ofAdd 1 : CyclicGroup (p * (p - 1))) ^ (p - 1) = 1 := by
-    convert congr_arg ( fun x => ( Classical.choice ( aut_of_cyclic_p2 ( h_p_prime := hp ) ) ) x ) h_trivial using 1 ; simp +decide [ h_iso ];
-    case h.e'_2.h => rfl
-    exact Eq.symm ( map_one _ );
-  rcases p with ( _ | _ | p ) <;> simp_all +decide [ pow_succ ];
-  · exact Nat.not_prime_zero hp.1;
-  · exact Nat.not_prime_one hp.1;
-  · replace h_gen_pow := congr_arg Multiplicative.toAdd h_gen_pow
-    simp_all +decide [pow_succ]
-    norm_cast at h_gen_pow
-    have hord : orderOf (Multiplicative.ofAdd 1 : CyclicGroup ((p+1+1) * (p+1))) = (p+1+1) * (p+1) := by
-      change addOrderOf (1 : ZMod ((p+1+1) * (p+1))) = (p+1+1) * (p+1)
-      exact ZMod.addOrderOf_one _
-    have hdvd := orderOf_dvd_of_pow_eq_one h_gen_pow
-    have hdvd' : (p+1+1) * (p+1) ∣ (p+1) := hord ▸ hdvd
-    exact Nat.not_dvd_of_pos_of_lt (Nat.succ_pos _)
-      (by nlinarith [Nat.pos_of_ne_zero hp_odd]) hdvd'
+  -- Evaluate the (supposedly trivial) hom on the generator: it equals `cpSqAut p`.
+  have h_gen : cpSqAut p = 1 := by
+    have hg := cpSqAction_gen (p := p)
+    rw [h] at hg
+    simpa using hg.symm
+  -- `cpSqAut p` sends the generator of `C_{p²}` to `Multiplicative.ofAdd ((1 + p) * 1)`.
+  have h_eval : cpSqAut p (Multiplicative.ofAdd (1 : ZMod (p ^ 2)))
+      = Multiplicative.ofAdd ((onePlusP p : ZMod (p ^ 2)) * 1) := rfl
+  rw [h_gen] at h_eval
+  simp only [MulAut.one_apply] at h_eval
+  -- Hence `onePlusP p = 1` in `ZMod (p²)`.
+  have h_unit : (onePlusP p : ZMod (p ^ 2)) = 1 := by
+    have := congrArg Multiplicative.toAdd h_eval.symm
+    simpa using this
+  -- But `onePlusP p = 1 + p`, so `p = 0` in `ZMod (p²)`.
+  have hval : (onePlusP p : ZMod (p ^ 2)) = 1 + (p : ZMod (p ^ 2)) := by
+    unfold onePlusP
+    rw [ZMod.coe_unitOfCoprime]; push_cast; ring
+  rw [hval] at h_unit
+  have h_p_zero : (p : ZMod (p ^ 2)) = 0 := by
+    have h2 : (1 : ZMod (p ^ 2)) + (p : ZMod (p ^ 2)) = 1 + 0 := by rw [add_zero]; exact h_unit
+    exact add_left_cancel h2
+  rw [ZMod.natCast_eq_zero_iff] at h_p_zero
+  -- `p² ∣ p` is impossible for a prime `p`.
+  have hp2 : p ^ 2 ≤ p := Nat.le_of_dvd hp.1.pos h_p_zero
+  nlinarith [hp.1.two_le]
 
 /--
 Helper: the semidirect product transport from H ⋊ K to C_{p²} ⋊ C_p

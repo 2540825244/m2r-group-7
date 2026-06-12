@@ -1,16 +1,15 @@
 import Mathlib.Logic.Basic
 import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.Algebra.Group.Equiv.Basic
-import «M2rGroup7».CpSqAction
 import «M2rGroup7».SmallGroupsLibrary
 import «M2rGroup7».P2qClassification.PqClassification
-import «M2rGroup7».UT3
-import «M2rGroup7».CaseA
-import «M2rGroup7».CaseB
-import «M2rGroup7».CaseC
-import «M2rGroup7».OddCaseA
-import «M2rGroup7».OddCaseB
-import «M2rGroup7».OddCaseC
+import «M2rGroup7».P3Classification.UT3
+import «M2rGroup7».P3Classification.CaseA
+import «M2rGroup7».P3Classification.CaseB
+import «M2rGroup7».P3Classification.CaseC
+import «M2rGroup7».P3Classification.OddCaseA
+import «M2rGroup7».P3Classification.OddCaseB
+import «M2rGroup7».P3Classification.OddCaseC
 import Mathlib.FieldTheory.Finite.GaloisField
 import Mathlib.Algebra.Module.ZMod
 import Mathlib.LinearAlgebra.Dimension.Free
@@ -249,14 +248,6 @@ theorem prime_cubed_non_abelian_classification {p : ℕ} [hn : Fact p.Prime]
     intro h
     apply hgen2_ne
     exact x.symm.injective (by simp [bZ, h])
-
-  have h_hom_a : x (QuotientGroup.mk' Z a) = gen1 := by
-    have hmk : QuotientGroup.mk' Z a = ↑a := rfl
-    rw [hmk, ha]; simp only [aZ]; exact x.apply_symm_apply gen1
-
-  have h_hom_b : x (QuotientGroup.mk' Z b) = gen2 := by
-    have hmk : QuotientGroup.mk' Z b = ↑b := rfl
-    rw [hmk, hb]; simp only [bZ]; exact x.apply_symm_apply gen2
 
   have hgen_cp : ∀ a : CyclicGroup p, ∃ k : ℤ, (Multiplicative.ofAdd (1 : ZMod p)) ^ k = a := by
     intro a
@@ -702,16 +693,11 @@ theorem order_p_cubed_classification {p : ℕ} [hn : Fact p.Prime]
     (p ≠ 2 ∧ Nonempty (MulEquiv G (CyclicGroup (p^2) ⋊[cpSqAction p] CyclicGroup p))) := by
   by_cases hab : IsMulCommutative G
   · haveI := hab
-    rcases prime_cubed_and_abelian_classification (G := G) h with h1 | h2 | h3
-    · exact Or.inl h1
-    · exact Or.inr (Or.inl h2)
-    · exact Or.inr (Or.inr (Or.inl h3))
+    rcases prime_cubed_and_abelian_classification (G := G) h with h1 | h2 | h3 <;>
+    · tauto
   · rcases prime_cubed_non_abelian_classification (G := G) hab h with
-      ⟨hp2, hD4 | hQ8⟩ | ⟨hp2, hUT3 | hSemi⟩
-    · exact Or.inr (Or.inr (Or.inr (Or.inl ⟨hp2, hD4⟩)))
-    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨hp2, hQ8⟩))))
-    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨hp2, hUT3⟩)))))
-    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨hp2, hSemi⟩)))))
+      ⟨hp2, hD4 | hQ8⟩ | ⟨hp2, hUT3 | hSemi⟩ <;>
+    · tauto
 
 theorem order8_classification {G : Type*} [Group G] (h : Nat.card G = 8) :
     (Nonempty (MulEquiv G (CyclicGroup 8))) ∨
@@ -722,11 +708,16 @@ theorem order8_classification {G : Type*} [Group G] (h : Nat.card G = 8) :
   haveI : Fact (Nat.Prime 2) := ⟨by decide⟩
   have h' : Nat.card G = 2 ^ 3 := by rw [h]; norm_num
   rcases order_p_cubed_classification (G := G) h' with
-    h1 | h2 | h3 | ⟨_, h4⟩ | ⟨_, h5⟩ | ⟨h6, _⟩ | ⟨h6, _⟩
-  · exact Or.inl h1
-  · exact Or.inr (Or.inl h2)
-  · exact Or.inr (Or.inr (Or.inl h3))
-  · exact Or.inr (Or.inr (Or.inr (Or.inl h4)))
-  · exact Or.inr (Or.inr (Or.inr (Or.inr h5)))
-  · exact absurd rfl h6
-  · exact absurd rfl h6
+    h1 | h2 | h3 | ⟨_, h4⟩ | ⟨_, h5⟩ | ⟨h6, _⟩ | ⟨h6, _⟩ <;>
+  · tauto
+
+theorem order_odd_prime_cubed_classification {p : ℕ} [hn : Fact p.Prime] (hp : p ≠ 2)
+    (h : Nat.card G = p ^ 3) :
+    (Nonempty (MulEquiv G (CyclicGroup (p^3)))) ∨
+    (Nonempty (MulEquiv G (CyclicGroup (p^2) × CyclicGroup p))) ∨
+    (Nonempty (MulEquiv G (CyclicGroup p × CyclicGroup p × CyclicGroup p))) ∨
+    (Nonempty (MulEquiv G (UT3 p))) ∨
+    (Nonempty (MulEquiv G (CyclicGroup (p^2) ⋊[cpSqAction p] CyclicGroup p))) := by
+  rcases order_p_cubed_classification (G := G) h with
+    h1 | h2 | h3 | ⟨h4, _⟩ | ⟨h4, _⟩ | ⟨_, h6⟩ | ⟨_, h7⟩ <;>
+  · tauto

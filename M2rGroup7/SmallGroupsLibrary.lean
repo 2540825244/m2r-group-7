@@ -5,6 +5,7 @@ import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.GroupTheory.OrderOfElement
 import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
 import «M2rGroup7».CyclicGroup
+import «M2rGroup7».P3Classification.UT3
 import «M2rGroup7».P2qClassification.PqClassification
 import «M2rGroup7».P2qClassification.FourQClassification
 import «M2rGroup7».P2qClassification.TwoPSquaredClassification
@@ -166,6 +167,18 @@ lemma c2OnCqInv_apply (q : ℕ) [NeZero q] (x : CyclicGroup 2) :
     c2OnCqInv q x = (MulEquiv.inv (CyclicGroup q)) ^ ((Multiplicative.toAdd x).val : ℤ) :=
   cyclicHom_apply_eq_zpow 2 (MulEquiv.inv (CyclicGroup q)) (inv_aut_pow_two_eq_one q) x
 
+/-- The order-2 action `C_4 →* Aut(C_q)` factoring through `C_4 / C_2`, sending
+the generator to inversion. -/
+def c4OnCqInv (q : Nat) [NeZero q] : CyclicGroup 4 →* MulAut (CyclicGroup q) :=
+  let inv : MulAut (CyclicGroup q) := MulEquiv.inv (CyclicGroup q)
+  cyclicHom 4 inv (by
+    have h2 : inv ^ 2 = 1 := by
+      ext x
+      change (x⁻¹)⁻¹ = x
+      exact inv_inv x
+    change inv ^ (2 * 2) = 1
+    rw [pow_mul, h2, one_pow])
+
 /-- The order-2 action `C_8 →* Aut(C_q)` factoring through `C_8 / C_4`, sending
 the generator to inversion. -/
 def c8OnCqInv (q : Nat) [NeZero q] : CyclicGroup 8 →* MulAut (CyclicGroup q) :=
@@ -193,6 +206,65 @@ the non-V_4 elements (`{r 1, r 3, sr 1, sr 3}`) to inversion. -/
 def d4OnCqInv (q : Nat) [NeZero q] : DihedralGroup 4 →* MulAut (CyclicGroup q) :=
   (c2OnCqInv q).comp d4ToC2
 
+/-- The canonical monoid hom sending a unit `u : (ZMod n)ˣ` to the automorphism of
+`CyclicGroup n = Multiplicative (ZMod n)` given by multiplication by `u`. -/
+def unitToCyclicAut (n : ℕ) [NeZero n] : (ZMod n)ˣ →* MulAut (CyclicGroup n) :=
+  (MulAutMultiplicative (G := ZMod n)).symm.toMonoidHom.comp
+    (DistribMulAction.toAddAut (ZMod n)ˣ (ZMod n))
+
+/-- `1 + p` is coprime to `p²`. -/
+theorem coprime_one_add_p (p : ℕ) [Fact p.Prime] : Nat.Coprime (1 + p) (p ^ 2) := by
+  have h : Nat.Coprime (1 + p) p := by simp [Nat.Coprime]
+  exact h.pow_right 2
+
+/-- The unit `1 + p` of `ZMod (p²)`. -/
+def onePlusP (p : ℕ) [Fact p.Prime] : (ZMod (p ^ 2))ˣ :=
+  ZMod.unitOfCoprime (1 + p) (coprime_one_add_p p)
+
+/-- Key number-theoretic fact: `(1 + p)^p = 1` in `ZMod (p²)`. -/
+theorem one_add_p_pow_p (p : ℕ) [Fact p.Prime] :
+    (1 + (p : ZMod (p ^ 2))) ^ p = 1 := by
+  -- Expand $(1 + p)^p$ modulo $p^2$.
+  have h_expand : ((1 + p) ^ p : ℕ) ≡ 1 [MOD p^2] := by
+    refine Nat.ModEq.symm <| Nat.modEq_of_dvd ?_;
+    simp +decide [ ← geom_sum_mul, pow_two ];
+    exact mul_dvd_mul ( by simp +decide [ ← ZMod.intCast_zmod_eq_zero_iff_dvd ] ) dvd_rfl;
+  simpa [ ← ZMod.natCast_eq_natCast_iff ] using h_expand
+
+/-- The unit `1 + p` has `p`-th power equal to `1`. -/
+theorem onePlusP_pow_p (p : ℕ) [Fact p.Prime] : onePlusP p ^ p = 1 := by
+  apply Units.ext
+  rw [Units.val_pow_eq_pow_val]
+  change ((onePlusP p : (ZMod (p ^ 2))ˣ) : ZMod (p ^ 2)) ^ p = 1
+  unfold onePlusP
+  rw [ZMod.coe_unitOfCoprime]
+  push_cast
+  exact one_add_p_pow_p p
+
+/-- The canonical order-`p` automorphism of `C_{p²}`: multiplication by `1 + p`. -/
+def cpSqAut (p : ℕ) [Fact p.Prime] : MulAut (CyclicGroup (p ^ 2)) :=
+  unitToCyclicAut (p ^ 2) (onePlusP p)
+
+/-- The `p`-th power of `cpSqAut p` is the identity automorphism. -/
+theorem cpSqAut_pow_p (p : ℕ) [Fact p.Prime] : cpSqAut p ^ p = 1 := by
+  unfold cpSqAut
+  rw [← map_pow, onePlusP_pow_p, map_one]
+
+/-- The canonical action of `C_p` on `C_{p²}` by an automorphism of order `p`.
+This is the unique (up to isomorphism) non-trivial semidirect product action.
+
+This is a **computable** version of the definition. -/
+def cpSqAction (p : ℕ) [Fact p.Prime] :
+    CyclicGroup p →* MulAut (CyclicGroup (p ^ 2)) :=
+  cyclicHom p (cpSqAut p) (cpSqAut_pow_p p)
+/-- Macro: `pqSdp q p` expands to `C_q ⋊ C_p` via the canonical non-abelian `pq` action.
+At each call site with concrete numerals, `decide` discharges `q ≠ 2`, `q - 1 ≠ 0`,
+and `p ∣ q - 1`. Uses `one_le_min_one_factorization_of_dvd` from `NumberTheoryUtils`. -/
+macro "pqSdp " q:num p:num : term =>
+  `(CyclicGroup $q ⋊[canonicalCpOnCqAction (by decide)
+        (le_min le_rfl ((by norm_num : Nat.Prime $p).factorization_pos_of_dvd
+          (by norm_num) (by norm_num)))] CyclicGroup $p)
+
 /-- Small groups database. Computable: each entry is built from `CyclicGroup`,
 direct products, `DihedralGroup`, `QuaternionGroup`, or a semidirect product
 with one of the explicit computable actions defined above (or in this file). -/
@@ -204,35 +276,27 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 4, 1 => CyclicGroup 4
   | 4, 2 => CyclicGroup 2 × CyclicGroup 2
   | 5, 1 => CyclicGroup 5
-  | 6, 1 => SemidirectProduct (CyclicGroup 3) (CyclicGroup 2)
-      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 3) (by norm_num : (3:ℕ) ≠ 2)
-        (by native_decide : 1 ≤ min 1 ((3 - 1 : ℕ).factorization 2)))
+  | 6, 1 => pqSdp 3 2
   | 6, 2 => CyclicGroup 6
   | 7, 1 => CyclicGroup 7
   | 8, 1 => CyclicGroup 8
-  | 8, 2 => CyclicGroup 4 × CyclicGroup 2
-  | 8, 3 => DihedralGroup 4
-  | 8, 4 => QuaternionGroup 2
-  | 8, 5 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
+  | 8, 2 => DihedralGroup 4
+  | 8, 3 => QuaternionGroup 2
+  | 8, 4 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
+  | 8, 5 => CyclicGroup 2 × CyclicGroup 4
   | 9, 1 => CyclicGroup 9
   | 9, 2 => CyclicGroup 3 × CyclicGroup 3
-  | 10, 1 => SemidirectProduct (CyclicGroup 5) (CyclicGroup 2)
-      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 5) (by norm_num : (5:ℕ) ≠ 2)
-        (by native_decide : 1 ≤ min 1 ((5 - 1 : ℕ).factorization 2)))
+  | 10, 1 => pqSdp 5 2
   | 10, 2 => CyclicGroup 10
   | 11, 1 => CyclicGroup 11
-  | 12, 1 => CyclicGroup 12
-  | 12, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 3
-  | 12, 3 => SemidirectProduct (CyclicGroup 3) (CyclicGroup 4)
-      (canonicalC4OnCqAction (by norm_num : (3:ℕ) ≠ 2))
-  | 12, 4 => SemidirectProduct (CyclicGroup 3) (CyclicGroup 2 × CyclicGroup 2)
-      (canonicalC2C2OnCqAction (by norm_num : (3:ℕ) ≠ 2))
-  | 12, 5 => SemidirectProduct (CyclicGroup 2 × CyclicGroup 2) (CyclicGroup 3)
-      canonicalC3OnC2C2Action
+  | 12, 1 => CyclicGroup 3 ⋊[canonicalC4OnCqAction (by norm_num : (3:ℕ) ≠ 2)] CyclicGroup 4
+  | 12, 2 => CyclicGroup 12
+  | 12, 3 => (CyclicGroup 2 × CyclicGroup 2) ⋊[canonicalC3OnC2C2Action] CyclicGroup 3
+  | 12, 4 => CyclicGroup 3 ⋊[canonicalC2C2OnCqAction (by norm_num : (3:ℕ) ≠ 2)]
+      (CyclicGroup 2 × CyclicGroup 2)
+  | 12, 5 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 3
   | 13, 1 => CyclicGroup 13
-  | 14, 1 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 2)
-      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 7) (by norm_num : (7:ℕ) ≠ 2)
-        (by native_decide : 1 ≤ min 1 ((7 - 1 : ℕ).factorization 2)))
+  | 14, 1 => pqSdp 7 2
   | 14, 2 => CyclicGroup 14
   | 15, 1 => CyclicGroup 15
   | 16, 1 => CyclicGroup 16
@@ -250,30 +314,23 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 16, 13 => (CyclicGroup 4 × CyclicGroup 2) ⋊[c2OnK8Psi6] CyclicGroup 2
   | 16, 14 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
   | 17, 1 => CyclicGroup 17
-  | 18, 1 => CyclicGroup 18
-  | 18, 2 => CyclicGroup 3 × CyclicGroup 3 × CyclicGroup 2
-  | 18, 3 => SemidirectProduct (CyclicGroup (3 ^ 2)) (CyclicGroup 2)
-      (canonicalC2OnCp2Action (by norm_num : (3:ℕ) ≠ 2))
-  | 18, 4 => SemidirectProduct (CyclicGroup 3 × CyclicGroup 3) (CyclicGroup 2)
-      (canonicalC2OnCpCpAction_r1 (by norm_num : (3:ℕ) ≠ 2))
-  | 18, 5 => SemidirectProduct (CyclicGroup 3 × CyclicGroup 3) (CyclicGroup 2)
-      (canonicalC2OnCpCpAction_r2 3)
+  | 18, 1 => CyclicGroup (3 ^ 2) ⋊[canonicalC2OnCp2Action (by norm_num : (3:ℕ) ≠ 2)] CyclicGroup 2
+  | 18, 2 => CyclicGroup 18
+  | 18, 3 => (CyclicGroup 3 × CyclicGroup 3) ⋊[canonicalC2OnCpCpAction_r1
+      (by norm_num : (3:ℕ) ≠ 2)] CyclicGroup 2
+  | 18, 4 => (CyclicGroup 3 × CyclicGroup 3) ⋊[canonicalC2OnCpCpAction_r2 3] CyclicGroup 2
+  | 18, 5 => CyclicGroup 3 × CyclicGroup 3 × CyclicGroup 2
   | 19, 1 => CyclicGroup 19
-  | 20, 1 => CyclicGroup 20
-  | 20, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 5
-  | 20, 3 => SemidirectProduct (CyclicGroup 5) (CyclicGroup 4)
-      (canonicalC4OnCqAction (by norm_num : (5:ℕ) ≠ 2))
-  | 20, 4 => SemidirectProduct (CyclicGroup 5) (CyclicGroup 4)
-      (canonicalC4OnCqAction_r2 (by native_decide : (5:ℕ) ≡ 1 [MOD 4]))
-  | 20, 5 => SemidirectProduct (CyclicGroup 5) (CyclicGroup 2 × CyclicGroup 2)
-      (canonicalC2C2OnCqAction (by norm_num : (5:ℕ) ≠ 2))
-  | 21, 1 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 3)
-      (canonicalCpOnCqAction (by norm_num : (3:ℕ) ≠ 7) (by norm_num : (7:ℕ) ≠ 2)
-        (by native_decide : 1 ≤ min 1 ((7 - 1 : ℕ).factorization 3)))
+  | 20, 1 => CyclicGroup 5 ⋊[canonicalC4OnCqAction (by norm_num : (5:ℕ) ≠ 2)] CyclicGroup 4
+  | 20, 2 => CyclicGroup 20
+  | 20, 3 => CyclicGroup 5 ⋊[canonicalC4OnCqAction_r2
+      (by decide : (5:ℕ) ≡ 1 [MOD 4])] CyclicGroup 4
+  | 20, 4 => CyclicGroup 5 ⋊[canonicalC2C2OnCqAction (by norm_num : (5:ℕ) ≠ 2)]
+      (CyclicGroup 2 × CyclicGroup 2)
+  | 20, 5 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 5
+  | 21, 1 => pqSdp 7 3
   | 21, 2 => CyclicGroup 21
-  | 22, 1 => SemidirectProduct (CyclicGroup 11) (CyclicGroup 2)
-      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 11) (by norm_num : (11:ℕ) ≠ 2)
-        (by native_decide : 1 ≤ min 1 ((11 - 1 : ℕ).factorization 2)))
+  | 22, 1 => pqSdp 11 2
   | 22, 2 => CyclicGroup 22
   | 23, 1 => CyclicGroup 23
   | 24, 1 => CyclicGroup 3 ⋊[c8OnCqInv 3] CyclicGroup 8
@@ -293,22 +350,23 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 24, 15 => CyclicGroup 3 × (CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2)
   | 25, 1 => CyclicGroup 25
   | 25, 2 => CyclicGroup 5 × CyclicGroup 5
-  | 26, 1 => SemidirectProduct (CyclicGroup 13) (CyclicGroup 2)
-      (canonicalCpOnCqAction (by norm_num : (2:ℕ) ≠ 13) (by norm_num : (13:ℕ) ≠ 2)
-        (by native_decide : 1 ≤ min 1 ((13 - 1 : ℕ).factorization 2)))
+  | 26, 1 => pqSdp 13 2
   | 26, 2 => CyclicGroup 26
   | 27, 1 => CyclicGroup 27
-  | 28, 1 => CyclicGroup 28
-  | 28, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 7
-  | 28, 3 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 4)
-      (canonicalC4OnCqAction (by norm_num : (7:ℕ) ≠ 2))
-  | 28, 4 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 2 × CyclicGroup 2)
-      (canonicalC2C2OnCqAction (by norm_num : (7:ℕ) ≠ 2))
+  | 27, 2 => UT3 3
+  | 27, 3 => CyclicGroup 9 ⋊[cpSqAction 3] CyclicGroup 3
+  | 27, 4 => CyclicGroup 3 × CyclicGroup 3 × CyclicGroup 3
+  | 27, 5 => CyclicGroup 3 × CyclicGroup 9
+  | 28, 1 => CyclicGroup 7 ⋊[canonicalC4OnCqAction (by norm_num : (7:ℕ) ≠ 2)] CyclicGroup 4
+  | 28, 2 => CyclicGroup 28
+  | 28, 3 => CyclicGroup 7 ⋊[canonicalC2C2OnCqAction (by norm_num : (7:ℕ) ≠ 2)]
+      (CyclicGroup 2 × CyclicGroup 2)
+  | 28, 4 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 7
   | 29, 1 => CyclicGroup 29
-  | 30, 1 => CyclicGroup 30
-  | 30, 2 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 14 (by decide)] CyclicGroup 2
-  | 30, 3 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 11 (by decide)] CyclicGroup 2
-  | 30, 4 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 4 (by decide)] CyclicGroup 2
+  | 30, 1 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 11 (by decide)] CyclicGroup 2
+  | 30, 2 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 4 (by decide)] CyclicGroup 2
+  | 30, 3 => CyclicGroup 15 ⋊[canonicalC2OnC15Pow 14 (by decide)] CyclicGroup 2
+  | 30, 4 => CyclicGroup 30
   | 31, 1 => CyclicGroup 31
   | _, _ => PUnit -- Fallback to make retrieve total
 
@@ -341,7 +399,7 @@ def num_entries (n : Nat) : Nat :=
   | 24 => 15
   | 25 => 2
   | 26 => 2
-  | 27 => 1 -- It is 5 actually, will fill rest later
+  | 27 => 5
   | 28 => 4
   | 29 => 1
   | 30 => 4
@@ -383,4 +441,3 @@ theorem retrieve_card (n : Nat) (i : Nat) [hv : ValidIndex n i] : Nat.card (retr
         Nat.ofNat_pos, Nat.one_le_ofNat, Nat.reduceLeDiff, Order.lt_one_iff, Order.lt_two_iff,
         Std.le_refl, gt_iff_lt, zero_le] <;>
       rfl
-

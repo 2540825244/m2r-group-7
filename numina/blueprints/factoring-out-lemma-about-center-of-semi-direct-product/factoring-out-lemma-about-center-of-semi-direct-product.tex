@@ -1,0 +1,107 @@
+% Blueprint: Factoring out lemma about center of semi direct product
+% Created by Numina
+
+\begin{document}
+
+\section{Centre of a semidirect product of abelian groups}
+
+The classification of semidirect products $C_{q^n}\rtimes C_{p^m}$ in
+\texttt{CycPGroupClassification.lean} uses a description of the centre that, in
+the existing proof, is stated for cyclic $p$- and $q$-groups but in fact only
+depends on the abelianness of the two factors. We factor that lemma out into a
+standalone statement for arbitrary abelian groups.
+
+Throughout this section, $N$ and $K$ are (multiplicative) abelian groups, and
+$f : K \to \operatorname{Aut}(N)$ is a group homomorphism. Write $N\rtimes_f K$
+for the semidirect product with the operation
+\[
+  (x_1, y_1)(x_2, y_2) \;=\; \bigl(x_1\cdot f(y_1)(x_2),\; y_1 y_2\bigr).
+\]
+
+\begin{definition}\label{def:fixedPointsSubgroup}
+\lean{fixedPointsSubgroup}
+\leanfile{M2rGroup7/Lemmas/GroupTheoryLemmas.lean}
+\leanok
+The \emph{fixed-point subgroup} $\operatorname{Fix}(\operatorname{Im} f)\le N$
+of $f$ is
+\[
+  \operatorname{Fix}(\operatorname{Im} f)
+  \;=\; \{\, n \in N \;:\; f(h)(n) = n \text{ for every } h \in K \,\}.
+\]
+It is a subgroup because $f(h)$ is a group automorphism of $N$ for every
+$h \in K$.
+\end{definition}
+
+\begin{lemma}\label{lem:mem_center_semidirectProduct_iff}
+\lean{mem_center_semidirectProduct_iff}
+\leanfile{M2rGroup7/Lemmas/GroupTheoryLemmas.lean}
+\uses{def:fixedPointsSubgroup}
+\leanok
+Let $N, K$ be abelian groups and $f : K \to \operatorname{Aut}(N)$. For
+$g = (n, h) \in N\rtimes_f K$, we have $g \in Z(N\rtimes_f K)$ if and only if
+\[
+  h \in \ker f
+  \qquad\text{and}\qquad
+  f(h')(n) = n \text{ for every } h' \in K.
+\]
+\end{lemma}
+\begin{proof}
+Write $g = (n, h)$ and let $x = (x', y') \in N\rtimes_f K$ be arbitrary. By
+definition of the operation, the commutativity relation $g x = x g$ reads
+\[
+  \bigl(n\cdot f(h)(x'),\, h y'\bigr)
+  \;=\; \bigl(x'\cdot f(y')(n),\, y' h\bigr).
+\]
+Because $K$ is abelian, the right components automatically agree. Hence
+$g\in Z(N\rtimes_f K)$ is equivalent to
+\[
+  n\cdot f(h)(x') \;=\; x' \cdot f(y')(n)
+  \qquad \text{for all } x' \in N,\ y' \in K. \tag{$\ast$}
+\]
+
+Setting $y' = 1$ in $(\ast)$ gives $n\cdot f(h)(x') = x' \cdot n$, and since $N$
+is abelian we may cancel to get $f(h)(x') = x'$ for every $x' \in N$, i.e.\
+$f(h) = \mathrm{id}$, i.e.\ $h \in \ker f$.
+
+Setting $x' = 1$ in $(\ast)$ and using $h \in \ker f$ gives $n = f(y')(n)$ for
+every $y' \in K$, i.e.\ $n \in \operatorname{Fix}(\operatorname{Im} f)$.
+
+Conversely, if both conditions hold then $f(h) = \mathrm{id}$ and
+$f(y')(n) = n$, so
+\[
+  (n, h)(x', y') = (n\cdot x',\, h y')
+  = (x'\cdot n,\, y' h) = (x', y')(n, h),
+\]
+using that $N$ and $K$ are abelian.
+\end{proof}
+
+\begin{lemma}\label{lem:center_semidirectProduct_iso}
+\lean{center_semidirectProduct_iso}
+\leanfile{M2rGroup7/Lemmas/GroupTheoryLemmas.lean}
+\uses{def:fixedPointsSubgroup, lem:mem_center_semidirectProduct_iff}
+\leanok
+Let $N, K$ be abelian groups and $f : K \to \operatorname{Aut}(N)$. There is a
+group isomorphism
+\[
+  Z(N\rtimes_f K) \;\simeq\; \operatorname{Fix}(\operatorname{Im} f) \times \ker f
+\]
+sending the class of $(n, h) \in Z(N\rtimes_f K)$ to $(n, h)$.
+\end{lemma}
+\begin{proof}
+By Lemma~\ref{lem:mem_center_semidirectProduct_iff}, the map
+\[
+  (n, h) \in Z(N\rtimes_f K) \;\longmapsto\; (n, h) \in
+  \operatorname{Fix}(\operatorname{Im} f) \times \ker f
+\]
+is well defined. It is a homomorphism: for $g_1 = (n_1, h_1)$ and
+$g_2 = (n_2, h_2)$ both in the centre, $h_1 \in \ker f$ implies
+$f(h_1) = \mathrm{id}$, so
+\[
+  g_1 g_2 = (n_1 \cdot f(h_1)(n_2),\, h_1 h_2) = (n_1 n_2,\, h_1 h_2),
+\]
+which matches the componentwise product. Injectivity is immediate, and
+surjectivity is the converse direction of
+Lemma~\ref{lem:mem_center_semidirectProduct_iff}.
+\end{proof}
+
+\end{document}
