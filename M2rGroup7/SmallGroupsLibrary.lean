@@ -5,6 +5,7 @@ import Mathlib.GroupTheory.SemidirectProduct
 import Mathlib.GroupTheory.OrderOfElement
 import Mathlib.LinearAlgebra.Matrix.SpecialLinearGroup
 import «M2rGroup7».CyclicGroup
+import «M2rGroup7».P3Classification.UT3
 import «M2rGroup7».P2qClassification.PqClassification
 import «M2rGroup7».P2qClassification.FourQClassification
 import «M2rGroup7».P2qClassification.TwoPSquaredClassification
@@ -193,6 +194,58 @@ the non-V_4 elements (`{r 1, r 3, sr 1, sr 3}`) to inversion. -/
 def d4OnCqInv (q : Nat) [NeZero q] : DihedralGroup 4 →* MulAut (CyclicGroup q) :=
   (c2OnCqInv q).comp d4ToC2
 
+/-- The canonical monoid hom sending a unit `u : (ZMod n)ˣ` to the automorphism of
+`CyclicGroup n = Multiplicative (ZMod n)` given by multiplication by `u`. -/
+def unitToCyclicAut (n : ℕ) [NeZero n] : (ZMod n)ˣ →* MulAut (CyclicGroup n) :=
+  (MulAutMultiplicative (G := ZMod n)).symm.toMonoidHom.comp
+    (DistribMulAction.toAddAut (ZMod n)ˣ (ZMod n))
+
+/-- `1 + p` is coprime to `p²`. -/
+theorem coprime_one_add_p (p : ℕ) [Fact p.Prime] : Nat.Coprime (1 + p) (p ^ 2) := by
+  have h : Nat.Coprime (1 + p) p := by simp [Nat.Coprime]
+  exact h.pow_right 2
+
+/-- The unit `1 + p` of `ZMod (p²)`. -/
+def onePlusP (p : ℕ) [Fact p.Prime] : (ZMod (p ^ 2))ˣ :=
+  ZMod.unitOfCoprime (1 + p) (coprime_one_add_p p)
+
+/-- Key number-theoretic fact: `(1 + p)^p = 1` in `ZMod (p²)`. -/
+theorem one_add_p_pow_p (p : ℕ) [Fact p.Prime] :
+    (1 + (p : ZMod (p ^ 2))) ^ p = 1 := by
+  -- Expand $(1 + p)^p$ modulo $p^2$.
+  have h_expand : ((1 + p) ^ p : ℕ) ≡ 1 [MOD p^2] := by
+    refine Nat.ModEq.symm <| Nat.modEq_of_dvd ?_;
+    simp +decide [ ← geom_sum_mul, pow_two ];
+    exact mul_dvd_mul ( by simp +decide [ ← ZMod.intCast_zmod_eq_zero_iff_dvd ] ) dvd_rfl;
+  simpa [ ← ZMod.natCast_eq_natCast_iff ] using h_expand
+
+/-- The unit `1 + p` has `p`-th power equal to `1`. -/
+theorem onePlusP_pow_p (p : ℕ) [Fact p.Prime] : onePlusP p ^ p = 1 := by
+  apply Units.ext
+  rw [Units.val_pow_eq_pow_val]
+  change ((onePlusP p : (ZMod (p ^ 2))ˣ) : ZMod (p ^ 2)) ^ p = 1
+  unfold onePlusP
+  rw [ZMod.coe_unitOfCoprime]
+  push_cast
+  exact one_add_p_pow_p p
+
+/-- The canonical order-`p` automorphism of `C_{p²}`: multiplication by `1 + p`. -/
+def cpSqAut (p : ℕ) [Fact p.Prime] : MulAut (CyclicGroup (p ^ 2)) :=
+  unitToCyclicAut (p ^ 2) (onePlusP p)
+
+/-- The `p`-th power of `cpSqAut p` is the identity automorphism. -/
+theorem cpSqAut_pow_p (p : ℕ) [Fact p.Prime] : cpSqAut p ^ p = 1 := by
+  unfold cpSqAut
+  rw [← map_pow, onePlusP_pow_p, map_one]
+
+/-- The canonical action of `C_p` on `C_{p²}` by an automorphism of order `p`.
+This is the unique (up to isomorphism) non-trivial semidirect product action.
+
+This is a **computable** version of the definition. -/
+def cpSqAction (p : ℕ) [Fact p.Prime] :
+    CyclicGroup p →* MulAut (CyclicGroup (p ^ 2)) :=
+  cyclicHom p (cpSqAut p) (cpSqAut_pow_p p)
+
 /-- Small groups database. Computable: each entry is built from `CyclicGroup`,
 direct products, `DihedralGroup`, `QuaternionGroup`, or a semidirect product
 with one of the explicit computable actions defined above (or in this file). -/
@@ -210,10 +263,10 @@ with one of the explicit computable actions defined above (or in this file). -/
   | 6, 2 => CyclicGroup 6
   | 7, 1 => CyclicGroup 7
   | 8, 1 => CyclicGroup 8
-  | 8, 2 => CyclicGroup 4 × CyclicGroup 2
-  | 8, 3 => DihedralGroup 4
-  | 8, 4 => QuaternionGroup 2
-  | 8, 5 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
+  | 8, 2 => DihedralGroup 4
+  | 8, 3 => QuaternionGroup 2
+  | 8, 4 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 2
+  | 8, 5 => CyclicGroup 2 × CyclicGroup 4
   | 9, 1 => CyclicGroup 9
   | 9, 2 => CyclicGroup 3 × CyclicGroup 3
   | 10, 1 => SemidirectProduct (CyclicGroup 5) (CyclicGroup 2)
@@ -298,6 +351,10 @@ with one of the explicit computable actions defined above (or in this file). -/
         (by native_decide : 1 ≤ min 1 ((13 - 1 : ℕ).factorization 2)))
   | 26, 2 => CyclicGroup 26
   | 27, 1 => CyclicGroup 27
+  | 27, 2 => UT3 3
+  | 27, 3 => CyclicGroup 9 ⋊[cpSqAction 3] CyclicGroup 3
+  | 27, 4 => CyclicGroup 3 × CyclicGroup 3 × CyclicGroup 3
+  | 27, 5 => CyclicGroup 3 × CyclicGroup 9
   | 28, 1 => CyclicGroup 28
   | 28, 2 => CyclicGroup 2 × CyclicGroup 2 × CyclicGroup 7
   | 28, 3 => SemidirectProduct (CyclicGroup 7) (CyclicGroup 4)
@@ -341,7 +398,7 @@ def num_entries (n : Nat) : Nat :=
   | 24 => 15
   | 25 => 2
   | 26 => 2
-  | 27 => 1 -- It is 5 actually, will fill rest later
+  | 27 => 5
   | 28 => 4
   | 29 => 1
   | 30 => 4
@@ -377,4 +434,3 @@ theorem retrieve_card (n : Nat) (i : Nat) [hv : ValidIndex n i] : Nat.card (retr
         Nat.ofNat_pos, Nat.one_le_ofNat, Nat.reduceLeDiff, Order.lt_one_iff, Order.lt_two_iff,
         Std.le_refl, gt_iff_lt, zero_le] <;>
       rfl
-

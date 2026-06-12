@@ -2,7 +2,7 @@ import Mathlib.GroupTheory.Sylow
 import Mathlib.SetTheory.Cardinal.Finite
 import Mathlib.GroupTheory.SchurZassenhaus
 import Mathlib.GroupTheory.SemidirectProduct
-import «M2rGroup7».Order8Classification
+import «M2rGroup7».P3Classification.MainP3Classification
 import «M2rGroup7».Lemmas.SylowUtils
 
 /-- A group of order `24` has either `1` or `4` Sylow 3-subgroups. -/

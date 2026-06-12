@@ -1,6 +1,6 @@
 import Mathlib
-import «M2rGroup7».OddCaseA
-import «M2rGroup7».OddCaseB
+import «M2rGroup7».P3Classification.OddCaseA
+import «M2rGroup7».P3Classification.OddCaseB
 import «M2rGroup7».SmallGroupsLibrary
 
 set_option maxHeartbeats 3200000
