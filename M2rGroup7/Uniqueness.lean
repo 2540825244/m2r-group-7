@@ -356,25 +356,20 @@ theorem uniqueness (n i n' i' : Nat)
     · -- n = 16
       by_invariant 16 i i'
         (isAbelianInv ⊗
-        (numElementsOfOrderInv 2) ⊗
-        (numElementsOfOrderInv 4) ⊗
+        orderSpectrumInv ⊗
         squaresInv)
     · -- n = 17
       by_single_group
     · -- n = 18
       by_invariant 18 i i'
         isAbelianInv ⊗
-        (numElementsOfOrderInv 2) ⊗
-        (numElementsOfOrderInv 9)
+        orderSpectrumInv
     · -- n = 19
       by_single_group
     · -- n = 20
       by_invariant 20 i i'
         isAbelianInv ⊗
-        (numElementsOfOrderInv 2) ⊗
-        (numElementsOfOrderInv 4) ⊗
-        (numElementsOfOrderInv 5) ⊗
-        (numElementsOfOrderInv 10)
+        orderSpectrumInv
     · -- n = 21: C21 vs C7⋊C3; abelian vs non-abelian
       by_invariant 21 i i' isAbelianInv
     · -- n = 22: D11 vs C22; non-abelian vs abelian
@@ -388,14 +383,11 @@ theorem uniqueness (n i n' i' : Nat)
     · -- n = 26: D13 vs C26; non-abelian vs abelian
       by_invariant 26 i i' isAbelianInv
     · -- n = 27
-      sorry
+      by_invariant 27 i i' (isAbelianInv ⊗ orderSpectrumInv)
     · -- n = 28
       by_invariant 28 i i'
         isAbelianInv ⊗
-        (numElementsOfOrderInv 2) ⊗
-        (numElementsOfOrderInv 4) ⊗
-        (numElementsOfOrderInv 7) ⊗
-        (numElementsOfOrderInv 14)
+        orderSpectrumInv
     · -- n = 29
       by_single_group
     · -- n = 30
