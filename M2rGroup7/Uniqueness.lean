@@ -173,7 +173,6 @@ def squaresInv : GroupInvariant Nat where
 
 -- Sorted list of (order, count) pairs for every element order that occurs.
 -- Built from numElementsOfOrderInv so it is computable (no noncomputable orderOf call).
--- Element orders divide |K| by Lagrange, so Nat.divisors covers all occurring orders.
 def orderSpectrumInv : GroupInvariant (List (ℕ × ℕ)) where
   eval K _ [Fintype K] [DecidableEq K] :=
     let n := Fintype.card K
