@@ -171,24 +171,6 @@ def squaresInv : GroupInvariant Nat where
         exact ⟨(e.symm z) ^ 2, Finset.mem_image.mpr ⟨e.symm z, Finset.mem_univ _, rfl⟩,
                by simp [map_pow]⟩)
 
--- Sorted list of (order, count) pairs for every element order that occurs.
--- Built from numElementsOfOrderInv so it is computable (no noncomputable orderOf call).
-def orderSpectrumInv : GroupInvariant (List (ℕ × ℕ)) where
-  eval K _ [Fintype K] [DecidableEq K] :=
-    let n := Fintype.card K
-    -- List.range gives [0..n] already sorted; filter to positive divisors of n.
-    -- Avoids Finset.sort (which goes through Multiset.toList → Classical.choice)
-    -- so the whole definition stays kernel-reducible for `decide`.
-    (List.range (n + 1)).filterMap fun d =>
-      if 0 < d && n % d == 0 then
-        let cnt := (numElementsOfOrderInv d).eval K
-        if 0 < cnt then some (d, cnt) else none
-      else none
-  preservation {K L} _ _ _ _ _ _ e := by
-    simp only [Fintype.card_congr e.toEquiv]
-    apply List.filterMap_congr
-    intro d _
-    simp only [(numElementsOfOrderInv d).preservation e]
 
 /-- Close a uniqueness goal for an order with exactly one group in `SmallGroupsLibrary`.
     Reduces `num_entries n = 1` via `simp` then uses `omega` to derive a contradiction
@@ -357,38 +339,44 @@ theorem uniqueness (n i n' i' : Nat)
     · -- n = 16
       by_invariant 16 i i'
         (isAbelianInv ⊗
-        orderSpectrumInv ⊗
+        (numElementsOfOrderInv 2) ⊗
+        (numElementsOfOrderInv 4) ⊗
         squaresInv)
     · -- n = 17
       by_single_group
     · -- n = 18
       by_invariant 18 i i'
         isAbelianInv ⊗
-        orderSpectrumInv
+        (numElementsOfOrderInv 2) ⊗
+        (numElementsOfOrderInv 9)
     · -- n = 19
       by_single_group
     · -- n = 20
       by_invariant 20 i i'
         isAbelianInv ⊗
-        orderSpectrumInv
+        (numElementsOfOrderInv 2)
     · -- n = 21: C21 vs C7⋊C3; abelian vs non-abelian
       by_invariant 21 i i' isAbelianInv
     · -- n = 22: D11 vs C22; non-abelian vs abelian
       by_invariant 22 i i' isAbelianInv
     · -- n = 23
       by_single_group
-    · -- n = 24
-      by_invariant 24 i i' orderSpectrumInv
+    · -- n = 24: distinguished by involution count, order-3 count, order-4 count, and order-8 count
+      by_invariant 24 i i'
+        (numElementsOfOrderInv 2) ⊗
+        (numElementsOfOrderInv 3) ⊗
+        (numElementsOfOrderInv 4) ⊗
+        (numElementsOfOrderInv 8)
     · -- n = 25: C25 vs C5×C5; C25 has element with x^5≠1, C5×C5 does not
       by_invariant 25 i i' (hasPowerNotOneInv 5)
     · -- n = 26: D13 vs C26; non-abelian vs abelian
       by_invariant 26 i i' isAbelianInv
-    · -- n = 27
-      by_invariant 27 i i' (isAbelianInv ⊗ orderSpectrumInv)
+    · -- n = 27: abelianness + order-3 count separates all 5 groups
+      by_invariant 27 i i' (isAbelianInv ⊗ (numElementsOfOrderInv 3))
     · -- n = 28
       by_invariant 28 i i'
         isAbelianInv ⊗
-        orderSpectrumInv
+        (numElementsOfOrderInv 2)
     · -- n = 29
       by_single_group
     · -- n = 30
