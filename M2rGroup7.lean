@@ -1,2 +1,3 @@
 import M2rGroup7.Classification
 import M2rGroup7.Uniqueness
+import M2rGroup7.UniqueClassification
