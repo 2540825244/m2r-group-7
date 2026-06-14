@@ -2,6 +2,12 @@ import «M2rGroup7».SmallGroupsLibrary
 
 universe u u' v
 
+/-- A group invariant valued in `α`: a function that assigns a value of type `α` to every
+    finite group `K`, and is preserved by group isomorphisms.  Two groups with different
+    invariant values cannot be isomorphic (see `not_iso_by`).
+
+    Invariants can be combined with `⊗` (notation for `combine`) to produce a product
+    invariant that distinguishes groups whenever either component does. -/
 structure GroupInvariant (α : Type u) [DecidableEq α] where
   eval (K : Type v) [Group K] [Fintype K] [DecidableEq K] : α
   preservation {K L : Type v}
@@ -165,25 +171,125 @@ def squaresInv : GroupInvariant Nat where
         exact ⟨(e.symm z) ^ 2, Finset.mem_image.mpr ⟨e.symm z, Finset.mem_univ _, rfl⟩,
                by simp [map_pow]⟩)
 
+
+/-- Close a uniqueness goal for an order with exactly one group in `SmallGroupsLibrary`.
+    Reduces `num_entries n = 1` via `simp` then uses `omega` to derive a contradiction
+    from the hypothesis `i ≠ i'` and the single-entry bound. -/
 macro "by_single_group" : tactic => `(tactic | (
   simp only [num_entries] at *
   omega
 ))
 
-set_option linter.style.nativeDecide false in
--- To speed up computation of non-isomorphism
-macro "by_invariant" i:ident i':ident inv:term : tactic => `(tactic | (
-  simp only [num_entries] at *
-  interval_cases $i <;> interval_cases $i' <;>
-    first
-    | omega
-    | simp only [retrieve]
-      exact not_iso_by $inv (by native_decide)
-))
+-- Convert a reduced Lean expression (Nat/Bool/nested Prod literal) to term syntax.
+private partial def exprLiteralToSyntax (e : Lean.Expr) : Lean.MetaM (Lean.TSyntax `term) := do
+  let e ← Lean.Meta.whnf e
+  if let .lit (.natVal n) := e then return Lean.Syntax.mkNumLit (toString n)
+  if e == Lean.mkConst ``Bool.true  then return ← `(true)
+  if e == Lean.mkConst ``Bool.false then return ← `(false)
+  -- Prod.mk.{u v} α β a b  →  four applications
+  if let .app (.app (.app (.app f _) _) aExpr) bExpr := e then
+    if f.isAppOf ``Prod.mk then
+      let aSt ← exprLiteralToSyntax aExpr
+      let bSt ← exprLiteralToSyntax bExpr
+      return ← `(($aSt, $bSt))
+  -- List.nil  →  []
+  if e.isAppOf ``List.nil then return ← `([])
+  -- List.cons α head tail  →  head :: tail
+  if e.isAppOf ``List.cons then
+    let args := e.getAppArgs  -- #[α, head, tail]
+    let headSt ← exprLiteralToSyntax args[1]!
+    let tailSt ← exprLiteralToSyntax args[2]!
+    return ← `($headSt :: $tailSt)
+  Lean.throwError "exprLiteralToSyntax: cannot convert {e}"
 
-set_option maxHeartbeats 800000 in
--- This is needed because the proof of uniqueness and obtaining the invariant
--- is mostly computational
+-- Evaluate a closed term `e : α` via native compilation (elab-time only).
+-- Handles Nat, Bool, and nested Prod types; never appears in the proof term.
+private unsafe def evalToLiteral (αExpr : Lean.Expr) (e : Lean.Expr) : Lean.MetaM Lean.Expr := do
+  let α ← Lean.Meta.whnf αExpr
+  if α == Lean.mkConst ``Nat then
+    return Lean.mkNatLit (← Lean.Meta.evalExpr Nat (Lean.mkConst ``Nat) e)
+  else if α == Lean.mkConst ``Bool then
+    let v ← Lean.Meta.evalExpr Bool (Lean.mkConst ``Bool) e
+    return if v then Lean.mkConst ``Bool.true else Lean.mkConst ``Bool.false
+  else if let .app (.app (.const ``Prod _) αA) αB := α then
+    let fstLit ← evalToLiteral αA (← Lean.Meta.mkAppM ``Prod.fst #[e])
+    let sndLit ← evalToLiteral αB (← Lean.Meta.mkAppM ``Prod.snd #[e])
+    let lvlA ← Lean.Meta.getLevel αA
+    let lvlB ← Lean.Meta.getLevel αB
+    return Lean.mkApp4 (Lean.mkConst ``Prod.mk [lvlA, lvlB]) αA αB fstLit sndLit
+  -- Generic List α: whnf to nil/cons constructor form and recurse on element and tail.
+  -- Avoids a hardcoded type check (which is brittle under definitional equality / universe
+  -- instantiation); any element type supported by evalToLiteral is handled automatically.
+  else if let .app (.const ``List _) αElem := α then
+    let le ← Lean.Meta.whnf e
+    if le.isAppOf ``List.nil then
+      return Lean.mkApp (Lean.mkConst ``List.nil [.zero]) αElem
+    else if le.isAppOf ``List.cons then
+      let args := le.getAppArgs  -- #[αElem, head, tail]
+      let headLit ← evalToLiteral αElem args[1]!
+      let tailLit ← evalToLiteral α args[2]!  -- α = List αElem; recurses into this branch
+      return Lean.mkApp3 (Lean.mkConst ``List.cons [.zero]) αElem headLit tailLit
+    else
+      Lean.throwError "evalToLiteral: list did not reduce to nil/cons: {le}"
+  else
+    Lean.throwError "evalToLiteral: unsupported invariant type {α}"
+
+/-- `by_invariant n i i' inv` proves that two groups of the same order `n`, indexed by
+    distinct `i` and `i'`, are non-isomorphic using the `GroupInvariant` `inv`.
+
+    The tactic runs in three phases at elaboration time:
+    - **Phase 1 (cache)**: for each group index `k ∈ 1..N`, evaluate `inv.eval (retrieve n k)`
+      via native compilation (`evalExpr`), then inject a kernel-verified hypothesis
+      `hG_k : inv.eval (retrieve n k) = <literal>` proved by `decide` into the goal context.
+    - **Phase 2 (simp set)**: collect all `hG_k` hypotheses into a simp lemma list.
+    - **Phase 3 (case split)**: `interval_cases i; interval_cases i'` enumerates all N² pairs;
+      diagonal cases are closed by `omega`; off-diagonal cases apply `not_iso_by`, rewrite
+      both invariant values to their cached literals via `simp`, then close with `decide`. -/
+syntax (name := byInvariant) "by_invariant" num ident ident term : tactic
+
+private unsafe def elabByInvariantImpl : Lean.Elab.Tactic.Tactic
+  | `(tactic| by_invariant $nStx $i $i' $inv) => do
+    let nGroups := num_entries nStx.getNat
+    -- Elaborate inv once to extract the return type α from GroupInvariant α.
+    let invExpr ← Lean.Elab.Tactic.elabTerm inv none
+    let αExpr := (← Lean.Meta.whnf (← Lean.Meta.inferType invExpr)).getAppArgs[0]!
+    -- Phase 1: for each group k, compute inv.eval (retrieve n k) at elaboration time,
+    -- then inject `have hG_k : ... = <literal> := by decide`.
+    -- `decide` is fully kernel-verified; evalToLiteral only guides which literal to expect.
+    let mut cacheIdents : Array Lean.Ident := #[]
+    for k in List.range nGroups do
+      let k1Stx := Lean.Syntax.mkNumLit (toString (k + 1))
+      let hName := Lean.mkIdent (Lean.Name.mkSimple s!"hG_{k + 1}")
+      cacheIdents := cacheIdents.push hName
+      let invEvalNK ← Lean.Elab.Tactic.elabTerm (← `(($inv).eval (retrieve $nStx $k1Stx))) none
+      let valStx    ← exprLiteralToSyntax (← evalToLiteral αExpr invEvalNK)
+      Lean.Elab.Tactic.evalTactic (← `(tactic|
+        have $hName : ($inv).eval (retrieve $nStx $k1Stx) = $valStx := by
+          set_option maxRecDepth 2000 in decide))
+    -- Phase 2: build simp lemma list from the cached idents.
+    let simpArgs ← cacheIdents.mapM fun h => `(Lean.Parser.Tactic.simpLemma| $h:ident)
+    -- Phase 3: case-split then close.
+    --   · omega closes i = i' subgoals (hi_neq in context)
+    --   · otherwise: simp rewrites both sides to cached literals, decide compares them
+    Lean.Elab.Tactic.evalTactic (← `(tactic|
+      simp only [num_entries] at * <;>
+      interval_cases $i <;> interval_cases $i' <;>
+      first
+      | omega
+      | (apply not_iso_by $inv
+         simp only [$simpArgs,*]
+         decide +kernel)))
+  | _ => Lean.Elab.throwUnsupportedSyntax
+
+@[implemented_by elabByInvariantImpl]
+private opaque elabByInvariantSafe : Lean.Elab.Tactic.Tactic
+
+@[tactic byInvariant]
+private def elabByInvariant : Lean.Elab.Tactic.Tactic := elabByInvariantSafe
+
+set_option maxHeartbeats 4000000 in
+-- Bumping heartbeats to allow the elaborator to construct the O(N²) case-split AST.
+-- The underlying kernel proofs use pure `decide` and execute.
 theorem uniqueness (n i n' i' : Nat)
   [ValidIndex n i] [ValidIndex n' i'] [Fact (n ≠ n' ∨ i ≠ i')]
   : IsEmpty ((retrieve n i) ≃* (retrieve n' i')) := by
@@ -205,81 +311,76 @@ theorem uniqueness (n i n' i' : Nat)
     · -- n = 3
       by_single_group
     · -- n = 4: C4 vs C2×C2; C4 has element with x^2≠1, C2×C2 does not
-      by_invariant i i' (hasPowerNotOneInv 2)
+      by_invariant 4 i i' (hasPowerNotOneInv 2)
     · -- n = 5
       by_single_group
     · -- n = 6: C6 vs D3; C6 is abelian, D3 is not
-      by_invariant i i' isAbelianInv
+      by_invariant 6 i i' isAbelianInv
     · -- n = 7
       by_single_group
     · -- n = 8
-      by_invariant i i'
-        isAbelianInv ⊗
-        (hasPowerNotOneInv 4) ⊗
-        (hasPowerNotOneInv 2) ⊗
-        (numElementsOfOrderInv 2)
+      by_invariant 8 i i'
+        (isAbelianInv ⊗ (hasPowerNotOneInv 4) ⊗ (hasPowerNotOneInv 2) ⊗ (numElementsOfOrderInv 2))
     · -- n = 9: C9 vs C3×C3; C9 has element with x^3≠1, C3×C3 does not
-      by_invariant i i' (hasPowerNotOneInv 3)
+      by_invariant 9 i i' (hasPowerNotOneInv 3)
     · -- n = 10: C10 vs D5; C10 is abelian, D5 is not
-      by_invariant i i' isAbelianInv
+      by_invariant 10 i i' isAbelianInv
     · -- n = 11
       by_single_group
     · -- n = 12
-      by_invariant i i' isAbelianInv ⊗ (numElementsOfOrderInv 2) ⊗ (numElementsOfOrderInv 4)
+      by_invariant 12 i i'
+        (isAbelianInv ⊗ (numElementsOfOrderInv 2) ⊗ (numElementsOfOrderInv 4))
     · -- n = 13
       by_single_group
     · -- n = 14
-      by_invariant i i' isAbelianInv
+      by_invariant 14 i i' isAbelianInv
     · -- n = 15
       by_single_group
     · -- n = 16
-      by_invariant i i'
-        isAbelianInv ⊗
+      by_invariant 16 i i'
+        (isAbelianInv ⊗
         (numElementsOfOrderInv 2) ⊗
         (numElementsOfOrderInv 4) ⊗
-        (numElementsOfOrderInv 8) ⊗
-        squaresInv
+        squaresInv)
     · -- n = 17
       by_single_group
     · -- n = 18
-      by_invariant i i'
+      by_invariant 18 i i'
         isAbelianInv ⊗
         (numElementsOfOrderInv 2) ⊗
         (numElementsOfOrderInv 9)
     · -- n = 19
       by_single_group
     · -- n = 20
-      by_invariant i i'
+      by_invariant 20 i i'
         isAbelianInv ⊗
-        (numElementsOfOrderInv 2) ⊗
-        (numElementsOfOrderInv 4) ⊗
-        (numElementsOfOrderInv 5) ⊗
-        (numElementsOfOrderInv 10)
+        (numElementsOfOrderInv 2)
     · -- n = 21: C21 vs C7⋊C3; abelian vs non-abelian
-      by_invariant i i' isAbelianInv
+      by_invariant 21 i i' isAbelianInv
     · -- n = 22: D11 vs C22; non-abelian vs abelian
-      by_invariant i i' isAbelianInv
+      by_invariant 22 i i' isAbelianInv
     · -- n = 23
       by_single_group
-    · -- n = 24
-      by_single_group
-    · -- n = 25: C25 vs C5×C5; C25 has element with x^5≠1, C5×C5 does not
-      by_invariant i i' (hasPowerNotOneInv 5)
-    · -- n = 26: D13 vs C26; non-abelian vs abelian
-      by_invariant i i' isAbelianInv
-    · -- n = 27
-      by_single_group
-    · -- n = 28
-      by_invariant i i'
-        isAbelianInv ⊗
+    · -- n = 24: distinguished by involution count, order-3 count, order-4 count, and order-8 count
+      by_invariant 24 i i'
         (numElementsOfOrderInv 2) ⊗
+        (numElementsOfOrderInv 3) ⊗
         (numElementsOfOrderInv 4) ⊗
-        (numElementsOfOrderInv 7) ⊗
-        (numElementsOfOrderInv 14)
+        (numElementsOfOrderInv 8)
+    · -- n = 25: C25 vs C5×C5; C25 has element with x^5≠1, C5×C5 does not
+      by_invariant 25 i i' (hasPowerNotOneInv 5)
+    · -- n = 26: D13 vs C26; non-abelian vs abelian
+      by_invariant 26 i i' isAbelianInv
+    · -- n = 27: abelianness + order-3 count separates all 5 groups
+      by_invariant 27 i i' (isAbelianInv ⊗ (numElementsOfOrderInv 3))
+    · -- n = 28
+      by_invariant 28 i i'
+        isAbelianInv ⊗
+        (numElementsOfOrderInv 2)
     · -- n = 29
       by_single_group
-    · -- n = 30: distinguished by number of elements of order 2
-      by_invariant i i' (numElementsOfOrderInv 2)
+    · -- n = 30
+      by_invariant 30 i i' (isAbelianInv ⊗ (numElementsOfOrderInv 2))
     · -- n = 31
       by_single_group
   · -- n ≠ n'
