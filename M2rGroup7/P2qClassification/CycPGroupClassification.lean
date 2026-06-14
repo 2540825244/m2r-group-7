@@ -12,7 +12,7 @@ def cyclicGroupAutEquivUnits (n : ℕ) [NeZero n] : MulAut (CyclicGroup n) ≃* 
 /-- Core existence: for each r ≤ v_p(q-1), there is an element of Aut(C_{q^n}) of order exactly p^r.
     Construction: Aut(C_{q^n}) ≃* (ZMod q^n)ˣ is cyclic of order q^{n-1}(q-1);
     a generator α raised to the power |Aut|/p^r has order exactly p^r. -/
-private lemma canonicalAutElement_exists
+private lemma candidateAutElement_exists
     (p q n r : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime]
     (hq_odd : q ≠ 2) (hn : 0 < n)
     (hr : r ≤ (q - 1).factorization p) :
@@ -153,9 +153,9 @@ lemma canonicalAutElement_orderOf
   rw [(cyclicGroupAutEquivUnits (q ^ n)).symm.orderOf_eq]
   show orderOf (canonicalAutElement_unit p q n r) = p ^ r
   -- The unit comes from the candidates list; we show the candidates list contains some
-  -- unit with order p^r (transported from canonicalAutElement_exists), then apply
+  -- unit with order p^r (transported from candidateAutElement_exists), then apply
   -- findFirstUnitWithOrder_orderOf.
-  obtain ⟨τ, hτ⟩ := canonicalAutElement_exists p q n r hq_odd hn hr
+  obtain ⟨τ, hτ⟩ := candidateAutElement_exists p q n r hq_odd hn hr
   let u₀ : (ZMod (q^n))ˣ := cyclicGroupAutEquivUnits (q^n) τ
   have hu₀ : orderOf u₀ = p ^ r := by
     change orderOf (cyclicGroupAutEquivUnits (q^n) τ) = p ^ r
